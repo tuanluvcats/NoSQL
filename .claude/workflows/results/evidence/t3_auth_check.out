@@ -1,0 +1,52 @@
++ docker exec c41-auth cqlsh -e 'SELECT 1 FROM system.local'
+Connection error: ('Unable to connect to any servers', {'127.0.0.1:9042': AuthenticationFailed('Remote end requires authentication')})
++ docker exec c41-auth cqlsh -u cassandra -p cassandra -e 'LIST ROLES; LIST ALL PERMISSIONS OF app_reader; SELECT keyspace_name, view_name FROM system_schema.views WHERE keyspace_name='\''ride_booking'\'';'
+
+Warning: Using a password on the command line interface can be insecure.
+Recommendation: use the credentials file to securely provide the password.
+
+
+ role       | super | login | options | datacenters
+------------+-------+-------+---------+-------------
+  app_admin | False |  True |        {} |         ALL
+ app_reader | False |  True |        {} |         ALL
+  cassandra |  True |  True |        {} |         ALL
+
+(3 rows)
+
+ role       | username   | resource                | permission
+------------+------------+-------------------------+------------
+ app_reader | app_reader | <keyspace ride_booking> |     SELECT
+
+(1 rows)
+
+ keyspace_name | view_name
+---------------+-----------------
+  ride_booking | rides_by_status
+
+(1 rows)
++ docker exec c41-auth cqlsh -u app_reader -p Reader@123 -e 'INSERT INTO ride_booking.rides (ride_id, status) VALUES (uuid(), '\''REQUESTED'\'')'
+
+Warning: Using a password on the command line interface can be insecure.
+Recommendation: use the credentials file to securely provide the password.
+
+<stdin>:1:Unauthorized: Error from server: code=2100 [Unauthorized] message="User app_reader has no MODIFY permission on <table ride_booking.rides> or any of its parents"
++ docker exec c41-auth nodetool status
+Datacenter: HCM
+===============
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address     Load        Tokens  Owns (effective)  Host ID                               Rack 
+UN  172.17.0.3  108.53 KiB  16      100.0%            8efce2b7-6de5-4d6d-8213-c9e539f2d6ce  rack1
+
++ docker exec c41-dconly nodetool status
+Datacenter: datacenter1
+=======================
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address     Load        Tokens  Owns (effective)  Host ID                               Rack 
+UN  172.17.0.4  104.35 KiB  16      100.0%            78ed115a-0a2f-49a4-bdeb-1598ff788fe2  rack1
+
++ docker exec c41-dconly grep -E '^dc|^endpoint_snitch' /etc/cassandra/cassandra-rackdc.properties /etc/cassandra/cassandra.yaml
+/etc/cassandra/cassandra-rackdc.properties:dc= HCM
+/etc/cassandra/cassandra.yaml:endpoint_snitch: SimpleSnitch

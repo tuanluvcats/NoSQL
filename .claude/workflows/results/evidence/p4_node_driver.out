@@ -1,0 +1,8 @@
+# npm view cassandra-driver (registry.npmjs.org)
+version = '4.10.0'
+repository.url = 'git+https://github.com/apache/cassandra-nodejs-driver.git'
+engines.node = '>=20'
+{'4.7.0': '2023-09-15', '4.7.1': '2023-09-19', '4.7.2': '2023-09-21', '4.8.0': '2025-02-20', '4.9.0': '2026-05-06', '4.10.0': '2026-09-23'}
+# node probe
+node v22.22.0 driver 4.10.0
+Row { release_version: '4.1.12', data_center: 'datacenter1' }

@@ -1,0 +1,28 @@
++ docker exec nosql-cassandra cqlsh -e 'CREATE TABLE IF NOT EXISTS probe.promo_codes (code text PRIMARY KEY, pct int); INSERT INTO probe.promo_codes (code, pct) VALUES ('\''GIAM20'\'', 20) USING TTL 86400; SELECT code, pct, TTL(pct) FROM probe.promo_codes;'
+
+ code   | pct | ttl(pct)
+--------+-----+----------
+ GIAM20 |  20 |    86400
+
+(1 rows)
++ docker exec nosql-cassandra cqlsh -e 'COPY probe.promo_codes TO '\''/tmp/promo.csv'\'' WITH HEADER=true;'
+Using 3 child processes
+
+Starting copy of probe.promo_codes with columns [code, pct].
+Processed: 1 rows; Rate:       8 rows/s; Avg. rate:       8 rows/s
+1 rows exported to 1 files in 0.130 seconds.
++ docker exec nosql-cassandra cat /tmp/promo.csv
+code,pct
+GIAM20,20
++ docker exec nosql-cassandra cqlsh -e 'TRUNCATE probe.promo_codes; COPY probe.promo_codes FROM '\''/tmp/promo.csv'\'' WITH HEADER=true; SELECT code, pct, TTL(pct) FROM probe.promo_codes;'
+Using 3 child processes
+
+Starting copy of probe.promo_codes with columns [code, pct].
+Processed: 1 rows; Rate:       3 rows/s; Avg. rate:       3 rows/sProcessed: 1 rows; Rate:       2 rows/s; Avg. rate:       2 rows/s
+1 rows imported from 1 files in 0.410 seconds (0 skipped).
+
+ code   | pct | ttl(pct)
+--------+-----+----------
+ GIAM20 |  20 |     null
+
+(1 rows)

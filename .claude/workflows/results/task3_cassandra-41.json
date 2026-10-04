@@ -1,0 +1,158 @@
+{
+  "task": 3,
+  "label": "cassandra-41",
+  "id_prefix": "C",
+  "run": {
+    "date": "2026-10-04",
+    "environment": "Claude Code cloud container (Linux). Docker daemon started inside the container; image cassandra:4.1 (digest sha256:9b33a893b9f9..., CASSANDRA_VERSION=4.1.12, created 2026-10-02) run with the same settings as docker-compose.yml (container nosql-cassandra, CASSANDRA_CLUSTER_NAME=NoSQLLab, MAX_HEAP_SIZE=1G, HEAP_NEWSIZE=256M, port 9042). Two extra throw-away containers (c41-auth, c41-dconly) were started for the auth/MV and DC checks and removed afterwards.",
+    "deviations_from_workflow": [
+      "prompt1_answer.md and the nosql_extract folder live on the Windows machine and are not in the repository, so claims are taken from the quotations inside .claude/workflows/verify-prompt1-analysis.js (pCass items 1-13). Claims marked [theo workflow] are paraphrased from that scope, not quoted from prompt1_answer.md; re-check their wording when prompt1_answer.md is available.",
+      "cassandra.apache.org is blocked by this environment's egress policy (HTTP 403). The same 4.1 documentation was read from its source in GitHub apache/cassandra branch cassandra-4.1 (doc/modules/cassandra/pages/*.adoc), which is what cassandra.apache.org/doc/4.1 is built from.",
+      "Instead of reasoning only from documents, every behaviour below was executed against a real Cassandra 4.1.12 node; the scripts and raw outputs are in .claude/workflows/results/evidence/."
+    ]
+  },
+  "findings": [
+    {
+      "id": "C1",
+      "claim": "\"Materialized View bị tắt mặc định\" (Cassandra 4.1)",
+      "verdict": "correct",
+      "severity": "medium",
+      "evidence": "conf/cassandra.yaml 4.1 line 1732-1733: \"# Materialized views are considered experimental and are not recommended for production use.\" / \"materialized_views_enabled: false\" (https://github.com/apache/cassandra/blob/cassandra-4.1/conf/cassandra.yaml#L1732-L1733). Run: CREATE MATERIALIZED VIEW ... -> evidence/t3_probe.out:1 \"Materialized views are disabled. Enable in cassandra.yaml to use.\" NEWS.txt (4.0 section) line 591-594: flags \"have been set as false by default\" (CASSANDRA-14866). docker-entrypoint.sh 4.1 lines 66-91 only rewrite broadcast_address, broadcast_rpc_address, cluster_name, endpoint_snitch, listen_address, num_tokens, rpc_address, start_rpc and dc/rack -> no env var for MV. Mounting a cassandra.yaml with materialized_views_enabled: true works: evidence/t3_auth_check.out:25 view rides_by_status exists; cqlsh printed \"Materialized views are experimental and are not recommended for production use.\"",
+      "correction": "Đúng. Khóa cấu hình ở 4.1 là materialized_views_enabled (ở 4.0 tên là enable_materialized_views), mặc định false. Image Docker không có biến môi trường để bật MV: muốn bật phải mount file cassandra.yaml đã sửa vào /etc/cassandra/cassandra.yaml (đã thử, chạy được). Khi tạo MV, Cassandra cảnh báo đây là tính năng thử nghiệm, không khuyến nghị cho production. Với đồ án nên dùng bảng phi chuẩn hóa + BATCH làm giải pháp chính; MV chỉ nên nêu như một tính năng có hạn chế."
+    },
+    {
+      "id": "C2",
+      "claim": "\"chưa có SAI (phải lên 5.0)\"",
+      "verdict": "correct",
+      "severity": "low",
+      "evidence": "NEWS.txt cassandra-5.0 line 185-186: \"Added a new secondary index implementation, Storage-Attached Indexes (SAI).\" (https://github.com/apache/cassandra/blob/cassandra-5.0/NEWS.txt#L185). On 4.1.12: evidence/t3_index_gcgrace.out \"Unable to find custom indexer class 'org.apache.cassandra.index.sai.StorageAttachedIndex'\". SASI: cassandra.yaml line 1736-1737 \"SASI indexes are considered experimental\" / \"sasi_indexes_enabled: false\"; run -> \"SASI indexes are disabled. Enable in cassandra.yaml to use.\" (evidence/t3_probe.out:3). Ordinary secondary index works: CREATE INDEX rides_status_2i succeeded, system_schema.indexes kind COMPOSITES (evidence/t3_index_gcgrace.out).",
+      "correction": "Đúng: SAI chỉ có từ Cassandra 5.0. Bổ sung: 4.1 có sẵn secondary index thường (CREATE INDEX ... ON bảng(cột)) dùng được ngay để minh họa truy vấn theo cột không phải khóa; SASI có trong 4.1 nhưng là tính năng thử nghiệm và bị tắt mặc định (sasi_indexes_enabled: false)."
+    },
+    {
+      "id": "C3",
+      "claim": "\"UDF cũng tắt mặc định\"",
+      "verdict": "correct",
+      "severity": "low",
+      "evidence": "cassandra.yaml 4.1 line 1514 \"user_defined_functions_enabled: false\", line 1520 \"scripted_user_defined_functions_enabled: false\". Run CREATE FUNCTION ... LANGUAGE java -> evidence/t3_probe.out:4 \"User-defined functions are disabled in cassandra.yaml - set user_defined_functions_enabled=true to enable\".",
+      "correction": "Đúng. Khóa là user_defined_functions_enabled (UDF Java) và scripted_user_defined_functions_enabled (UDF JavaScript), cả hai mặc định false; bật cũng phải mount cassandra.yaml. Các hàm tổng hợp có sẵn COUNT/SUM/AVG/MIN/MAX không cần UDF."
+    },
+    {
+      "id": "C4",
+      "claim": "[theo workflow] Dùng hàm tổng hợp COUNT/SUM/AVG/MIN/MAX với GROUP BY cho truy vấn nâng cao trên 4.1",
+      "verdict": "correct",
+      "severity": "medium",
+      "evidence": "evidence/t3_probe.out:6-11 GROUP BY customer_id returns COUNT/SUM/AVG/MIN/MAX per partition, with warning line 13-14 \"Aggregation query used without partition key\". Restrictions: line 24 \"Group by is currently only supported on the columns of the PRIMARY KEY, got status\"; line 25 \"Group by currently only support groups of columns following their declared order in the PRIMARY KEY\". doc cql/dml.adoc (4.1) line 187-189: \"the GROUP BY option only accepts primary key columns in defined order\". Time buckets: NEWS.txt 4.1 section line 171-172 \"Add floor functions that can be use to group by time range\"; run GROUP BY customer_id, floor(booked_at, 1d) works (t3_probe.out:27-32). AVG on bigint is integer division: t3_probe.out:34-36 avg(fare)=46333 vs avg(cast(fare as double))=46333.33333.",
+      "correction": "Đúng, nhưng cần ghi rõ ràng buộc: GROUP BY chỉ nhận cột khóa chính theo đúng thứ tự khai báo (partition key trước, rồi tiền tố clustering); không GROUP BY được theo cột thường như status. Từ 4.1 có thể nhóm theo khoảng thời gian bằng floor(cột_timestamp, 1d) ở cột cuối của GROUP BY. AVG trên cột số nguyên (int/bigint) chia lấy phần nguyên, muốn có số lẻ phải CAST sang double/decimal. Truy vấn tổng hợp không chỉ định partition key sẽ quét toàn bảng (Cassandra cảnh báo) — trong đồ án nên luôn lọc theo partition key."
+    },
+    {
+      "id": "C5",
+      "claim": "[theo workflow] PER PARTITION LIMIT; phân trang bằng token(); ALLOW FILTERING",
+      "verdict": "correct",
+      "severity": "low",
+      "evidence": "evidence/t3_probe.out:40-45 PER PARTITION LIMIT 1 returns the newest ride of each customer (clustering booked_at DESC). Line 47-52 token(customer_id): CUST002=3949864281515454340 < CUST001=4430528727449596840, so WHERE token(customer_id) > token('CUST001') returns 0 rows (line 54-58): order follows the token, not the key text. Line 59: query on regular column without ALLOW FILTERING rejected (\"Cannot execute this query as it might involve data filtering...\"); with ALLOW FILTERING it runs (61-67). doc cql/dml.adoc line 222: \"The ALLOW FILTERING option explicitly executes a full scan.\"",
+      "correction": "Đúng. Khi viết báo cáo cần giải thích: thứ tự duyệt theo token() là thứ tự giá trị băm Murmur3, không phải thứ tự chữ cái của khóa; ALLOW FILTERING là quét toàn bộ (hoặc toàn partition), chỉ chấp nhận khi đã giới hạn trong một partition hoặc dữ liệu nhỏ."
+    },
+    {
+      "id": "C6",
+      "claim": "[theo workflow] LWT: INSERT ... IF NOT EXISTS; UPDATE ... IF status='REQUESTED' (nhận cuốc); serial consistency",
+      "verdict": "correct",
+      "severity": "medium",
+      "evidence": "evidence/t3_probe.out:76-82 INSERT IF NOT EXISTS -> [applied] True, second insert -> False and returns the existing row. Line 84-90: UPDATE rides SET driver_id='DRV01', status='ACCEPTED' ... IF status='REQUESTED' -> True; the same update by DRV02 -> False, status ACCEPTED (race for accepting a ride handled). Line 91 SERIAL CONSISTENCY LOCAL_SERIAL accepted; line 93-95 condition on two regular columns works. Line 96: \"Batch with conditions cannot span multiple partitions\". Line 117: \"Conditional updates are not supported on counter tables\". Cost: cql/dml.adoc (4.1) line 292-293 \"IF NOT EXISTS will incur a non-negligible performance cost, because Paxos is used\"; Cassandra: The Definitive Guide 3rd ed. (TaiLieuThamKhao/[4]), section \"Lightweight Transactions and Paxos\": \"a successful transaction requires four round-trips between the coordinator node and replicas\".",
+      "correction": "Đúng. Bổ sung: điều kiện IF được đặt trên cột thường (status) là hợp lệ và chính là cách chống hai tài xế cùng nhận một cuốc; BATCH có điều kiện IF chỉ được nằm trong một partition; không dùng LWT trên bảng counter; mỗi LWT tốn 4 vòng trao đổi Paxos nên chỉ dùng cho bước cần tranh chấp (đăng ký tài khoản, nhận cuốc), không dùng cho mọi ghi."
+    },
+    {
+      "id": "C7",
+      "claim": "[theo workflow] Cột static, set<text>, UDT, TTL, WRITETIME",
+      "verdict": "correct",
+      "severity": "low",
+      "evidence": "evidence/t3_probe.out:97 \"Static columns are only useful (and thus allowed) if the table has at least one clustering column\". Line 99-104: static driver_name/vehicle_plate shared by every row of partition DRV01 after one UPDATE. Line 106-108: set<text> append, frozen UDT field access home.city, TTL(full_name)=3600, WRITETIME(full_name). Line 111: \"Cannot use selection function writeTime on non-frozen collection phones\"; cql/dml.adoc (4.1) line 88-89 \"The WRITETIME and TTL functions can't be used on multi-cell columns such as non-frozen collections\". This is only lifted in 5.0 (NEWS.txt cassandra-5.0 line 214-216).",
+      "correction": "Đúng. Lưu ý khi minh họa: cột static bắt buộc bảng có clustering column; WRITETIME/TTL trong 4.1 không áp dụng được cho collection/UDT không frozen (chỉ 5.0 mới hỗ trợ), nên minh họa WRITETIME/TTL trên cột đơn (text, int...)."
+    },
+    {
+      "id": "C8",
+      "claim": "[theo workflow] Bảng counter revenue_by_day PRIMARY KEY ((city, yyyymm), day) để thống kê doanh thu (VND)",
+      "verdict": "partly_wrong",
+      "severity": "medium",
+      "evidence": "Rules confirmed on 4.1.12 (evidence/t3_probe.out): line 112 \"Cannot mix counter and non counter columns in the same table\"; 113 \"INSERT statements are not allowed on counter tables, use UPDATE instead\"; 114 \"Cannot provide custom TTL for counter updates\"; 115 \"counters can only be incremented/decremented, not set\"; 116 \"Counter and non-counter mutations cannot exist in the same batch\"; 117 no LWT; 119-125 BEGIN COUNTER BATCH works. cql/types.adoc (4.1) line 58-60: counter is \"a 64-bit signed integer\"; line 74-77: deletion \"is only guaranteed to work the first time ... you should not re-update a counter that you have deleted\"; line 78-83: \"Counter updates are, by nature, not idempotent ... replaying the update may or may not lead to an over count.\"",
+      "correction": "Bảng counter tạo được đúng như đề xuất, nhưng không nên dùng counter làm nguồn số liệu tiền: cập nhật counter không idempotent (timeout rồi thử lại có thể cộng trùng), không đặt lại được giá trị, không có TTL, không dùng chung BATCH với bảng thường nên không thể ghi nguyên tử cùng bản ghi chuyến đi. Đề xuất: dùng counter cho số chuyến (ride_count) để minh họa kiểu counter; doanh thu lấy từ bảng thanh toán thường (ví dụ payments_by_city_day với cột amount bigint) bằng SUM(...) GROUP BY trong một partition, hoặc lưu bigint thường do ứng dụng tính lại. VND là số nguyên nên bigint đủ, không cần decimal. Nếu giữ counter cho doanh thu thì phải nêu hạn chế này trong báo cáo."
+    },
+    {
+      "id": "C9",
+      "claim": "[theo workflow] Bảng driver_locations PRIMARY KEY ((driver_id), ts DESC) với TTL 1 ngày",
+      "verdict": "partly_wrong",
+      "severity": "medium",
+      "evidence": "compaction/index.adoc (4.1) line 178-187: \"Once the TTL has expired the data is converted to a tombstone which stays around for at least gc_grace_seconds ... if you mix data with TTL and data without TTL ... Cassandra will have a hard time dropping the tombstones\". Default gc_grace_seconds = 864000 (10 days) on 4.1.12 (evidence/t3_index_gcgrace.out). cassandra.yaml line 1563-1564 tombstone_warn_threshold 1000 / tombstone_failure_threshold 100000. compaction/twcs.adoc line 4-11: TWCS \"is designed specifically for workloads ... time-series in nature or when all data is written with a TTL\"; line 36-37 choose \"approximately 20-30 windows\" per TTL period. Tested alternative: PRIMARY KEY ((driver_id, day), ts) WITH CLUSTERING ORDER BY (ts DESC) AND default_time_to_live = 86400 AND compaction = TWCS HOURS/1 -> created, TTL(lat)=86400 applied automatically (t3_probe.out:127-129; t3_index_gcgrace.out shows the stored options).",
+      "correction": "Khóa ((driver_id), ts DESC) làm partition của mỗi tài xế phình mãi (ví dụ gửi GPS 5 giây/lần = 17.280 dòng/ngày) và dòng hết hạn TTL thành tombstone, còn tồn tại ít nhất gc_grace_seconds (mặc định 10 ngày) trước khi bị dọn. Nên: (1) chia bucket theo ngày: PRIMARY KEY ((driver_id, day), ts) với CLUSTERING ORDER BY (ts DESC); (2) đặt default_time_to_live = 86400 ở mức bảng thay vì USING TTL từng câu, và không trộn dữ liệu có/không TTL; (3) dùng compaction TimeWindowCompactionStrategy (compaction_window_unit 'HOURS', compaction_window_size 1). Vị trí hiện tại của tài xế nên để ở bảng riêng khóa driver_id (ghi đè), không đọc từ lịch sử."
+    },
+    {
+      "id": "C10",
+      "claim": "[theo workflow] Bảng drivers_by_area PRIMARY KEY ((area, status), rating DESC, driver_id)",
+      "verdict": "partly_wrong",
+      "severity": "medium",
+      "evidence": "evidence/t3_probe.out:132 UPDATE ... SET status -> \"PRIMARY KEY part status found in SET part\"; line 133 UPDATE ... SET rating -> \"PRIMARY KEY part rating found in SET part\". Moving a driver requires DELETE (old key, which needs the old rating value) + INSERT (new key) in a logged BATCH; tested: line 135-145 row moved from AVAILABLE to BUSY. cql/dml.adoc (4.1) line 452-453: \"There is a performance penalty for batch atomicity when a batch spans multiple partitions\".",
+      "correction": "Thiết kế chạy được nhưng mỗi lần đổi trạng thái (rảnh/bận) hoặc đổi điểm đánh giá đều không UPDATE được mà phải DELETE dòng cũ + INSERT dòng mới trong BATCH có log, và phải đọc trước giá trị rating cũ để xóa đúng khóa. Partition (area, 'AVAILABLE') còn có thể thành điểm nóng. Đề xuất: bỏ rating khỏi clustering key (sắp xếp theo rating ở tầng ứng dụng vì số tài xế mỗi khu nhỏ), giữ status trong partition key chỉ khi chấp nhận DELETE+INSERT bằng BATCH và trình bày rõ đây là cái giá của thiết kế query-first; hoặc dùng ((area), driver_id) với status là cột thường."
+    },
+    {
+      "id": "C11",
+      "claim": "(missing) Datacenter mặc định, biến môi trường của image cassandra:4.1 và cấu hình xác thực để làm mục 'quản trị người dùng'",
+      "verdict": "missing",
+      "severity": "high",
+      "evidence": "Default DC: SELECT data_center FROM system.local -> datacenter1; nodetool status \"Datacenter: datacenter1\" (container started from docker-compose settings). docker-entrypoint.sh 4.1 lines 66-91 (identical to https://github.com/docker-library/cassandra/blob/master/4.1/docker-entrypoint.sh). CASSANDRA_DC alone has no effect: container with CASSANDRA_DC=HCM and default SimpleSnitch -> cassandra-rackdc.properties \"dc= HCM\" but nodetool \"Datacenter: datacenter1\" (evidence/t3_auth_check.out:43,51-52); docker-library/docs cassandra/content.md line 89: \"You must set CASSANDRA_ENDPOINT_SNITCH to use the GossipingPropertyFileSnitch ... otherwise this variable will have no effect\". With CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch + CASSANDRA_DC=HCM -> \"Datacenter: HCM\" (t3_auth_check.out:35). Auth: cassandra.yaml line 169 \"authenticator: AllowAllAuthenticator\", line 178 \"authorizer: AllowAllAuthorizer\"; on the default setup CREATE ROLE ... WITH PASSWORD -> \"CassandraRoleManager doesn't support PASSWORD\", CREATE ROLE/GRANT/LIST ROLES -> \"You have to be logged in and not anonymous\" (t3_probe.out:146-149). With a mounted yaml (authenticator: PasswordAuthenticator, authorizer: CassandraAuthorizer): anonymous login refused (t3_auth_check.out:2), superuser cassandra/cassandra creates roles app_admin/app_reader, GRANT SELECT works, app_reader INSERT -> \"User app_reader has no MODIFY permission\" (t3_auth_check.out:12,19,33). HUONG_DAN_CHAY.md line 126 states the lab runs without authentication.",
+      "correction": "Cần bổ sung: (1) Với docker-compose hiện tại, tên datacenter là datacenter1 — đây là giá trị phải nhập vào ô DataCenter/local datacenter khi kết nối DbSchema và driver; CASSANDRA_DC chỉ có tác dụng khi đặt thêm CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch. (2) Image chỉ hỗ trợ các biến CASSANDRA_LISTEN_ADDRESS, BROADCAST_ADDRESS, BROADCAST_RPC_ADDRESS, RPC_ADDRESS, START_RPC, SEEDS, CLUSTER_NAME, NUM_TOKENS, ENDPOINT_SNITCH, DC, RACK; không có biến cho xác thực, MV, UDF. (3) Mặc định Cassandra không bật xác thực (AllowAllAuthenticator) nên CREATE ROLE ... WITH PASSWORD và GRANT đều lỗi. Muốn trình bày 'quản trị người dùng' bằng role/quyền của Cassandra phải mount cassandra.yaml đặt authenticator: PasswordAuthenticator và authorizer: CassandraAuthorizer, đăng nhập lần đầu bằng cassandra/cassandra rồi tạo role riêng; khi đó DbSchema và ứng dụng cũng phải khai báo user/password. Nếu không bật, phần người dùng chỉ có thể là tài khoản ở tầng ứng dụng."
+    },
+    {
+      "id": "C12",
+      "claim": "[theo workflow] Backup/Restore trên 4.1 bằng nodetool snapshot rồi khôi phục",
+      "verdict": "correct",
+      "severity": "medium",
+      "evidence": "evidence/t3_backup_restore.out: nodetool snapshot -t bk_drivers -kt probe.rides_by_driver (line 14), listsnapshots (line 15-29), TRUNCATE -> count 0 and automatic snapshot truncated-...-rides_by_driver (line 48; cassandra.yaml line 972 auto_snapshot: true), snapshot folder contains SSTables + manifest.json + schema.cql (line 49-58), nodetool import -cd restores 2 rows (line 59-67). NEWS.txt (4.0 section) line 390: \"nodetool refresh has been deprecated in favour of nodetool import\"; operating/bulk_loading.adoc line 384-385 same. operating/backups.adoc line 345-350: schema.cql in every snapshot; line 505-511: restore tools are sstableloader and nodetool import. cassandra.yaml line 960 incremental_backups: false. Tools present in the image: /opt/cassandra/bin has cqlsh, nodetool, sstableloader (t3_backup_restore.out tail); /opt/cassandra/tools/bin (sstabledump, ...) exists but is not on PATH.",
+      "correction": "Đúng hướng. Quy trình nên trình bày: DESCRIBE KEYSPACE ride_booking (sao lưu lược đồ) → nodetool flush → nodetool snapshot -t <tên> ride_booking → nodetool listsnapshots → (sự cố/TRUNCATE) → nodetool import ride_booking <bảng> <thư_mục_snapshot> (dùng -cd để copy thay vì move) → nodetool clearsnapshot -t <tên>. Dùng nodetool import thay cho nodetool refresh (refresh đã deprecated từ 4.0). Lưu ý TRUNCATE/DROP tự tạo snapshot 'truncated-...'/'dropped-...' do auto_snapshot: true. Trên Windows chạy qua docker exec nosql-cassandra nodetool ...; trong Git Bash cần MSYS_NO_PATHCONV=1 khi có đường dẫn."
+    },
+    {
+      "id": "C13",
+      "claim": "(missing) Giới hạn của cqlsh COPY TO/FROM khi dùng cho Import/Export",
+      "verdict": "missing",
+      "severity": "medium",
+      "evidence": "evidence/t3_copy_ttl.out: row inserted USING TTL 86400 (line 5 TTL 86400) -> COPY TO csv -> TRUNCATE -> COPY FROM -> TTL null (line 26): TTL (and WRITETIME) are not preserved. COPY works for collections/UDT (customers round trip in evidence/t3_backup_restore.out) and for counter tables (evidence/t3_copy_counter_help.out L11-17). operating/bulk_loading.adoc (4.1) line 7-8: \"Although the cqlsh COPY command can load CSV data, it is not a good option for amounts of data.\" HELP COPY (evidence/t3_copy_counter_help.out) lists options HEADER, DELIMITER, NULL, DATETIMEFORMAT, MAXATTEMPTS, CHUNKSIZE, INGESTRATE, MAXBATCHSIZE, MAXROWS, MAXPARSEERRORS, ERRFILE, TTL, PAGESIZE. COPY is a cqlsh shell command, not a CQL statement: tools/cqlsh.adoc (4.1) L126-129 \"Special Commands ... special commands that are not part of CQL\", COPY TO at L385.",
+      "correction": "Cần bổ sung khi trình bày Import/Export: COPY là lệnh của cqlsh, không phải câu CQL, nên không chạy được qua driver Python hay trình soạn CQL của công cụ GUI; COPY không giữ TTL/WRITETIME (đã thử: TTL 86400 thành null sau khi nhập lại) — với bảng có TTL như khuyến mãi phải dùng tùy chọn WITH TTL=... khi COPY FROM; COPY phù hợp dữ liệu nhỏ/vừa của đồ án, dữ liệu lớn dùng sstableloader/nodetool import. Các tùy chọn nên minh họa: HEADER=true, DELIMITER, NULL, DATETIMEFORMAT, MAXROWS."
+    },
+    {
+      "id": "C14",
+      "claim": "\"Chạy 3 node cần khoảng 4–6 GB RAM\"",
+      "verdict": "correct",
+      "severity": "low",
+      "evidence": "evidence/t3_memory.out: three cassandra:4.1 containers with MAX_HEAP_SIZE=1G use 1.223 GiB, 1.275 GiB, 1.274 GiB each when idle; JVM started with -Xms1G -Xmx1G -Xmn256M (heap is fully pre-allocated). operating/hardware.adoc (4.1) line 22-28: off-heap memory is used in addition to the heap; line 36: production heap \"no less than 2GB\".",
+      "correction": "Hợp lý: mỗi node heap 1G chiếm khoảng 1,2–1,3 GB khi rảnh, 3 node ≈ 3,7–3,9 GB, cộng phần ảo hóa của Docker Desktop/WSL2 và tải thực tế thì 4–6 GB là ước lượng đúng. Ghi chú thêm: heap 1G chỉ dành cho môi trường học tập (tài liệu khuyến nghị tối thiểu 2 GB cho production), và mỗi node cần container riêng với CASSANDRA_SEEDS trỏ tới node đầu."
+    },
+    {
+      "id": "C15",
+      "claim": "(missing) Tag cassandra:4.1 là tag trôi (floating) — phiên bản vá thực tế thay đổi theo thời gian",
+      "verdict": "missing",
+      "severity": "low",
+      "evidence": "docker image inspect cassandra:4.1 -> CASSANDRA_VERSION=4.1.12, Created 2026-10-02; cqlsh banner \"[cqlsh 6.1.0 | Cassandra 4.1.12 | CQL spec 3.4.6 | Native protocol v5]\". NEWS.txt cassandra-4.1 already lists a 4.1.13 section (line 54).",
+      "correction": "Khi ghi phiên bản trong báo cáo nên ghi đúng bản vá đang chạy (lấy bằng SHOW VERSION hoặc SELECT release_version FROM system.local), và nếu muốn ảnh chụp và báo cáo khớp nhau lâu dài thì ghim tag cụ thể trong docker-compose (ví dụ cassandra:4.1.12) thay vì cassandra:4.1."
+    }
+  ],
+  "facts_for_prompt2": [
+    "Image cassandra:4.1 hiện là Cassandra 4.1.12 (cqlsh 6.1.0, CQL spec 3.4.6, native protocol v5), chạy trên Temurin Java 11; tag 4.1 là tag trôi. Nguồn: evidence/t3_version.out.",
+    "Với docker-compose.yml của repo (không đặt CASSANDRA_DC), datacenter là 'datacenter1', rack 'rack1', cluster_name 'NoSQLLab', snitch SimpleSnitch, num_tokens 16. Driver và DbSchema phải dùng local datacenter = datacenter1. Nguồn: evidence/t3_version.out; cassandra.yaml 4.1 L27, L1332.",
+    "CASSANDRA_DC/CASSANDRA_RACK chỉ có hiệu lực khi đặt CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch. Nguồn: https://github.com/docker-library/docs/blob/master/cassandra/content.md L89; thử nghiệm evidence/t3_auth_check.out L35, L43, L51-52.",
+    "Biến môi trường image hỗ trợ: CASSANDRA_LISTEN_ADDRESS, CASSANDRA_BROADCAST_ADDRESS, CASSANDRA_BROADCAST_RPC_ADDRESS, CASSANDRA_RPC_ADDRESS, CASSANDRA_START_RPC, CASSANDRA_SEEDS, CASSANDRA_CLUSTER_NAME, CASSANDRA_NUM_TOKENS, CASSANDRA_ENDPOINT_SNITCH, CASSANDRA_DC, CASSANDRA_RACK (+ MAX_HEAP_SIZE/HEAP_NEWSIZE qua cassandra-env.sh). Cấu hình khác phải mount /etc/cassandra/cassandra.yaml. Nguồn: https://github.com/docker-library/cassandra/blob/master/4.1/docker-entrypoint.sh L44-91; content.md L69-91.",
+    "Mặc định 4.1: materialized_views_enabled false (L1733), sasi_indexes_enabled false (L1737), user_defined_functions_enabled false (L1514), authenticator AllowAllAuthenticator (L169), authorizer AllowAllAuthorizer (L178), incremental_backups false (L960), auto_snapshot true (L972). Nguồn: https://github.com/apache/cassandra/blob/cassandra-4.1/conf/cassandra.yaml",
+    "Bật MV/xác thực trong Docker: mount cassandra.yaml đã sửa (đã thử: 3 dòng authenticator: PasswordAuthenticator, authorizer: CassandraAuthorizer, materialized_views_enabled: true). Đăng nhập đầu tiên: cqlsh -u cassandra -p cassandra. Nguồn: evidence/t3_auth_check.sh, t3_auth_check.out.",
+    "Quản trị người dùng (khi bật PasswordAuthenticator): CREATE ROLE app_admin WITH PASSWORD = '...' AND LOGIN = true; GRANT ALL PERMISSIONS ON KEYSPACE ride_booking TO app_admin; GRANT SELECT ON KEYSPACE ride_booking TO app_reader; LIST ROLES; LIST ALL PERMISSIONS OF app_reader; user chỉ có SELECT ghi dữ liệu bị từ chối 'no MODIFY permission'. Nguồn: evidence/t3_auth.cql, t3_auth_check.out L12-33.",
+    "Lỗi nguyên văn khi chưa bật xác thực: CREATE ROLE ... WITH PASSWORD -> \"org.apache.cassandra.auth.CassandraRoleManager doesn't support PASSWORD\"; GRANT -> \"You have to be logged in and not anonymous to perform this request\". Nguồn: evidence/t3_probe.out L146-149.",
+    "SAI chỉ có từ Cassandra 5.0 (NEWS.txt cassandra-5.0 L185); 4.1 dùng được secondary index thường (CREATE INDEX ... ON rides(status)), SASI bị tắt. Nguồn: evidence/t3_index_gcgrace.out, t3_probe.out L3.",
+    "GROUP BY 4.1: chỉ trên cột khóa chính theo thứ tự khai báo; có floor(ts, 1d) để nhóm theo ngày (mới ở 4.1, NEWS.txt 4.1 L171-172); AVG trên bigint chia nguyên -> dùng CAST(x AS double). Ví dụ chạy được: SELECT customer_id, floor(booked_at, 1d), COUNT(*) FROM rides_by_customer WHERE customer_id='CUST001' GROUP BY customer_id, floor(booked_at, 1d). Nguồn: evidence/t3_probe.out L6-37.",
+    "LWT nhận cuốc chạy được: UPDATE rides SET driver_id='DRV01', status='ACCEPTED' WHERE ride_id=... IF status='REQUESTED'; tài xế thứ hai nhận [applied]=False kèm status hiện tại. BATCH có IF chỉ trong 1 partition. Chi phí: Paxos 4 vòng (Cassandra TDG 3rd ed., mục Lightweight Transactions and Paxos; cql/dml.adoc L292-293). Nguồn: evidence/t3_probe.out L76-96.",
+    "Counter: 64-bit signed; bảng chỉ chứa counter ngoài khóa; không INSERT, không TTL, không SET, không LWT, BATCH riêng (BEGIN COUNTER BATCH); không idempotent khi retry. Nguồn: cql/types.adoc 4.1 L56-83 (https://github.com/apache/cassandra/blob/cassandra-4.1/doc/modules/cassandra/pages/cql/types.adoc); evidence/t3_probe.out L112-125.",
+    "Static column bắt buộc có clustering column; WRITETIME/TTL không dùng được trên collection/UDT không frozen ở 4.1 (chỉ 5.0). Nguồn: evidence/t3_probe.out L97-111; cql/dml.adoc 4.1 L88-89; NEWS.txt 5.0 L214-216.",
+    "Không UPDATE được cột thuộc PRIMARY KEY ('PRIMARY KEY part status found in SET part'); đổi khóa = DELETE + INSERT trong BATCH (logged, có chi phí batchlog khi nhiều partition: cql/dml.adoc L452-453). Nguồn: evidence/t3_probe.out L132-145.",
+    "Bảng chuỗi thời gian có TTL: PRIMARY KEY ((driver_id, day), ts) WITH CLUSTERING ORDER BY (ts DESC) AND default_time_to_live = 86400 AND compaction = {'class':'TimeWindowCompactionStrategy','compaction_window_unit':'HOURS','compaction_window_size':1} tạo được; gc_grace_seconds mặc định 864000. TWCS dành cho dữ liệu time-series/TTL (compaction/twcs.adoc L4-11, chọn ~20-30 cửa sổ L36-37); TTL hết hạn thành tombstone tồn tại ít nhất gc_grace_seconds (compaction/index.adoc L178-187). Nguồn: evidence/t3_index_gcgrace.out.",
+    "Backup/restore đã chạy thật: nodetool flush; nodetool snapshot -t bk ride_booking (hoặc -kt ks.table); nodetool listsnapshots; snapshot nằm ở /var/lib/cassandra/data/<ks>/<table>-<uuid>/snapshots/<tên>/ kèm schema.cql; khôi phục: nodetool import [-cd] <ks> <table> <thư_mục>; nodetool clearsnapshot -t <tên>. nodetool refresh deprecated từ 4.0 (NEWS.txt L390). TRUNCATE/DROP tự tạo snapshot (auto_snapshot: true). Nguồn: evidence/t3_backup_restore.sh/.out; operating/backups.adoc L345-350, L505-516.",
+    "cqlsh, nodetool, sstableloader có sẵn trong /opt/cassandra/bin của image; sstabledump, sstablemetadata... ở /opt/cassandra/tools/bin (không có trong PATH). Chạy từ Windows: docker exec nosql-cassandra nodetool ... Nguồn: evidence/t3_backup_restore.out (cuối file).",
+    "COPY TO/FROM: là lệnh cqlsh (không phải CQL); làm mất TTL/WRITETIME (TTL 86400 -> null); chạy được với collection, UDT, counter; không phù hợp dữ liệu lớn (operating/bulk_loading.adoc L7-8). Tùy chọn: HEADER, DELIMITER, NULL, DATETIMEFORMAT, MAXROWS, PAGESIZE, CHUNKSIZE, INGESTRATE, MAXBATCHSIZE, MAXATTEMPTS, MAXPARSEERRORS, ERRFILE, TTL. Nguồn: evidence/t3_copy_ttl.out, evidence/t3_copy_counter_help.out; tools/cqlsh.adoc L126-129.",
+    "DESCRIBE KEYSPACE <ks> xuất toàn bộ DDL (keyspace, type, table, index) để sao lưu lược đồ. Nguồn: evidence/t3_describe_keyspace_probe.cql (11 câu CREATE).",
+    "RAM: node cassandra:4.1 với MAX_HEAP_SIZE=1G dùng ~1,22–1,28 GiB khi rảnh (-Xms1G -Xmx1G); 3 node ≈ 3,7–3,9 GiB + overhead Docker Desktop. Tài liệu khuyến nghị heap production ≥ 2 GB (operating/hardware.adoc L36). Nguồn: evidence/t3_memory.out."
+  ]
+}

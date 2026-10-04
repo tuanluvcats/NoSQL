@@ -1,0 +1,21 @@
+++ docker exec nosql-cassandra cqlsh -e 'CREATE CUSTOM INDEX rides_sai ON probe.rides (status) USING '\''StorageAttachedIndex'\'';'
+<stdin>:1:ConfigurationException: Unable to find custom indexer class 'StorageAttachedIndex'
+++ docker exec nosql-cassandra cqlsh -e 'CREATE CUSTOM INDEX rides_sai ON probe.rides (status) USING '\''org.apache.cassandra.index.sai.StorageAttachedIndex'\'';'
+<stdin>:1:ConfigurationException: Unable to find custom indexer class 'org.apache.cassandra.index.sai.StorageAttachedIndex'
+++ docker exec nosql-cassandra cqlsh -e 'CREATE CUSTOM INDEX rides_sasi ON probe.rides (status) USING '\''org.apache.cassandra.index.sasi.SASIIndex'\'';'
+<stdin>:1:InvalidRequest: Error from server: code=2200 [Invalid query] message="SASI indexes are disabled. Enable in cassandra.yaml to use."
+++ docker exec nosql-cassandra cqlsh -e 'SELECT index_name, kind FROM system_schema.indexes WHERE keyspace_name='\''probe'\'';'
+
+ index_name      | kind
+-----------------+------------
+ rides_status_2i | COMPOSITES
+
+(1 rows)
+++ docker exec nosql-cassandra cqlsh -e 'SELECT table_name, gc_grace_seconds, default_time_to_live, compaction FROM system_schema.tables WHERE keyspace_name='\''probe'\'' AND table_name IN ('\''rides_by_customer'\'','\''driver_locations'\'');'
+
+ table_name        | gc_grace_seconds | default_time_to_live | compaction
+-------------------+------------------+----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  driver_locations |           864000 |                86400 | {'class': 'org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy', 'compaction_window_size': '1', 'compaction_window_unit': 'HOURS', 'max_threshold': '32', 'min_threshold': '4'}
+ rides_by_customer |           864000 |                    0 |                                                                   {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+
+(2 rows)

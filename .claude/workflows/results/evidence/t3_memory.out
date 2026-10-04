@@ -1,0 +1,8 @@
+# docker stats --no-stream (3 single-node cassandra:4.1 containers, MAX_HEAP_SIZE=1G HEAP_NEWSIZE=256M, idle after probes)
+c41-dconly 1.223GiB / 15.72GiB
+c41-auth 1.275GiB / 15.72GiB
+nosql-cassandra 1.274GiB / 15.72GiB
+# JVM flags in nosql-cassandra
+-Xmn256M
+-Xms1G
+-Xmx1G

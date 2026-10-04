@@ -1,0 +1,21 @@
+# docker image inspect cassandra:4.1
+Created=2026-10-02T02:43:08.103328132Z JAVA_HOME=/opt/java/openjdk CASSANDRA_HOME=/opt/cassandra CASSANDRA_CONF=/etc/cassandra CASSANDRA_VERSION=4.1.12 CASSANDRA_SHA512=cea0acc8aa52b44798dc45ff5edc26f910f5e4025f40d5f4a3b6728ac8d2aaacf9da0aebeb997c0d0039e7034a9478b9af57e1546b45428d7a7638fc61e75dc8 
+# cqlsh SHOW VERSION + system.local
+[cqlsh 6.1.0 | Cassandra 4.1.12 | CQL spec 3.4.6 | Native protocol v5]
+
+ cluster_name | data_center | rack  | release_version | cql_version
+--------------+-------------+-------+-----------------+-------------
+     NoSQLLab | datacenter1 | rack1 |          4.1.12 |       3.4.6
+
+(1 rows)
+# java
+openjdk version "11.0.32.1" 2026-08-18
+OpenJDK Runtime Environment Temurin-11.0.32.1+1 (build 11.0.32.1+1)
+# nodetool status
+Datacenter: datacenter1
+=======================
+Status=Up/Down
+# yaml
+11:cluster_name: NoSQLLab
+27:num_tokens: 16
+1332:endpoint_snitch: SimpleSnitch

@@ -1,0 +1,364 @@
+[{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77034"
+	},
+	"Masv": "SV013",
+	"Hoten": "Phạm Văn Minh",
+	"Ngaysinh": {
+		"$date": "2002-12-05T00:00:00Z"
+	},
+	"Email": [
+		"minh.pham@gmail.com"
+	],
+	"Lop": {
+		"Malop": "CTK45A",
+		"Tenlop": "Công nghệ Thông tin 45A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH001",
+			"Tenmh": "Cơ sở dữ liệu",
+			"Sotc": 3,
+			"Diem": 7.2
+		}
+	],
+	"Ngoaingu": [
+		"Trung",
+		"Pháp"
+	],
+	"Tuoi": 24,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77036"
+	},
+	"Masv": "SV015",
+	"Hoten": "Hoàng Văn Quang",
+	"Ngaysinh": {
+		"$date": "2003-04-25T00:00:00Z"
+	},
+	"Phai": "Nam",
+	"Email": [
+		"quang.hoang@gmail.com"
+	],
+	"Lop": {
+		"Malop": "KT45B",
+		"Tenlop": "Kinh tế K45B",
+		"Khoa": "Khoa Kinh tế"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH004",
+			"Tenmh": "Kinh tế vi mô",
+			"Sotc": 3,
+			"Diem": 7.5
+		},
+		{
+			"Mamh": "MH005",
+			"Tenmh": "Kinh tế vĩ mô",
+			"Sotc": 3,
+			"Diem": 8
+		}
+	],
+	"Ngoaingu": [
+		"Trung",
+		"Pháp"
+	],
+	"Tuoi": 24,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77035"
+	},
+	"Masv": "SV014",
+	"Hoten": "Lê Thị Hoa",
+	"Ngaysinh": {
+		"$date": "2004-03-01T00:00:00Z"
+	},
+	"Phai": "Nữ",
+	"Email": [
+		"hoa.le@gmail.com"
+	],
+	"Lop": {
+		"Malop": "CTK45A",
+		"Tenlop": "Công nghệ Thông tin 45A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH001",
+			"Tenmh": "Cơ sở dữ liệu",
+			"Sotc": 3,
+			"Diem": 9
+		},
+		{
+			"Mamh": "MH003",
+			"Tenmh": "Mạng máy tính",
+			"Sotc": 4,
+			"Diem": 8.1
+		}
+	],
+	"Ngoaingu": [
+		"Trung",
+		"Pháp"
+	],
+	"Tuoi": 24,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77037"
+	},
+	"Masv": "SV016",
+	"Hoten": "Nguyễn Thị Mai",
+	"Ngaysinh": {
+		"$date": "2004-07-12T00:00:00Z"
+	},
+	"Phai": "Nữ",
+	"Email": [
+		"mai.nguyen@gmail.com",
+		"mai.nguyen@student.edu.vn"
+	],
+	"Monhoc": [
+		{
+			"Mamh": "MH004",
+			"Tenmh": "Kinh tế vi mô",
+			"Sotc": 3,
+			"Diem": 8.3
+		},
+		{
+			"Mamh": "MH005",
+			"Tenmh": "Kinh tế vĩ mô",
+			"Sotc": 3,
+			"Diem": 7.8
+		}
+	],
+	"Ngoaingu": [
+		"Anh",
+		"Pháp"
+	],
+	"Tuoi": 20,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf7703a"
+	},
+	"Masv": "SV019",
+	"Hoten": "Đặng Văn Hùng",
+	"Ngaysinh": {
+		"$date": "2004-05-02T00:00:00Z"
+	},
+	"Phai": "Nam",
+	"Email": [
+		"hung.dang@gmail.com",
+		"hung.dang@student.edu.vn",
+		"hungdang2004@stu.edu.vn"
+	],
+	"Lop": {
+		"Malop": "SPV44A",
+		"Tenlop": "Sư phạm Văn Khóa 44A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH007",
+			"Tenmh": "Văn học Việt Nam",
+			"Sotc": 3,
+			"Diem": 8.4
+		},
+		{
+			"Mamh": "MH008",
+			"Tenmh": "Ngữ pháp tiếng Việt",
+			"Sotc": 2,
+			"Diem": 7.6
+		}
+	],
+	"Ngoaingu": [
+		"Anh",
+		"Pháp"
+	],
+	"Tuoi": 20,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77038"
+	},
+	"Masv": "SV017",
+	"Hoten": "Bùi Văn Khánh",
+	"Ngaysinh": {
+		"$date": "2003-03-30T00:00:00Z"
+	},
+	"Phai": "Nam",
+	"Email": [
+		"khanh.bui@gmail.com"
+	],
+	"Lop": {
+		"Malop": "KT45C",
+		"Tenlop": "Kinh tế K45B"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH004",
+			"Tenmh": "Kinh tế vi mô",
+			"Sotc": 3,
+			"Diem": 6.9
+		},
+		{
+			"Mamh": "MH006",
+			"Tenmh": "Thống kê kinh tế",
+			"Sotc": 2,
+			"Diem": 7.5
+		}
+	],
+	"Ngoaingu": [
+		"Anh",
+		"Pháp"
+	],
+	"Tuoi": 20,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77039"
+	},
+	"Masv": "SV018",
+	"Hoten": "Vũ Thị Hương",
+	"Ngaysinh": {
+		"$date": "2002-11-14T00:00:00Z"
+	},
+	"Phai": "Nữ",
+	"Email": [
+		"huong.vu@gmail.com"
+	],
+	"Lop": {
+		"Malop": "SPV44A",
+		"Tenlop": "Sư phạm Văn Khóa 44A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH007",
+			"Tenmh": "Văn học Việt Nam",
+			"Sotc": 3,
+			"Diem": 9.2
+		},
+		{
+			"Mamh": "MH008",
+			"Tenmh": "Ngữ pháp tiếng Việt",
+			"Sotc": 2,
+			"Diem": 8.8
+		}
+	],
+	"Ngoaingu": [
+		"Anh",
+		"Pháp"
+	],
+	"Tuoi": 20,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf7703b"
+	},
+	"Masv": "SV020",
+	"Hoten": "Ngô Thị Thu",
+	"Ngaysinh": {
+		"$date": "2003-08-08T00:00:00Z"
+	},
+	"Phai": "Nữ",
+	"Lop": {
+		"Malop": "SPV44A",
+		"Tenlop": "Sư phạm Văn Khóa 44A"
+	},
+	"Ngoaingu": [
+		"Anh",
+		"Pháp"
+	],
+	"Tuoi": 20,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77032"
+	},
+	"Masv": "SV011",
+	"Hoten": "Nguyễn Văn Nam",
+	"Ngaysinh": {
+		"$date": "2003-06-15T00:00:00Z"
+	},
+	"Phai": "Nam",
+	"Email": [
+		"nam.nguyen@stu.edu.vn",
+		"namnguyen@student.edu.vn",
+		"nam.nguyen@student.edu.vn"
+	],
+	"Lop": {
+		"Malop": "CTK45A",
+		"Tenlop": "Công nghệ Thông tin 45A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH001",
+			"Tenmh": "Cơ sở dữ liệu",
+			"Sotc": 3,
+			"Diem": 8
+		},
+		{
+			"Mamh": "MH002",
+			"Tenmh": "Lập trình Java",
+			"Sotc": 3,
+			"Diem": 7.5
+		},
+		{
+			"Mamh": "MH010",
+			"Tenmh": "Trí tuệ nhân tạo",
+			"Sotc": 3,
+			"Diem": 9
+		}
+	],
+	"Diachi": "Tp.hcm",
+	"Ngoaingu": [
+		"Trung",
+		"Pháp"
+	],
+	"Tuoi": 24,
+	"SoDT": "0900000000"
+},
+{
+	"_id": {
+		"$oid": "68c36d0de32f92d1dcf77033"
+	},
+	"Masv": "SV012",
+	"Hoten": "Trần Thị Lan Anh",
+	"Ngaysinh": {
+		"$date": "2003-09-20T00:00:00Z"
+	},
+	"Phai": "Nữ",
+	"Email": [],
+	"Lop": {
+		"Malop": "CTK45A",
+		"Tenlop": "Công nghệ Thông tin 45A"
+	},
+	"Monhoc": [
+		{
+			"Mamh": "MH001",
+			"Tenmh": "Cơ sở dữ liệu",
+			"Sotc": 3,
+			"Diem": 9.5
+		},
+		{
+			"Mamh": "MH002",
+			"Tenmh": "Lập trình Java",
+			"Sotc": 3,
+			"Diem": 7.9
+		}
+	],
+	"Ngoaingu": [
+		"Trung",
+		"Pháp"
+	],
+	"Tuoi": 24,
+	"SoDT": "0900000000"
+}]
+

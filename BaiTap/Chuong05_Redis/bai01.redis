@@ -1,0 +1,17 @@
+# Chương 5 - Redis - Bài 1
+# Chạy: docker exec -i nosql-redis sh -c "redis-cli < /baitap/Chuong05_Redis/bai01.redis"
+
+FLUSHDB
+
+SET sv:001:ten "An"
+SET sv:001:diem 8.5
+SET sv:002:ten "Binh"
+SET sv:002:diem 6.0
+
+HSET sv:003 ten "Chi" diem 9.2 lop "14DH"
+
+ZADD bangdiem 8.5 "An" 6.0 "Binh" 9.2 "Chi"
+
+GET sv:001:ten
+HGETALL sv:003
+ZREVRANGE bangdiem 0 -1 WITHSCORES

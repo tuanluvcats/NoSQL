@@ -1,0 +1,72 @@
+# NoSQL (14DH) - moi truong thuc hanh cho 4 CSDL trong giao an
+#
+# Khoi dong tat ca:      docker compose up -d
+# Khoi dong 1 DB:        docker compose up -d mongo
+# Xem trang thai:        docker compose ps
+# Dung lai (giu du lieu): docker compose stop
+# Xoa sach (mat du lieu): docker compose down -v
+
+services:
+  # Chuong 2 - MongoDB (document store)
+  mongo:
+    image: mongo:7
+    container_name: nosql-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./BaiTap:/baitap
+
+  # Chuong 3 - Cassandra (wide-column store)
+  # Can nhieu RAM va mat ~60s de khoi dong xong.
+  cassandra:
+    image: cassandra:4.1
+    container_name: nosql-cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: NoSQLLab
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+      - ./BaiTap:/baitap
+
+  # Chuong 4 - Neo4j (graph database)
+  # Giao dien Neo4j Browser: http://localhost:7474  (user: neo4j / pass: password123)
+  neo4j:
+    image: neo4j:5
+    container_name: nosql-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # HTTP - Neo4j Browser
+      - "7687:7687"   # Bolt - driver va cypher-shell
+    environment:
+      NEO4J_AUTH: neo4j/password123
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - ./BaiTap:/baitap
+
+  # Chuong 5 - Redis (key-value store)
+  redis:
+    image: redis:7
+    container_name: nosql-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+      - ./BaiTap:/baitap
+
+volumes:
+  mongo-data:
+  cassandra-data:
+  neo4j-data:
+  neo4j-logs:
+  redis-data:

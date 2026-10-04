@@ -1,0 +1,14 @@
+Tìm hiểu công cụ DbSchema để quản trị và khai thác CSDL Cassandra “Quản lý dữ liệu đặt xe công nghệ” và xây dựng ứng dụng minh họa
+
+Nội dung nộp gồm:
+
+    Tìm hiểu lý thuyết và cài đặt Tool theo yêu cầu đề tài 
+    Trình bày chi tiết các chức năng của Tool đã tìm hiểu
+    So sánh điểm mạnh, điểm yếu của Tool đang thực hiện với
+    một GUI Tool khác.
+    Nêu bậc điểm mạnh của Tool đang thực hiện với các loại
+    ứng dụng Database nào
+    Xây dựng Database cho ứng dụng cụ thể: thiết kế CSDL đáp ứng yêu cầu nghiệp vụ của đề tài
+    Tạo Database - Insert dữ liệu đầy đủ cho ứng dụng - Dữ liệu đáp ứng truy vấn cơ bản - Dữ liệu đáp ứng truy vấn nâng cao đáp ứng yêu cầu ứng
+    dụng 
+    Import/export dữ liệu; Backup và Restore dữ liệu

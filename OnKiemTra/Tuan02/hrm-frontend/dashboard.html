@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>HRM Dashboard Chuyên Sâu</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .interactive-row {
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .interactive-row:hover {
+        background-color: #f1f8ff !important;
+      }
+      .card-stat {
+        border-left: 4px solid #0d6efd;
+      }
+    </style>
+  </head>
+  <body class="container-fluid py-4 px-4 bg-light">
+    <h2 class="mb-4 fw-bold text-primary">Dashboard Quản Trị Nhân Sự</h2>
+
+    <div class="row g-3 mb-4" id="overviewCards">
+      <!-- Render bằng JS -->
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-dark text-white fw-bold">
+            Phân tích Nhân sự theo Phòng ban
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-hover m-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Phòng Ban</th>
+                  <th>Số NV</th>
+                  <th>Lương TB</th>
+                  <th>Lương Cao Nhất</th>
+                  <th>Lương Thấp Nhất</th>
+                </tr>
+              </thead>
+              <tbody id="deptTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-dark text-white fw-bold">
+            Bản đồ Kỹ năng
+          </div>
+          <ul class="list-group list-group-flush" id="skillListBody"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-5">
+      <div
+        class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+      >
+        <span class="fw-bold">Danh sách Dự án</span>
+        <div class="d-flex gap-2">
+          <input
+            type="text"
+            id="searchProject"
+            class="form-control form-control-sm"
+            placeholder="Tìm theo tên/mã..."
+            onkeyup="filterProjects()"
+          />
+          <select
+            id="filterStatus"
+            class="form-select form-select-sm"
+            onchange="filterProjects()"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Planned">Planned</option>
+          </select>
+          <button
+            class="btn btn-sm btn-outline-light text-nowrap"
+            onclick="sortProjectsByBudget()"
+          >
+            Sắp xếp Ngân sách
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover m-0">
+          <thead class="table-light">
+            <tr>
+              <th>Mã DA</th>
+              <th>Tên Dự án</th>
+              <th>Trạng thái</th>
+              <th>Ngân sách</th>
+              <th>Quản lý</th>
+              <th>Số Thành viên</th>
+              <th>Tổng Giờ/Tuần</th>
+            </tr>
+          </thead>
+          <tbody id="projectTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Nhân viên theo phòng -->
+    <div class="modal fade" id="deptEmpModal">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="deptModalTitle">Danh sách Nhân viên</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Mã NV</th>
+                  <th>Họ Tên</th>
+                  <th>Lương</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="deptEmpList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Chi tiết Dự án -->
+    <div class="modal fade" id="projectDetailsModal">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="projModalTitle">Chi tiết Dự án</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p id="projManagerInfo" class="fw-bold text-danger"></p>
+            <table class="table table-bordered mt-3">
+              <thead class="table-light">
+                <tr>
+                  <th>Mã NV</th>
+                  <th>Vai trò</th>
+                  <th>Giờ làm/Tuần</th>
+                </tr>
+              </thead>
+              <tbody id="projMemberList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const API = "http://localhost:8080/api/dashboard";
+      let allProjects = [];
+      let budgetSortAsc = true;
+
+      const deptModal = new bootstrap.Modal(
+        document.getElementById("deptEmpModal"),
+      );
+      const projModal = new bootstrap.Modal(
+        document.getElementById("projectDetailsModal"),
+      );
+
+      async function initDashboard() {
+        await Promise.all([
+          loadOverview(),
+          loadDepts(),
+          loadSkills(),
+          loadProjects(),
+        ]);
+      }
+
+      async function loadOverview() {
+        const res = await fetch(`${API}/overview`);
+        const data = await res.json();
+        document.getElementById("overviewCards").innerHTML = `
+                ${buildCard("Phòng ban", data.totalDepts, "primary")}
+                ${buildCard("Tổng Nhân viên", data.totalEmps, "success")}
+                ${buildCard("Đang làm việc", data.activeEmps, "info")}
+                ${buildCard("Đã nghỉ việc", data.inactiveEmps, "secondary")}
+                ${buildCard("Tổng Dự án", data.totalProjects, "warning")}
+                ${buildCard("Dự án In Progress", data.inProgress, "primary")}
+                ${buildCard("Dự án Completed", data.completed, "success")}
+                ${buildCard("Ngân sách (In Progress)", data.totalBudget.toLocaleString() + " đ", "danger")}
+            `;
+      }
+
+      function buildCard(title, value, color) {
+        return `
+                <div class="col-md-3">
+                    <div class="card card-stat shadow-sm h-100 border-${color}">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">${title}</h6>
+                            <h4 class="fw-bold text-${color} m-0">${value}</h4>
+                        </div>
+                    </div>
+                </div>`;
+      }
+
+      async function loadDepts() {
+        const res = await fetch(`${API}/departments`);
+        const data = await res.json();
+        document.getElementById("deptTableBody").innerHTML = data
+          .map(
+            (d) => `
+                <tr class="interactive-row" onclick="viewDeptEmployees('${d._id}')">
+                    <td class="fw-bold text-primary">${d._id}</td>
+                    <td>${d.soNhanVien}</td>
+                    <td>${Math.round(d.luongTrungBinh).toLocaleString()} đ</td>
+                    <td>${d.luongCaoNhat.toLocaleString()} đ</td>
+                    <td>${d.luongThapNhat.toLocaleString()} đ</td>
+                </tr>
+            `,
+          )
+          .join("");
+      }
+
+      async function loadSkills() {
+        const res = await fetch(`${API}/skills`);
+        const data = await res.json();
+        document.getElementById("skillListBody").innerHTML = data
+          .map(
+            (s) => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${s._id} <span class="badge bg-primary rounded-pill">${s.soNhanVien} nhân viên</span>
+                </li>
+            `,
+          )
+          .join("");
+      }
+
+      async function loadProjects() {
+        const res = await fetch(`${API}/projects`);
+        allProjects = await res.json();
+        renderProjects(allProjects);
+      }
+
+      function renderProjects(projects) {
+        document.getElementById("projectTableBody").innerHTML = projects
+          .map((p) => {
+            let members = p.members || [];
+            let totalHours = members.reduce(
+              (sum, m) => sum + (m.hoursPerWeek || 0),
+              0,
+            );
+            return `
+                <tr class="interactive-row" onclick='viewProjectDetails(${JSON.stringify(p)})'>
+                    <td class="fw-bold">${p.projectId}</td>
+                    <td>${p.projectName}</td>
+                    <td><span class="badge ${p.status === "Completed" ? "bg-success" : p.status === "In Progress" ? "bg-primary" : "bg-secondary"}">${p.status}</span></td>
+                    <td>${p.budget ? p.budget.toLocaleString() + " đ" : "0 đ"}</td>
+                    <td>${p.managerId || "N/A"}</td>
+                    <td>${members.length}</td>
+                    <td>${totalHours} h/tuần</td>
+                </tr>`;
+          })
+          .join("");
+      }
+
+      function filterProjects() {
+        const text = document
+          .getElementById("searchProject")
+          .value.toLowerCase();
+        const status = document.getElementById("filterStatus").value;
+        let filtered = allProjects.filter(
+          (p) =>
+            (p.projectName.toLowerCase().includes(text) ||
+              p.projectId.toLowerCase().includes(text)) &&
+            (status === "" || p.status === status),
+        );
+        renderProjects(filtered);
+      }
+
+      function sortProjectsByBudget() {
+        let sorted = [...allProjects].sort((a, b) =>
+          budgetSortAsc ? a.budget - b.budget : b.budget - a.budget,
+        );
+        budgetSortAsc = !budgetSortAsc;
+        renderProjects(sorted);
+      }
+
+      async function viewDeptEmployees(deptCode) {
+        const res = await fetch(`${API}/employees/dept/${deptCode}`);
+        const emps = await res.json();
+        document.getElementById("deptModalTitle").innerText =
+          `Nhân sự phòng: ${deptCode}`;
+        document.getElementById("deptEmpList").innerHTML = emps
+          .map(
+            (e) => `
+                <tr>
+                    <td>${e.employeeId}</td>
+                    <td>${e.fullName}</td>
+                    <td>${e.salary.toLocaleString()} đ</td>
+                    <td>${e.active ? "Đang làm" : "Đã nghỉ"}</td>
+                </tr>
+            `,
+          )
+          .join("");
+        deptModal.show();
+      }
+
+      function viewProjectDetails(project) {
+        document.getElementById("projModalTitle").innerText =
+          `Dự án: ${project.projectName} (${project.projectId})`;
+        document.getElementById("projManagerInfo").innerText =
+          `Người quản lý: ${project.managerId || "Chưa cập nhật"}`;
+
+        let members = project.members || [];
+        document.getElementById("projMemberList").innerHTML = members
+          .map(
+            (m) => `
+                <tr>
+                    <td class="fw-bold">${m.employeeId}</td>
+                    <td>${m.role}</td>
+                    <td>${m.hoursPerWeek}</td>
+                </tr>
+            `,
+          )
+          .join("");
+        projModal.show();
+      }
+
+      window.onload = initDashboard;
+    </script>
+  </body>
+</html>

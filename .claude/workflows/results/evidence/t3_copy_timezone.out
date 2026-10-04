@@ -1,0 +1,34 @@
++ docker exec nosql-cassandra sh -c 'printf '\''customer_id,created_at\nTZ1,2026-10-04 08:00:00+0700\nTZ2,2026-10-04 08:00:00+0000\nTZ3,2026-10-04 08:00:00\nTZ4,2026-10-04 08:00:00-0500\n'\'' > /tmp/tz.csv'
++ docker exec nosql-cassandra cqlsh -e 'COPY ride_booking.customers (customer_id, created_at) FROM '\''/tmp/tz.csv'\'' WITH HEADER = true;'
+Reading options from the command line: {'header': 'true'}
+Using 3 child processes
+
+Starting copy of ride_booking.customers with columns [customer_id, created_at].
+Processed: 4 rows; Rate:      14 rows/s; Avg. rate:      14 rows/sProcessed: 4 rows; Rate:       7 rows/s; Avg. rate:      10 rows/s
+4 rows imported from 1 files in 0.392 seconds (0 skipped).
++ docker exec nosql-cassandra cqlsh -e 'INSERT INTO ride_booking.customers (customer_id, created_at) VALUES ('\''TZ5'\'', '\''2026-10-04 08:00:00+0700'\'');'
++ docker exec nosql-cassandra cqlsh -e 'SELECT customer_id, created_at FROM ride_booking.customers WHERE customer_id IN ('\''TZ1'\'', '\''TZ2'\'', '\''TZ3'\'', '\''TZ4'\'', '\''TZ5'\'');'
+
+ customer_id | created_at
+-------------+---------------------------------
+         TZ1 | 2026-10-04 15:00:00.000000+0000
+         TZ2 | 2026-10-04 08:00:00.000000+0000
+         TZ3 | 2026-10-04 08:00:00.000000+0000
+         TZ4 | 2026-10-04 03:00:00.000000+0000
+         TZ5 | 2026-10-04 01:00:00.000000+0000
+
+(5 rows)
++ docker exec nosql-cassandra cqlsh -e 'COPY ride_booking.customers (customer_id, created_at) TO '\''/tmp/tz_out.csv'\'' WITH HEADER = true;'
+Reading options from the command line: {'header': 'true'}
+Using 3 child processes
+
+Starting copy of ride_booking.customers with columns [customer_id, created_at].
+Processed: 15 rows; Rate:     200 rows/s; Avg. rate:     200 rows/s
+15 rows exported to 1 files in 0.081 seconds.
++ docker exec nosql-cassandra sh -c 'grep TZ /tmp/tz_out.csv'
+TZ5,2026-10-04 01:00:00.000+0000
+TZ2,2026-10-04 08:00:00.000+0000
+TZ3,2026-10-04 08:00:00.000+0000
+TZ1,2026-10-04 15:00:00.000+0000
+TZ4,2026-10-04 03:00:00.000+0000
++ docker exec nosql-cassandra cqlsh -e 'DELETE FROM ride_booking.customers WHERE customer_id IN ('\''TZ1'\'', '\''TZ2'\'', '\''TZ3'\'', '\''TZ4'\'', '\''TZ5'\'');'

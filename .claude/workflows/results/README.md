@@ -10,7 +10,7 @@ Task 3 (`cassandra-41`) và task 4 (`python-driver`) đã chạy xong trên clou
 |---|---|---|---|
 | 1 | draft-text (T) | Chạy trên local | Không đổi |
 | 2 | draft-screenshots (S) | Chạy trên local | Không đổi |
-| 3 | cassandra-41 (C) | **Xong trên cloud** | [`task3_cassandra-41.json`](task3_cassandra-41.json): 15 finding, 21 fact. Local chỉ đối chiếu claim |
+| 3 | cassandra-41 (C) | **Xong trên cloud** | [`task3_cassandra-41.json`](task3_cassandra-41.json): 15 finding, 22 fact. Local chỉ đối chiếu claim |
 | 4 | python-driver (P) | **Xong trên cloud** | [`task4_python-driver.json`](task4_python-driver.json): 5 finding, 11 fact. Local đối chiếu claim và chạy thử trên Windows thật |
 | 5 | dbschema (D) | Chạy trên local | Không đổi |
 | 6 | rubric-consistency (R) | Chạy trên local | Không đổi |
@@ -91,6 +91,7 @@ Nếu sửa `task3_cassandra-41.json` hoặc `task4_python-driver.json`, chạy 
 | `t3_backup_restore.sh` → `.out` | snapshot → TRUNCATE → `nodetool import`; COPY làm mất TTL |
 | `t3_backup_restore2.sh` → `.out` | Incremental backup → import, `nodetool refresh`, `sstableloader`, `clearsnapshot` |
 | `t3_copy_ttl.sh` → `.out`, `t3_copy_counter_help.out` | COPY làm mất TTL; COPY bảng counter; HELP COPY |
+| `t3_copy_timezone.sh` → `.out` | cqlsh 6.1 `COPY FROM` hiểu ngược dấu múi giờ (+0700) |
 | `t3_auth.cql`, `t3_auth_check.sh` → `.out` | Bật PasswordAuthenticator + MV bằng yaml mount; role và quyền; `CASSANDRA_DC` |
 | `t3_memory.out` | RAM mỗi node với heap 1G |
 | `t3_describe_keyspace_probe.cql` | Kết quả `DESCRIBE KEYSPACE` |

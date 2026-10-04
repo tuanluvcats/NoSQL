@@ -1,0 +1,6 @@
+customer_id,full_name,phone,email,address,created_at
+CUST011,Phan Gia Bảo,0901000011,bao.phan@gmail.com,"18 Tân Kỳ Tân Quý, Tân Phú, TP.HCM",2026-10-04 01:00:00+0000
+CUST012,Lâm Khánh Chi,0901000012,chi.lam@gmail.com,"7 Phạm Ngọc Thạch, Quận 3, TP.HCM",2026-10-04 01:05:00+0000
+CUST013,Châu Minh Nhật,0901000013,nhat.chau@gmail.com,"310 Nguyễn Oanh, Gò Vấp, TP.HCM",2026-10-04 01:10:00+0000
+CUST014,Hà Thu Trang,0901000014,trang.ha@gmail.com,"55 Trần Duy Hưng, Cầu Giấy, Hà Nội",2026-10-04 01:15:00+0000
+CUST015,Quách Tuấn Kiệt,0901000015,kiet.quach@gmail.com,"9 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội",2026-10-04 01:20:00+0000

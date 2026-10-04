@@ -1,0 +1,7 @@
+## Linux CPython Python 3.12.15, manylinux wheel, no pyasyncore
+python 3.12.15 Linux
+driver 3.30.1
+connection_class: <class 'cassandra.io.libevreactor.LibevConnection'>
+server: Row(release_version='4.1.12', data_center='datacenter1')
+rows: [Row(customer_id='CUST002', n=1), Row(customer_id='CUST001', n=3)]
+LWT applied: True

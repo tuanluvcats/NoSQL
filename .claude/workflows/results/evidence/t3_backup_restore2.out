@@ -1,0 +1,145 @@
++ docker exec nosql-cassandra sh -c 'rm -rf /tmp/incr /tmp/loader'
++ docker exec nosql-cassandra nodetool statusbackup
+not running
++ docker exec nosql-cassandra nodetool enablebackup
++ docker exec nosql-cassandra nodetool statusbackup
+running
++ docker exec nosql-cassandra cqlsh -e 'INSERT INTO probe.rides_by_customer (customer_id, booked_at, ride_id, status, fare) VALUES ('\''CUST003'\'', '\''2026-09-05 07:30:00+0000'\'', 77777777-7777-7777-7777-777777777777, '\''COMPLETED'\'', 45000);'
++ docker exec nosql-cassandra nodetool flush probe rides_by_customer
+++ tdir rides_by_customer
++++ docker exec nosql-cassandra cqlsh -e 'SELECT id FROM system_schema.tables WHERE keyspace_name='\''probe'\'' AND table_name='\''rides_by_customer'\'''
++++ sed -n 4p
++++ tr -d ' -'
+++ id=0c33d6b0bfd111f1bf5adfeb3ecce29e
+++ echo /var/lib/cassandra/data/probe/rides_by_customer-0c33d6b0bfd111f1bf5adfeb3ecce29e
++ T=/var/lib/cassandra/data/probe/rides_by_customer-0c33d6b0bfd111f1bf5adfeb3ecce29e
++ docker exec nosql-cassandra sh -c 'ls /var/lib/cassandra/data/probe/rides_by_customer-0c33d6b0bfd111f1bf5adfeb3ecce29e/backups/'
+nb-1-big-CompressionInfo.db
+nb-1-big-Data.db
+nb-1-big-Digest.crc32
+nb-1-big-Filter.db
+nb-1-big-Index.db
+nb-1-big-Statistics.db
+nb-1-big-Summary.db
+nb-1-big-TOC.txt
++ docker exec nosql-cassandra sh -c 'mkdir -p /tmp/incr && cp /var/lib/cassandra/data/probe/rides_by_customer-0c33d6b0bfd111f1bf5adfeb3ecce29e/backups/* /tmp/incr/ && chown -R cassandra /tmp/incr'
++ docker exec nosql-cassandra cqlsh -e 'TRUNCATE probe.rides_by_customer;'
++ docker exec nosql-cassandra nodetool import probe rides_by_customer /tmp/incr
++ docker exec nosql-cassandra cqlsh -e 'SELECT customer_id, booked_at, fare FROM probe.rides_by_customer;'
+
+ customer_id | booked_at                       | fare
+-------------+---------------------------------+--------
+     CUST003 | 2026-09-05 07:30:00.000000+0000 |  45000
+     CUST002 | 2026-09-03 10:00:00.000000+0000 | 120000
+     CUST001 | 2026-09-02 18:00:00.000000+0000 |      0
+     CUST001 | 2026-09-02 09:00:00.000000+0000 |  87000
+     CUST001 | 2026-09-01 08:00:00.000000+0000 |  52000
+
+(5 rows)
++ docker exec nosql-cassandra nodetool disablebackup
++ docker exec nosql-cassandra nodetool snapshot -t bk_refresh -kt probe.rides_by_driver
+Requested creating snapshot(s) for [probe.rides_by_driver] with snapshot name [bk_refresh] and options {skipFlush=false}
+Snapshot directory: bk_refresh
+++ tdir rides_by_driver
++++ docker exec nosql-cassandra cqlsh -e 'SELECT id FROM system_schema.tables WHERE keyspace_name='\''probe'\'' AND table_name='\''rides_by_driver'\'''
++++ sed -n 4p
++++ tr -d ' -'
+++ id=0c4c8ed0bfd111f1bf5adfeb3ecce29e
+++ echo /var/lib/cassandra/data/probe/rides_by_driver-0c4c8ed0bfd111f1bf5adfeb3ecce29e
++ D=/var/lib/cassandra/data/probe/rides_by_driver-0c4c8ed0bfd111f1bf5adfeb3ecce29e
++ docker exec nosql-cassandra cqlsh -e 'TRUNCATE probe.rides_by_driver; SELECT COUNT(*) FROM probe.rides_by_driver;'
+
+ count
+-------
+     0
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
++ docker exec nosql-cassandra sh -c 'cp /var/lib/cassandra/data/probe/rides_by_driver-0c4c8ed0bfd111f1bf5adfeb3ecce29e/snapshots/bk_refresh/nb-* /var/lib/cassandra/data/probe/rides_by_driver-0c4c8ed0bfd111f1bf5adfeb3ecce29e/ && chown cassandra /var/lib/cassandra/data/probe/rides_by_driver-0c4c8ed0bfd111f1bf5adfeb3ecce29e/nb-*'
++ docker exec nosql-cassandra nodetool refresh -- probe rides_by_driver
+nodetool refresh is deprecated, use nodetool import instead
++ docker exec nosql-cassandra cqlsh -e 'SELECT COUNT(*) FROM probe.rides_by_driver;'
+
+ count
+-------
+     2
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
++ docker exec nosql-cassandra nodetool snapshot -t bk_loader -kt probe.customers
+Requested creating snapshot(s) for [probe.customers] with snapshot name [bk_loader] and options {skipFlush=false}
+Snapshot directory: bk_loader
+++ tdir customers
++++ docker exec nosql-cassandra cqlsh -e 'SELECT id FROM system_schema.tables WHERE keyspace_name='\''probe'\'' AND table_name='\''customers'\'''
++++ sed -n 4p
++++ tr -d ' -'
+++ id=0c612840bfd111f1bf5adfeb3ecce29e
+++ echo /var/lib/cassandra/data/probe/customers-0c612840bfd111f1bf5adfeb3ecce29e
++ K=/var/lib/cassandra/data/probe/customers-0c612840bfd111f1bf5adfeb3ecce29e
++ docker exec nosql-cassandra sh -c 'mkdir -p /tmp/loader/probe/customers && cp /var/lib/cassandra/data/probe/customers-0c612840bfd111f1bf5adfeb3ecce29e/snapshots/bk_loader/nb-* /tmp/loader/probe/customers/'
++ docker exec nosql-cassandra cqlsh -e 'TRUNCATE probe.customers; SELECT COUNT(*) FROM probe.customers;'
+
+ count
+-------
+     0
+
+(1 rows)
+
+Warnings :
+Aggregation query used without partition key
+
+++ docker exec nosql-cassandra hostname -i
+++ awk '{print $1}'
++ IP=172.17.0.2
++ docker exec nosql-cassandra sstableloader -d 172.17.0.2 /tmp/loader/probe/customers
+Established connection to initial hosts
+Opening sstables and calculating sections to stream
+Streaming relevant part of /tmp/loader/probe/customers/nb-1-big-Data.db  to [/172.17.0.2:7000]
+progress: [/172.17.0.2:7000]0:1/7 2  % total: 2% 0.040KiB/s (avg: 0.040KiB/s)
+progress: [/172.17.0.2:7000]0:2/7 2  % total: 2% 6.018KiB/s (avg: 0.043KiB/s)
+progress: [/172.17.0.2:7000]0:3/7 97 % total: 97% 986.533KiB/s (avg: 1.615KiB/s)
+progress: [/172.17.0.2:7000]0:4/7 98 % total: 98% 38.233KiB/s (avg: 1.628KiB/s)
+progress: [/172.17.0.2:7000]0:5/7 98 % total: 98% 10.579KiB/s (avg: 1.633KiB/s)
+progress: [/172.17.0.2:7000]0:6/7 99 % total: 99% 89.787KiB/s (avg: 1.651KiB/s)
+progress: [/172.17.0.2:7000]0:7/7 100% total: 100% 12.882KiB/s (avg: 1.654KiB/s)
+progress: [/172.17.0.2:7000]0:7/7 100% total: 100% 0.000KiB/s (avg: 1.627KiB/s)
+
+Summary statistics: 
+   Connections per host    : 1         
+   Total files transferred : 7         
+   Total bytes transferred : 5.364KiB  
+   Total duration          : 3443 ms   
+   Average transfer rate   : 1.558KiB/s
+   Peak transfer rate      : 1.654KiB/s
+
++ docker exec nosql-cassandra cqlsh -e 'SELECT customer_id, full_name, phones FROM probe.customers;'
+
+ customer_id | full_name | phones
+-------------+-----------+------------------------------
+     CUST001 |    Tran B | {'0901000001', '0901000002'}
+
+(1 rows)
++ docker exec nosql-cassandra nodetool listsnapshots
+Snapshot Details: 
+Snapshot name                             Keyspace name Column family name True size Size on disk Creation time            Expiration time
+truncated-1791104012565-rides_by_driver   probe         rides_by_driver    6.22 KiB  6.22 KiB     2026-10-04T08:53:32.565Z                
+truncated-1791104007294-rides_by_customer probe         rides_by_customer  6.5 KiB   6.5 KiB      2026-10-04T08:53:27.294Z                
+truncated-1791104016619-customers         probe         customers          6.64 KiB  6.64 KiB     2026-10-04T08:53:36.619Z                
+bk_loader                                 probe         customers          6.64 KiB  6.64 KiB     2026-10-04T08:53:35.461Z                
+bk_refresh                                probe         rides_by_driver    6.22 KiB  6.22 KiB     2026-10-04T08:53:31.499Z                
+
+Total TrueDiskSpaceUsed: 26.45 KiB
+
++ docker exec nosql-cassandra nodetool clearsnapshot -t bk_loader -- probe
+Requested clearing snapshot(s) for [probe] with snapshot name [bk_loader]
++ docker exec nosql-cassandra nodetool clearsnapshot --all -- probe
+Requested clearing snapshot(s) for [probe] with [all snapshots]
++ docker exec nosql-cassandra nodetool listsnapshots
+Snapshot Details: 
+There are no snapshots

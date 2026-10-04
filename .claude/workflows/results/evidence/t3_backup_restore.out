@@ -14,20 +14,10 @@ Requested creating snapshot(s) for [probe.rides_by_driver] with snapshot name [b
 Snapshot directory: bk_drivers
 + docker exec nosql-cassandra nodetool listsnapshots
 Snapshot Details: 
-Snapshot name                             Keyspace name Column family name True size Size on disk Creation time            Expiration time
-truncated-1791102232425-customers         probe         customers          6.64 KiB  6.64 KiB     2026-10-04T08:23:52.425Z                
-truncated-1791102233695-revenue_by_day    probe         revenue_by_day     6.32 KiB  6.32 KiB     2026-10-04T08:23:53.695Z                
-before_demo                               probe         rides_by_driver    1.12 KiB  6.22 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         drivers_by_area    1.12 KiB  6.41 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         driver_locations   1.15 KiB  6.36 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         rides_by_customer  6.45 KiB  6.45 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         customers          6.64 KiB  6.64 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         revenue_by_day     6.32 KiB  6.32 KiB     2026-10-04T08:23:37.473Z                
-before_demo                               probe         rides              1.15 KiB  11.3 KiB     2026-10-04T08:23:37.473Z                
-bk_drivers                                probe         rides_by_driver    1.12 KiB  6.22 KiB     2026-10-04T08:38:07.971Z                
-truncated-1791102219463-rides_by_customer probe         rides_by_customer  6.45 KiB  6.45 KiB     2026-10-04T08:23:39.463Z                
+Snapshot name Keyspace name Column family name True size Size on disk Creation time            Expiration time
+bk_drivers    probe         rides_by_driver    1.12 KiB  6.22 KiB     2026-10-04T08:54:07.581Z                
 
-Total TrueDiskSpaceUsed: 31.98 KiB
+Total TrueDiskSpaceUsed: 0 bytes
 
 + docker exec nosql-cassandra cqlsh -e 'TRUNCATE probe.rides_by_driver; SELECT COUNT(*) FROM probe.rides_by_driver;'
 
@@ -40,12 +30,16 @@ Total TrueDiskSpaceUsed: 31.98 KiB
 Warnings :
 Aggregation query used without partition key
 
-++ docker exec nosql-cassandra sh -c 'ls -d /var/lib/cassandra/data/probe/rides_by_driver-*'
-+ D=/var/lib/cassandra/data/probe/rides_by_driver-d90ff010bfcc11f1a422ff24a245ba08
-+ docker exec nosql-cassandra sh -c 'ls /var/lib/cassandra/data/probe/rides_by_driver-d90ff010bfcc11f1a422ff24a245ba08/snapshots/ && ls /var/lib/cassandra/data/probe/rides_by_driver-d90ff010bfcc11f1a422ff24a245ba08/snapshots/bk_drivers'
-before_demo
+++ tdir rides_by_driver
++++ docker exec nosql-cassandra cqlsh -e 'SELECT id FROM system_schema.tables WHERE keyspace_name='\''probe'\'' AND table_name='\''rides_by_driver'\'''
++++ sed -n 4p
++++ tr -d ' -'
+++ id=274a8020bfd111f1bf5adfeb3ecce29e
+++ echo /var/lib/cassandra/data/probe/rides_by_driver-274a8020bfd111f1bf5adfeb3ecce29e
++ D=/var/lib/cassandra/data/probe/rides_by_driver-274a8020bfd111f1bf5adfeb3ecce29e
++ docker exec nosql-cassandra sh -c 'ls /var/lib/cassandra/data/probe/rides_by_driver-274a8020bfd111f1bf5adfeb3ecce29e/snapshots/ && ls /var/lib/cassandra/data/probe/rides_by_driver-274a8020bfd111f1bf5adfeb3ecce29e/snapshots/bk_drivers'
 bk_drivers
-truncated-1791103089793-rides_by_driver
+truncated-1791104049325-rides_by_driver
 manifest.json
 nb-1-big-CompressionInfo.db
 nb-1-big-Data.db
@@ -56,7 +50,7 @@ nb-1-big-Statistics.db
 nb-1-big-Summary.db
 nb-1-big-TOC.txt
 schema.cql
-+ docker exec nosql-cassandra nodetool import -cd probe rides_by_driver /var/lib/cassandra/data/probe/rides_by_driver-d90ff010bfcc11f1a422ff24a245ba08/snapshots/bk_drivers
++ docker exec nosql-cassandra nodetool import -cd probe rides_by_driver /var/lib/cassandra/data/probe/rides_by_driver-274a8020bfd111f1bf5adfeb3ecce29e/snapshots/bk_drivers
 + docker exec nosql-cassandra cqlsh -e 'SELECT driver_id, ride_id, vehicle_plate FROM probe.rides_by_driver;'
 
  driver_id | ride_id                              | vehicle_plate
@@ -69,13 +63,13 @@ schema.cql
 Using 3 child processes
 
 Starting copy of probe.customers with columns [customer_id, full_name, home, phones, saved_places].
-Processed: 1 rows; Rate:      11 rows/s; Avg. rate:      11 rows/s
-1 rows exported to 1 files in 0.094 seconds.
+Processed: 1 rows; Rate:      13 rows/s; Avg. rate:      13 rows/s
+1 rows exported to 1 files in 0.087 seconds.
 Using 3 child processes
 
 Starting copy of probe.customers with columns [customer_id, full_name, home, phones, saved_places].
-Processed: 1 rows; Rate:       3 rows/s; Avg. rate:       3 rows/sProcessed: 1 rows; Rate:       2 rows/s; Avg. rate:       3 rows/s
-1 rows imported from 1 files in 0.395 seconds (0 skipped).
+Processed: 1 rows; Rate:       4 rows/s; Avg. rate:       4 rows/sProcessed: 1 rows; Rate:       2 rows/s; Avg. rate:       3 rows/s
+1 rows imported from 1 files in 0.386 seconds (0 skipped).
 
  customer_id | ttl(full_name)
 -------------+----------------

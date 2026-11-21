@@ -136,7 +136,7 @@ vẹn và chạy ứng dụng trên keyspace riêng ở Trường hợp 1.
 .venv\Scripts\python -m uvicorn main:app --port 8000
 ```
 
-Mở <http://127.0.0.1:8000>. Trang chủ `/` hiện keyspace đang dùng, phiên bản Cassandra (`release_version` đọc một dòng từ `system.local`) và các lối vào nhanh theo vai trò
+Mở <http://127.0.0.1:8000> (nếu cổng 8000 đã có chương trình khác dùng, ví dụ một container Docker, chạy lại với `--port 8010` rồi mở cổng đó). Trang chủ `/` hiện keyspace đang dùng, phiên bản Cassandra (`release_version` đọc một dòng từ `system.local`) và các lối vào nhanh theo vai trò
 của người đã đăng nhập (quản trị: tài khoản, danh mục, báo cáo, khu vực, nhất quán, backup; khách: đặt xe, lịch sử; tài xế: nhận chuyến, thu nhập, đánh giá; chưa đăng nhập: đăng nhập, đăng ký, kết nối). Trang `/connection` cho biết ứng dụng đang nối tới đâu (host, protocol 4, `release_version` lấy từ `system.local`, keyspace,
 danh sách bảng, `rides.rated_at` đã có hay chưa). `/health` trả `{"status": "ok"}` kể cả khi chưa nối được Cassandra.
 

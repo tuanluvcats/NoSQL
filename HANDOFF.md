@@ -29,7 +29,7 @@ Toàn bộ Task 0 đến 14 của kế hoạch đã làm xong và commit (Task 1
 | (sửa) | Trang lỗi 404/403/500 đúng người dùng đã đăng nhập, không lộ lỗi DB khi tra cứu người dùng | `e5b230f` |
 | 12 | Trang Kết nối (mục 8), trang NoSQL minh họa, kịch bản T01 đến T12 end-to-end | `9989227` |
 | 13 | README, kịch bản demo, HANDOFF, `tests/unit/test_docs.py` | `245fdbf` |
-| 14 | Vòng chỉnh cuối: trang chủ theo keyspace thật và vai trò, trang 500 ẩn lỗi (log + `APP_DEBUG=1`), menu trang 503 đúng người dùng, `tools.check_env --help` | commit "fix(app): vòng chỉnh cuối ..." (xem `git log`) |
+| 14 | Vòng chỉnh cuối: trang chủ theo keyspace thật và vai trò, trang 500 ẩn lỗi (log + `APP_DEBUG=1`), menu trang 503 đúng người dùng, `tools.check_env --help` | `b78ecd0` |
 
 Kết quả test ở HEAD `9989227` (trước Task 13): 545 test xanh trên Cassandra 3.11.4 (cài trực tiếp, Windows 11, Python 3.12.7), cả chế độ reset thường và đầy đủ.
 Task 13 thêm `tests/unit/test_docs.py` (13 test), tổng 558 test (325 unit, 233 integration). Task 14 thêm test cho trang chủ, trang 500/503, `APP_DEBUG` và `check_env`
@@ -126,5 +126,5 @@ b7198fd feat(app): tài xế online/offline một khu vực, nhận chuyến LWT
 e5b230f fix(app): trang lỗi 404/403/500 hiển thị đúng người dùng đã đăng nhập, không lộ lỗi DB khi tra cứu người dùng
 9989227 feat(app): trang Kết nối, trang NoSQL minh họa và kịch bản T01–T12 end-to-end
 245fdbf docs(app): README, kịch bản demo, HANDOFF
-(kế tiếp) fix(app): vòng chỉnh cuối (trang chủ theo vai trò, trang 500 ẩn lỗi, menu 503, check_env --help)
+b78ecd0 fix(app): vòng chỉnh cuối (trang chủ theo vai trò, trang 500 ẩn lỗi, menu 503, check_env --help)
 ```

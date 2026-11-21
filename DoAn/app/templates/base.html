@@ -9,42 +9,32 @@
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<nav class="navbar navbar-expand navbar-dark bg-dark mb-3">
-  <div class="container">
+{% macro nav(href, label) -%}
+  {%- set here = request.url.path == href or (href != '/' and request.url.path.startswith(href + '/')) -%}
+  <a class="btn btn-sm {{ 'btn-light' if here else 'btn-outline-light' }}" href="{{ href }}"{% if here %} aria-current="page"{% endif %}>{{ label }}</a>
+{%- endmacro %}
+<nav class="navbar navbar-dark bg-dark mb-3">
+  <div class="container flex-wrap gap-2">
     <a class="navbar-brand" href="/">Đặt xe công nghệ</a>
-    <span class="navbar-text small d-flex align-items-center gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-1 small">
       {% if user %}
-        {{ user.full_name or user.username }} ({{ user.role }})
         {% if user.role in ('ADMIN', 'OPERATOR') %}
-          <a class="btn btn-sm btn-outline-light" href="/admin/accounts">Tài khoản</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/customers">Khách</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/drivers">Tài xế</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/vehicles">Xe</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/promotions">Khuyến mãi</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/reports">Báo cáo</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/areas">Khu vực</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/consistency">Nhất quán</a>
-          <a class="btn btn-sm btn-outline-light" href="/admin/backup">Backup</a>
-          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
+          <span class="text-white-50 ms-1">Người dùng</span>{{ nav("/admin/accounts", "Tài khoản") }}
+          <span class="text-white-50 ms-2">Dữ liệu</span>{{ nav("/admin/customers", "Khách") }}{{ nav("/admin/drivers", "Tài xế") }}{{ nav("/admin/vehicles", "Xe") }}{{ nav("/admin/promotions", "Khuyến mãi") }}{{ nav("/admin/backup", "Backup") }}
+          <span class="text-white-50 ms-2">Nghiệp vụ</span>{{ nav("/admin/areas", "Khu vực") }}{{ nav("/admin/reports", "Báo cáo") }}{{ nav("/admin/consistency", "Nhất quán") }}
         {% elif user.role == 'CUSTOMER' %}
-          <a class="btn btn-sm btn-outline-light" href="/customer/book">Đặt xe</a>
-          <a class="btn btn-sm btn-outline-light" href="/customer/rides">Lịch sử</a>
-          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
+          {{ nav("/customer/book", "Đặt xe") }}{{ nav("/customer/rides", "Lịch sử chuyến") }}
         {% elif user.role == 'DRIVER' %}
-          <a class="btn btn-sm btn-outline-light" href="/driver">Nhận chuyến</a>
-          <a class="btn btn-sm btn-outline-light" href="/driver/income">Thu nhập</a>
-          <a class="btn btn-sm btn-outline-light" href="/driver/ratings">Đánh giá</a>
-          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
+          {{ nav("/driver", "Trạng thái") }}{{ nav("/driver/waiting", "Chuyến chờ") }}{{ nav("/driver/income", "Thu nhập") }}{{ nav("/driver/ratings", "Đánh giá") }}
         {% endif %}
-        <a class="btn btn-sm btn-outline-light" href="/connection">Kết nối</a>
-        <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-light" type="submit">Đăng xuất</button></form>
+        <span class="text-white-50 ms-2">Hệ thống</span>{{ nav("/nosql", "NoSQL") }}{{ nav("/connection", "Kết nối") }}
+        <span class="navbar-text ms-2">{{ user.full_name or user.username }} ({{ user.role }})</span>
+        <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-warning" type="submit">Đăng xuất</button></form>
       {% else %}
-        Chưa đăng nhập
-        <a class="btn btn-sm btn-outline-light" href="/connection">Kết nối</a>
-        <a class="btn btn-sm btn-outline-light" href="/login">Đăng nhập</a>
-        <a class="btn btn-sm btn-outline-light" href="/register">Đăng ký</a>
+        <span class="navbar-text me-1">Chưa đăng nhập</span>
+        {{ nav("/connection", "Kết nối") }}{{ nav("/login", "Đăng nhập") }}{{ nav("/register", "Đăng ký") }}
       {% endif %}
-    </span>
+    </div>
   </div>
 </nav>
 <main class="container">

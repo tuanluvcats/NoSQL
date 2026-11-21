@@ -10,7 +10,7 @@
   <form method="post" action="/admin/consistency/check" class="row g-2 align-items-end mb-2">
     <div class="col-auto"><label class="form-label small mb-0" for="chk-ride">Mã chuyến</label>
       <input class="form-control form-control-sm font-monospace" id="chk-ride" name="ride_id" value="{{ ride_id }}" placeholder="RIDE_1001" maxlength="64" required></div>
-    <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Kiểm tra</button></div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Kiểm tra chuyến</button></div>
   </form>
   {% if diffs is not none %}
     {% if diffs %}
@@ -57,7 +57,7 @@
     <input type="hidden" name="action" value="check_areas">
     <div class="col-auto"><label class="form-label small mb-0" for="chk-drv">Mã tài xế</label>
       <input class="form-control form-control-sm font-monospace" id="chk-drv" name="driver_id" value="{{ driver_id }}" placeholder="DRV_551" maxlength="64" required></div>
-    <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Kiểm tra</button></div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Kiểm tra khu vực</button></div>
   </form>
   {% if area_problems is not none %}
     {% if area_problems %}

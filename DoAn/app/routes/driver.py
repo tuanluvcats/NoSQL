@@ -10,7 +10,7 @@ from config import AREAS
 from domain.auth import DRIVER
 from domain.tz import fmt_vn, to_date, vn_date
 from routes.deps import flash_trace, get_db, pop_trace_event, render, require_role, set_flash
-from services import driver_presence, reports, rides_flow
+from services import consistency, driver_presence, reports, rides_flow
 from services.result import ActionResult
 
 router = APIRouter()
@@ -34,7 +34,9 @@ def _home(request: Request, user: dict, errors: list[str] | None = None, status:
     if driver is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ tài xế.")
     areas = driver_presence.find_area_rows(db, driver_id)
-    ctx = {"driver": driver, "areas": areas, "area_config": AREAS, "errors": errors or [],
+    current_ride = (consistency.recent_active_ride(db, driver_id, request.app.state.clock())
+                    if driver.get("status") == "BUSY" else None)
+    ctx = {"driver": driver, "areas": areas, "current_ride": current_ride, "area_config": AREAS, "errors": errors or [],
            "form": form or {"city": "HCM", "district": "Q1", "plate": "", "lat": "", "lng": ""},
            "event": pop_trace_event(request) if status == 200 else None}
     return render(request, "driver/home.html", ctx, status_code=status)

@@ -145,6 +145,12 @@ def _fast_active(db, driver_id: str, now: datetime) -> str | None:
     return None
 
 
+def recent_active_ride(db, driver_id: str, now: datetime) -> str | None:
+    """Chuyến ACCEPTED/ONGOING của tài xế chỉ qua đường nhanh (đọc theo partition key, không quét bảng).
+    Dùng cho trang tài xế, tải mỗi lần mở trang nên không được quét toàn bảng `rides`."""
+    return _fast_active(db, driver_id, now)
+
+
 def active_ride_of(db, driver_id: str, now: datetime, scan: dict[str, list[str]] | None = None) -> str | None:
     """Chuyến ACCEPTED/ONGOING của tài xế, hoặc None. Không thấy ở đường nhanh thì quét `rides` để chắc chắn, vì lệnh
     ghi bảng phụ có thể đã lỗi (D10): thiếu dòng ở rides_by_driver_month không chứng minh được là không có chuyến."""

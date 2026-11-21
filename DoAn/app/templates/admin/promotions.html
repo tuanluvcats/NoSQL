@@ -33,7 +33,7 @@
           </td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary" href="/admin/promotions/{{ r.promo_code }}/edit">Sửa</a>
-            <form method="post" action="/admin/promotions/{{ r.promo_code }}/delete" class="d-inline">
+            <form method="post" action="/admin/promotions/{{ r.promo_code }}/delete" class="d-inline" onsubmit="return confirm('Xóa mã khuyến mãi này?');">
               <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
             </form>
           </td>

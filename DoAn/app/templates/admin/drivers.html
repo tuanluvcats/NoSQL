@@ -20,7 +20,7 @@
           <td>{{ r.status }}</td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary" href="/admin/drivers/{{ r.driver_id }}/edit">Sửa</a>
-            <form method="post" action="/admin/drivers/{{ r.driver_id }}/delete" class="d-inline">
+            <form method="post" action="/admin/drivers/{{ r.driver_id }}/delete" class="d-inline" onsubmit="return confirm('Xóa tài xế này? Không xóa được nếu tài xế đã có chuyến (hãy khóa tài khoản).');">
               <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
             </form>
           </td>

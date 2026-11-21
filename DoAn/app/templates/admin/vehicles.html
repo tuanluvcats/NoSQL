@@ -36,7 +36,7 @@
           <td>{{ r.color or '-' }}</td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary" href="/admin/vehicles/{{ r.vehicle_id }}/edit">Sửa</a>
-            <form method="post" action="/admin/vehicles/{{ r.vehicle_id }}/delete" class="d-inline">
+            <form method="post" action="/admin/vehicles/{{ r.vehicle_id }}/delete" class="d-inline" onsubmit="return confirm('Xóa xe này?');">
               <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
             </form>
           </td>

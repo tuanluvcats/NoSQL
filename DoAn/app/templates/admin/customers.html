@@ -19,7 +19,7 @@
           <td>{{ r.address or '-' }}</td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary" href="/admin/customers/{{ r.customer_id }}/edit">Sửa</a>
-            <form method="post" action="/admin/customers/{{ r.customer_id }}/delete" class="d-inline">
+            <form method="post" action="/admin/customers/{{ r.customer_id }}/delete" class="d-inline" onsubmit="return confirm('Xóa khách này? Không xóa được nếu khách đã có chuyến (hãy khóa tài khoản).');">
               <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
             </form>
           </td>

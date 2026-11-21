@@ -18,7 +18,7 @@
           <td class="small">{{ a.last_login_at or '-' }}</td>
           <td>
             {% if a.is_active %}
-              <form method="post" action="/admin/accounts/{{ a.username }}/lock" class="d-inline">
+              <form method="post" action="/admin/accounts/{{ a.username }}/lock" class="d-inline" onsubmit="return confirm('Khóa tài khoản này? Người dùng sẽ bị đăng xuất ở lần thao tác kế tiếp.');">
                 <button class="btn btn-sm btn-outline-danger" type="submit">Khóa</button>
               </form>
             {% else %}

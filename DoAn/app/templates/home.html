@@ -4,30 +4,31 @@
   <p class="text-muted">Cassandra{% if cassandra_version %} {{ cassandra_version }}{% endif %}, keyspace <code>{{ keyspace }}</code>. Mỗi thao tác hiển thị các lệnh CQL đã chạy ở cuối trang.</p>
   <p>Trạng thái: <a href="/health">/health</a></p>
 
-  <h2 class="h5 mt-4">Lối vào nhanh</h2>
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    {% if not user %}
-      <a class="btn btn-primary" href="/login">Đăng nhập</a>
-      <a class="btn btn-outline-primary" href="/register">Đăng ký</a>
-      <a class="btn btn-outline-secondary" href="/connection">Kết nối</a>
-    {% elif user.role in ('ADMIN', 'OPERATOR') %}
-      <a class="btn btn-outline-primary" href="/admin/accounts">Tài khoản</a>
-      <a class="btn btn-outline-primary" href="/admin/customers">Khách</a>
-      <a class="btn btn-outline-primary" href="/admin/drivers">Tài xế</a>
-      <a class="btn btn-outline-primary" href="/admin/vehicles">Xe</a>
-      <a class="btn btn-outline-primary" href="/admin/promotions">Khuyến mãi</a>
-      <a class="btn btn-outline-primary" href="/admin/reports">Báo cáo</a>
-      <a class="btn btn-outline-primary" href="/admin/areas">Khu vực</a>
-      <a class="btn btn-outline-primary" href="/admin/consistency">Nhất quán</a>
-      <a class="btn btn-outline-primary" href="/admin/backup">Backup</a>
-    {% elif user.role == 'CUSTOMER' %}
-      <a class="btn btn-primary" href="/customer/book">Đặt xe</a>
-      <a class="btn btn-outline-primary" href="/customer/rides">Lịch sử</a>
-    {% elif user.role == 'DRIVER' %}
-      <a class="btn btn-primary" href="/driver">Bật/tắt nhận chuyến</a>
-      <a class="btn btn-outline-primary" href="/driver/waiting">Nhận chuyến</a>
-      <a class="btn btn-outline-primary" href="/driver/income">Thu nhập</a>
-      <a class="btn btn-outline-primary" href="/driver/ratings">Đánh giá</a>
-    {% endif %}
-  </div>
+  <h2 class="h5 mt-4">Bạn làm được gì ở đây</h2>
+  <p class="text-muted small">Các chức năng nằm trên thanh menu phía trên (mỗi chức năng chỉ có một nút, trang đang mở được tô sáng).</p>
+  {% if not user %}
+    <ul>
+      <li><strong>Đăng ký</strong> tài khoản khách: ghi <code>user_accounts</code> bằng LWT <code>IF NOT EXISTS</code> nên không trùng tên đăng nhập.</li>
+      <li><strong>Đăng nhập</strong> bằng tài khoản mẫu (mật khẩu <code>123456</code>): <code>admin</code> (quản trị), <code>dieuphoi</code> (điều phối), <code>cust001</code> (khách), <code>drv551</code> (tài xế).</li>
+      <li><strong>Kết nối</strong>: xem ứng dụng đang nối tới Cassandra nào (host, datacenter, protocol, phiên bản).</li>
+    </ul>
+  {% elif user.role in ('ADMIN', 'OPERATOR') %}
+    <ul>
+      <li><strong>Người dùng</strong>: khóa/mở tài khoản (LWT), không cho khóa admin cuối cùng.</li>
+      <li><strong>Dữ liệu</strong>: thêm, sửa, xóa khách, tài xế, xe (tra biển số qua materialized view), khuyến mãi (set <code>cities</code>); backup/restore JSON.</li>
+      <li><strong>Nghiệp vụ</strong>: tài xế và chuyến chờ theo khu vực, doanh thu ngày/7 ngày, xuất CSV, kiểm tra nhất quán giữa các bảng phi chuẩn hóa.</li>
+    </ul>
+  {% elif user.role == 'CUSTOMER' %}
+    <ol>
+      <li><strong>Đặt xe</strong>: chọn điểm đón/trả, xem báo giá (có mã khuyến mãi), xác nhận.</li>
+      <li>Theo dõi chuyến trong <strong>Lịch sử chuyến</strong>; hủy được khi chuyến còn REQUESTED/ACCEPTED.</li>
+      <li>Chuyến COMPLETED thì đánh giá tài xế (mỗi chuyến một lần).</li>
+    </ol>
+  {% elif user.role == 'DRIVER' %}
+    <ol>
+      <li><strong>Trạng thái</strong>: bật nhận chuyến ở một khu vực (vào <code>drivers_by_area</code>), hoặc tắt.</li>
+      <li><strong>Chuyến chờ</strong>: xem chuyến REQUESTED trong khu vực và nhận (LWT, hai tài xế không nhận trùng).</li>
+      <li>Trên trang chuyến: bắt đầu, rồi hoàn thành và thanh toán. Xem <strong>Thu nhập</strong> theo tháng và <strong>Đánh giá</strong>.</li>
+    </ol>
+  {% endif %}
 {% endblock %}

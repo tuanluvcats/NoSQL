@@ -70,10 +70,14 @@
     })();
   </script>
   {% else %}
-    <div class="alert alert-warning">Đang có chuyến (BUSY): chưa thể bật hoặc tắt nhận chuyến.</div>
+    <div class="alert alert-warning">Đang có chuyến (BUSY): chưa thể bật hoặc tắt nhận chuyến.
+      {% if current_ride %}<a class="alert-link font-monospace" href="/rides/{{ current_ride }}">Mở chuyến {{ current_ride }}</a> để bắt đầu hoặc hoàn thành.
+      {% else %}Không tìm thấy chuyến đang chạy trong tháng này: báo quản trị dùng trang Nhất quán để giải phóng.{% endif %}</div>
   {% endif %}
 
+  {% if driver.status != 'BUSY' and (areas or driver.status == 'AVAILABLE') %}
   <form method="post" action="/driver/offline" class="mb-3">
-    <button class="btn btn-outline-danger" type="submit" {{ 'disabled' if driver.status == 'BUSY' }}>Tắt nhận chuyến</button>
+    <button class="btn btn-outline-danger" type="submit">Tắt nhận chuyến</button>
   </form>
+  {% endif %}
 {% endblock %}

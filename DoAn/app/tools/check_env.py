@@ -4,27 +4,7 @@ from __future__ import annotations
 import sys
 
 from config import Settings
-
-
-def connect(settings: Settings, timeout: float = 5.0):
-    from cassandra.cluster import Cluster
-    from cassandra.policies import DCAwareRoundRobinPolicy
-
-    cluster = Cluster(
-        list(settings.hosts),
-        port=settings.port,
-        protocol_version=4,
-        connect_timeout=timeout,
-        control_connection_timeout=timeout,
-        load_balancing_policy=DCAwareRoundRobinPolicy(local_dc=settings.local_dc),
-    )
-    try:
-        session = cluster.connect()
-    except BaseException:
-        cluster.shutdown()
-        raise
-    session.default_timeout = 30
-    return session
+from db.session import connect
 
 
 def check_env(settings: Settings) -> dict:
@@ -36,12 +16,12 @@ def check_env(settings: Settings) -> dict:
         "has_rated_at": False,
         "error": None,
     }
-    session = None
+    cluster = None
     try:
-        session = connect(settings)
+        cluster, session = connect(settings)
         result["connected"] = True
         row = session.execute("SELECT release_version FROM system.local").one()
-        result["release_version"] = row.release_version if row else None
+        result["release_version"] = row["release_version"] if row else None
         ks = settings.keyspace
         result["keyspace_exists"] = (
             session.execute("SELECT keyspace_name FROM system_schema.keyspaces WHERE keyspace_name = %s", (ks,)).one()
@@ -57,8 +37,8 @@ def check_env(settings: Settings) -> dict:
     except Exception as e:  # noqa: BLE001 - báo lỗi thay vì ném
         result["error"] = f"{type(e).__name__}: {e}"
     finally:
-        if session is not None:
-            session.cluster.shutdown()
+        if cluster is not None:
+            cluster.shutdown()
     return result
 
 

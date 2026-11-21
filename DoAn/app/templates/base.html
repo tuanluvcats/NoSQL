@@ -1,0 +1,37 @@
+{% from "_trace.html" import panel %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Đặt xe công nghệ{% endblock %}</title>
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark mb-3">
+  <div class="container">
+    <a class="navbar-brand" href="/">Đặt xe công nghệ</a>
+    <span class="navbar-text small">
+      {% if user %}{{ user.full_name or user.username }} ({{ user.role }}){% else %}Chưa đăng nhập{% endif %}
+    </span>
+  </div>
+</nav>
+<main class="container">
+  {% if db_error %}
+    <div class="alert alert-danger" role="alert">
+      <strong>Không kết nối được Cassandra.</strong> {{ db_error }}
+    </div>
+  {% endif %}
+  {% if maintenance %}
+    <div class="alert alert-warning" role="alert">Đang ở chế độ bảo trì: các thao tác ghi bị chặn.</div>
+  {% endif %}
+  {% block content %}{% endblock %}
+  <hr>
+  {% if last_trace %}
+    {{ panel("CQL của thao tác vừa rồi", last_trace) }}
+  {% endif %}
+  {{ panel("CQL đã chạy", trace, written, matrix) }}
+</main>
+</body>
+</html>

@@ -8,9 +8,9 @@ from tools.setup_db import setup_db
 
 def test_tables_and_view(raw, test_keyspace):
     s = raw
-    tables = {r.table_name for r in s.execute(
+    tables = {r["table_name"] for r in s.execute(
         "SELECT table_name FROM system_schema.tables WHERE keyspace_name = %s", (test_keyspace,))}
-    views = {r.view_name for r in s.execute(
+    views = {r["view_name"] for r in s.execute(
         "SELECT view_name FROM system_schema.views WHERE keyspace_name = %s", (test_keyspace,))}
     assert tables == set(BASE_TABLES)
     assert views == {"vehicles_by_plate"}
@@ -22,7 +22,7 @@ def test_rated_at_column(raw, test_keyspace):
 
 def test_seed_counts(raw):
     for table, expected in EXPECTED_SEED_COUNTS.items():
-        n = raw.execute(f"SELECT COUNT(*) FROM {table}").one()[0]
+        n = raw.execute(f"SELECT COUNT(*) FROM {table}").one()["count"]
         assert n == expected, table
 
 

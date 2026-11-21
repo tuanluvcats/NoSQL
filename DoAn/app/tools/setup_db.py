@@ -30,13 +30,13 @@ def main(argv=None) -> int:
     if args.seed and not args.yes:
         print("Từ chối: --seed sẽ TRUNCATE dữ liệu. Thêm --yes để xác nhận.", file=sys.stderr)
         return 2
-    from tools.check_env import connect
+    from db.session import connect
 
-    session = connect(Settings.from_env())
+    cluster, session = connect(Settings.from_env())
     try:
         counts = setup_db(session, args.keyspace, seed=args.seed, schema_path=CASSANDRA_DIR / "01_schema.cql")
     finally:
-        session.cluster.shutdown()
+        cluster.shutdown()
     print(f"Đã dựng keyspace {args.keyspace}" + (f"; seed: {counts}" if args.seed else ""))
     return 0
 

@@ -1,0 +1,18 @@
+{# Badge [applied] và bảng giá trị hiện tại khi LWT bị từ chối #}
+{% macro lwt_badge(applied, current) -%}
+  {% if applied is none %}
+  {% elif applied %}
+    <span class="badge text-bg-success">[applied] True</span>
+  {% else %}
+    <span class="badge text-bg-danger">[applied] False</span>
+    {% if current %}
+      <table class="table table-sm table-bordered mb-0 mt-1 lwt-current">
+        <tbody>
+        {% for k, v in current.items() %}
+          <tr><th class="font-monospace">{{ k }}</th><td class="font-monospace">{{ v }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  {% endif %}
+{%- endmacro %}

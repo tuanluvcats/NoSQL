@@ -1,0 +1,75 @@
+{# Panel "CQL đã chạy": mỗi lệnh CQL của request (hoặc của thao tác POST vừa rồi) #}
+{% from "_lwt.html" import lwt_badge %}
+{% macro trace_table(entries) -%}
+  {% if entries %}
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle trace-table">
+      <thead>
+        <tr>
+          <th>Mã</th><th>Q</th><th>Bảng</th><th>Partition key</th><th>Consistency</th>
+          <th>CQL + tham số</th><th>Kết quả</th><th class="text-end">ms</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for e in entries %}
+        <tr class="{{ 'table-danger' if e.error else '' }}">
+          <td><span class="badge text-bg-secondary">{{ e.code }}</span></td>
+          <td>{{ e.q }}</td>
+          <td class="font-monospace">{{ e.table }}</td>
+          <td class="font-monospace small">
+            {% for k, v in e.partition_key.items() %}{{ k }} = {{ v }}{% if not loop.last %}<br>{% endif %}{% else %}-{% endfor %}
+          </td>
+          <td class="small">{{ e.consistency }}{% if e.kind == 'lwt' %}<br>serial: LOCAL_SERIAL{% endif %}</td>
+          <td>
+            <code class="d-block text-break">{{ e.cql }}</code>
+            {% if e.params %}<small class="text-muted font-monospace text-break">? = {{ e.params | join(', ') }}</small>{% endif %}
+          </td>
+          <td>
+            {% if e.error %}
+              <span class="badge text-bg-danger">lỗi</span> <small>{{ e.error }}</small>
+            {% elif e.kind == 'lwt' %}
+              {{ lwt_badge(e.applied, e.current) }}
+            {% elif e.kind in ('write',) %}
+              <span class="badge text-bg-info">đã ghi</span>
+            {% else %}
+              {{ e.row_count }} dòng
+            {% endif %}
+          </td>
+          <td class="text-end">{{ '%.1f' | format(e.elapsed_ms) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-0">Chưa có lệnh CQL nào.</p>
+  {% endif %}
+{%- endmacro %}
+
+{% macro panel(title, entries, written=none, matrix=none) -%}
+  <section class="card mb-3 cql-panel">
+    <div class="card-header fw-semibold">{{ title }}</div>
+    <div class="card-body">
+      {{ trace_table(entries) }}
+      {% if written %}
+        <p class="mt-2 mb-1 tables-written"><strong>Bảng bị ghi:</strong> {{ written | join(' → ') }}</p>
+      {% endif %}
+      {% if matrix %}
+        <p class="mb-0 matrix-check">
+          So với WRITE_MATRIX[{{ matrix.event }}]:
+          {% if matrix.complete %}
+            <span class="badge text-bg-success">đủ</span>
+          {% else %}
+            <span class="badge text-bg-danger">thiếu: {{ matrix.missing | join(', ') }}</span>
+          {% endif %}
+          {% for t, ok in matrix.required %}
+            <span class="badge {{ 'text-bg-success' if ok else 'text-bg-danger' }}">{{ t }}</span>
+          {% endfor %}
+          {% for t, ok in matrix.optional %}
+            <span class="badge {{ 'text-bg-primary' if ok else 'text-bg-light border' }}" title="tùy chọn">({{ t }})</span>
+          {% endfor %}
+        </p>
+      {% endif %}
+    </div>
+  </section>
+{%- endmacro %}

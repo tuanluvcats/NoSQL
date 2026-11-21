@@ -1,0 +1,4 @@
+body { background: #f8f9fa; }
+.cql-panel code { font-size: .8rem; }
+.trace-table td, .trace-table th { vertical-align: top; }
+.lwt-current { max-width: 20rem; font-size: .75rem; }

@@ -5,6 +5,8 @@ import pytest
 
 from config import CASSANDRA_DIR, Settings, UnsafeKeyspaceError, assert_test_keyspace
 from db.migrate import create_test_keyspace, ensure_app_migration
+from db.repo import CassandraDb
+from db.session import connect
 from tools.seed import load_seed, reset_tables
 
 
@@ -18,38 +20,16 @@ def settings_test():
     return dataclasses.replace(Settings.from_env(), keyspace=ks)
 
 
-def connect(settings, timeout: float = 5.0):
-    # Tạm viết ở đây; Task 3 chuyển sang db/session.py
-    from cassandra.cluster import Cluster
-    from cassandra.policies import DCAwareRoundRobinPolicy
-
-    cluster = Cluster(
-        list(settings.hosts),
-        port=settings.port,
-        protocol_version=4,
-        connect_timeout=timeout,
-        control_connection_timeout=timeout,
-        load_balancing_policy=DCAwareRoundRobinPolicy(local_dc=settings.local_dc),
-    )
-    try:
-        session = cluster.connect()
-    except BaseException:
-        cluster.shutdown()
-        raise
-    session.default_timeout = 30
-    return session
-
-
 @pytest.fixture(scope="session")
 def cassandra_session(settings_test):
     from cassandra.cluster import NoHostAvailable
 
     try:
-        session = connect(settings_test, timeout=5.0)
+        cluster, session = connect(settings_test)
     except (NoHostAvailable, OSError):
         pytest.skip(f"Không có Cassandra ở {','.join(settings_test.hosts)}:{settings_test.port}")
     yield session
-    session.cluster.shutdown()
+    cluster.shutdown()
 
 
 @pytest.fixture(scope="session")
@@ -65,3 +45,8 @@ def raw(cassandra_session, test_keyspace):
     load_seed(cassandra_session, test_keyspace, CASSANDRA_DIR / "02_data.cql")
     cassandra_session.set_keyspace(test_keyspace)
     return cassandra_session
+
+
+@pytest.fixture
+def db(raw, test_keyspace):
+    return CassandraDb(raw, test_keyspace)

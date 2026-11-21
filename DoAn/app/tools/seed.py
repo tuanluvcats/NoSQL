@@ -85,14 +85,14 @@ def main(argv=None) -> int:
     if not args.yes:
         print("Từ chối: lệnh này TRUNCATE dữ liệu. Thêm --yes để xác nhận.", file=sys.stderr)
         return 2
-    from tools.check_env import connect
+    from db.session import connect
 
-    session = connect(Settings.from_env())
+    cluster, session = connect(Settings.from_env())
     try:
         reset_tables(session, args.keyspace)
         counts = load_seed(session, args.keyspace, CASSANDRA_DIR / "02_data.cql")
     finally:
-        session.cluster.shutdown()
+        cluster.shutdown()
     for t, n in counts.items():
         print(f"{t}: {n}")
     return 0

@@ -48,6 +48,26 @@ def optional_user(request: Request) -> dict | None:
     return user
 
 
+def safe_user(request: Request) -> dict | None:
+    """Người dùng hiện tại cho trang lỗi và trang công khai: KHÔNG bao giờ ném lỗi.
+
+    Dùng lại kết quả nếu route đã nạp. Nếu chưa (route lỗi trước khi chạy dependency, 404, 500) thì lấy tên đăng nhập từ
+    phiên rồi nạp lại từ Cassandra; tài khoản bị khóa, không có DB hoặc DB lỗi đều coi như khách và không lộ chi tiết lỗi."""
+    if getattr(request.state, "user_loaded", False):
+        return request.state.user
+    username = _session(request).get("username")
+    user = None
+    db = getattr(request.app.state, "db", None)
+    if username and db is not None:
+        try:
+            user = load_active_user(db, username)
+        except Exception:  # noqa: BLE001 - trang lỗi không được sập hay lộ lỗi DB chỉ vì tra cứu người dùng
+            user = None
+    request.state.user = user
+    request.state.user_loaded = True
+    return user
+
+
 def current_user(request: Request) -> dict:
     user = optional_user(request)
     if user is None:

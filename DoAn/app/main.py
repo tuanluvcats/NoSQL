@@ -15,7 +15,7 @@ from db.repo import CassandraDb
 from db.trace import TraceStore
 from domain.tz import now_vn
 from routes import admin_accounts, admin_backup, admin_catalog, admin_tools, auth as auth_routes, customer as customer_routes, driver as driver_routes, rides as rides_routes, reports as reports_routes
-from routes.deps import AuthRedirect, auth_redirect_handler, optional_user, render
+from routes.deps import AuthRedirect, auth_redirect_handler, optional_user, render, safe_user
 from services.maintenance import MaintenanceState
 
 RESTORE_PATH = "/admin/backup/restore"
@@ -68,11 +68,13 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(request: Request, exc: StarletteHTTPException):
+        safe_user(request)  # menu của trang lỗi hiện đúng người dùng đã đăng nhập
         return render(request, "error.html", {"status": exc.status_code, "detail": exc.detail},
                       status_code=exc.status_code)
 
     @app.exception_handler(Exception)
     async def _server_error(request: Request, exc: Exception):
+        safe_user(request)
         return render(request, "error.html", {"status": 500, "detail": f"{type(exc).__name__}: {exc}"},
                       status_code=500)
 

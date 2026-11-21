@@ -19,6 +19,35 @@
       <button class="btn btn-success" type="submit">Nhận chuyến</button>
     </form>
   {% endif %}
+  {% if user and user.role == 'DRIVER' and ride.driver_id == user.ref_id and ride.status == 'ACCEPTED' %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/start" class="row g-2 align-items-end mb-3">
+      <div class="col-auto"><label class="form-label small mb-0" for="start-lat">Vĩ độ (tùy chọn)</label>
+        <input class="form-control form-control-sm" id="start-lat" name="lat" inputmode="decimal" placeholder="10.8270"></div>
+      <div class="col-auto"><label class="form-label small mb-0" for="start-lng">Kinh độ (tùy chọn)</label>
+        <input class="form-control form-control-sm" id="start-lng" name="lng" inputmode="decimal" placeholder="106.6880"></div>
+      <div class="col-auto"><button class="btn btn-primary" type="submit">Bắt đầu chuyến</button></div>
+    </form>
+  {% endif %}
+  {% if user and user.role == 'DRIVER' and ride.driver_id == user.ref_id and ride.status == 'ONGOING' %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/complete" class="row g-2 align-items-end mb-3">
+      <div class="col-auto"><label class="form-label small mb-0" for="drop-district">Quận trả khách</label>
+        <select class="form-select form-select-sm" id="drop-district" name="drop_district" required>
+          {% for d in areas.get(ride.city, []) %}<option value="{{ d }}"{% if d == ride.district %} selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select></div>
+      <div class="col-auto"><label class="form-label small mb-0" for="done-lat">Vĩ độ (tùy chọn)</label>
+        <input class="form-control form-control-sm" id="done-lat" name="lat" inputmode="decimal"></div>
+      <div class="col-auto"><label class="form-label small mb-0" for="done-lng">Kinh độ (tùy chọn)</label>
+        <input class="form-control form-control-sm" id="done-lng" name="lng" inputmode="decimal"></div>
+      <div class="col-auto"><button class="btn btn-success" type="submit">Hoàn thành và thanh toán</button></div>
+    </form>
+  {% endif %}
+  {% if can_cancel %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/cancel" class="row g-2 align-items-end mb-3">
+      <div class="col-auto"><label class="form-label small mb-0" for="cancel-reason">Lý do hủy</label>
+        <input class="form-control form-control-sm" id="cancel-reason" name="reason" maxlength="200" placeholder="Khách hủy"></div>
+      <div class="col-auto"><button class="btn btn-outline-danger" type="submit">Hủy chuyến</button></div>
+    </form>
+  {% endif %}
   <h2 class="h6">status_history</h2>
   <ul class="font-monospace small">
     {% for t, s in history %}<li>{{ fmt(t) }} &rarr; {{ s }}</li>{% else %}<li>-</li>{% endfor %}

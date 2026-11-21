@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from starlette.responses import RedirectResponse
 
 from config import AREAS, PAYMENT_METHODS
-from domain.auth import CUSTOMER, can_view_ride
+from domain.auth import CUSTOMER, can_cancel_ride, can_view_ride
 from domain.ids import new_ride_id
 from domain.tz import fmt_vn
 from routes.deps import current_user, flash_trace, get_db, pop_trace_event, render, require_role, set_flash
@@ -75,7 +75,7 @@ def book_submit(request: Request, ride_id: str = Form(""), city: str = Form(""),
     if not result.ok:
         return _page(request, form, [result.message], 400, result=result)
     set_flash(request, True, result.message)
-    flash_trace(request)
+    flash_trace(request, "book" if result.code == "ok" else None)
     return RedirectResponse(f"/rides/{result.ride_id}", status_code=303)
 
 
@@ -87,5 +87,7 @@ def ride_detail(request: Request, ride_id: str, user: dict = Depends(current_use
     if not can_view_ride(user.get("role"), user.get("ref_id"), ride):
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem chuyến này.")
     history = sorted(((t, s) for t, s in (ride.get("status_history") or {}).items()), key=lambda x: x[0])
-    event = pop_trace_event(request) or ("book" if "trace_token" in request.scope.get("session", {}) else None)
-    return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event})
+    event = pop_trace_event(request)  # sự kiện do route POST đặt (book/accept/start/complete/cancel)
+    can_cancel = can_cancel_ride(user.get("role"), user.get("ref_id"), ride)
+    return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event,
+                                                 "can_cancel": can_cancel, "areas": AREAS})

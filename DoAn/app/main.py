@@ -14,7 +14,7 @@ from db import trace
 from db.repo import CassandraDb
 from db.trace import TraceStore
 from domain.tz import now_vn
-from routes import admin_accounts, admin_catalog, auth as auth_routes, customer as customer_routes, driver as driver_routes
+from routes import admin_accounts, admin_catalog, auth as auth_routes, customer as customer_routes, driver as driver_routes, rides as rides_routes
 from routes.deps import AuthRedirect, auth_redirect_handler, optional_user, render
 
 
@@ -81,6 +81,7 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
     app.include_router(admin_catalog.router)
     app.include_router(customer_routes.router)
     app.include_router(driver_routes.router)
+    app.include_router(rides_routes.router)
     return app
 
 

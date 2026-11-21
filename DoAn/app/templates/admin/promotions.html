@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Khuyến mãi{% endblock %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h1 class="h4 mb-0">Khuyến mãi</h1>
+    <a class="btn btn-sm btn-primary" href="/admin/promotions/new">Thêm mã</a>
+  </div>
+  <p class="text-muted small">Quét toàn bảng nhỏ (APP16), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Cột <code>cities</code> là kiểu <code>set&lt;text&gt;</code>: thêm/bớt từng phần tử bằng <code>cities = cities + {...}</code> / <code>- {...}</code> (T11), không ghi đè cả tập. Mã đã có lượt dùng thì không xóa được.</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead><tr><th>Mã</th><th>Mô tả</th><th>Giảm %</th><th>Tối đa</th><th>Cước tối thiểu</th><th>Đã dùng</th><th>Hiệu lực</th><th>Thành phố (set)</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="font-monospace">{{ r.promo_code }}</td>
+          <td>{{ r.description }}</td>
+          <td>{{ r.discount_percent }}</td>
+          <td>{{ '{:,.0f}'.format(r.max_discount or 0) }}</td>
+          <td>{{ '{:,.0f}'.format(r.min_fare or 0) }}</td>
+          <td>{{ r.used_count }} / {{ r.usage_limit }}</td>
+          <td class="small">{{ r.valid_from }}<br>{{ r.valid_to }}</td>
+          <td>
+            {% for c in (r.cities or []) %}
+              <form method="post" action="/admin/promotions/{{ r.promo_code }}/cities/remove" class="d-inline">
+                <input type="hidden" name="city" value="{{ c }}">
+                <button class="btn btn-sm btn-outline-secondary py-0" type="submit" title="Bỏ {{ c }}">{{ c }} &times;</button>
+              </form>
+            {% endfor %}
+            <form method="post" action="/admin/promotions/{{ r.promo_code }}/cities/add" class="d-inline-flex gap-1 mt-1">
+              <input class="form-control form-control-sm" style="width: 5rem" name="city" placeholder="DN" maxlength="5" required>
+              <button class="btn btn-sm btn-outline-primary" type="submit">Thêm</button>
+            </form>
+          </td>
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary" href="/admin/promotions/{{ r.promo_code }}/edit">Sửa</a>
+            <form method="post" action="/admin/promotions/{{ r.promo_code }}/delete" class="d-inline">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="text-muted">Chưa có mã khuyến mãi.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

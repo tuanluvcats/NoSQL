@@ -1,0 +1,16 @@
+{% macro errors_box(errors) %}
+  {% if errors %}
+    <div class="alert alert-danger" role="alert">
+      <ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro field(name, label, value, readonly=False, type="text", hint="", required=True) %}
+  <div class="mb-3">
+    <label class="form-label" for="f_{{ name }}">{{ label }}</label>
+    <input class="form-control" id="f_{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+           {% if readonly %}readonly{% endif %} {% if required %}required{% endif %}>
+    {% if hint %}<div class="form-text">{{ hint }}</div>{% endif %}
+  </div>
+{% endmacro %}

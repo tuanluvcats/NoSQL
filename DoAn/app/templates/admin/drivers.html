@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Tài xế{% endblock %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h1 class="h4 mb-0">Tài xế</h1>
+    <a class="btn btn-sm btn-primary" href="/admin/drivers/new">Thêm tài xế</a>
+  </div>
+  <p class="text-muted small">Quét toàn bảng nhỏ (APP03), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Chỉ xóa được tài xế OFFLINE, chưa có chuyến, xe hay tài khoản. Trạng thái do luồng nhận chuyến quản lý, không sửa ở đây.</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead><tr><th>Mã</th><th>Họ tên</th><th>Số bằng lái</th><th>Điện thoại</th><th>Điểm</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="font-monospace">{{ r.driver_id }}</td>
+          <td>{{ r.full_name }}</td>
+          <td class="font-monospace">{{ r.license_number }}</td>
+          <td>{{ r.phone }}</td>
+          <td>{{ r.rating }}</td>
+          <td>{{ r.status }}</td>
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary" href="/admin/drivers/{{ r.driver_id }}/edit">Sửa</a>
+            <form method="post" action="/admin/drivers/{{ r.driver_id }}/delete" class="d-inline">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-muted">Chưa có tài xế.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

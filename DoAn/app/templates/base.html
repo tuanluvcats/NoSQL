@@ -15,7 +15,13 @@
     <span class="navbar-text small d-flex align-items-center gap-2">
       {% if user %}
         {{ user.full_name or user.username }} ({{ user.role }})
-        {% if user.role in ('ADMIN', 'OPERATOR') %}<a class="btn btn-sm btn-outline-light" href="/admin/accounts">Tài khoản</a>{% endif %}
+        {% if user.role in ('ADMIN', 'OPERATOR') %}
+          <a class="btn btn-sm btn-outline-light" href="/admin/accounts">Tài khoản</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/customers">Khách</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/drivers">Tài xế</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/vehicles">Xe</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/promotions">Khuyến mãi</a>
+        {% endif %}
         <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-light" type="submit">Đăng xuất</button></form>
       {% else %}
         Chưa đăng nhập

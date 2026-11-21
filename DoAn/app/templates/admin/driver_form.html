@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "admin/_form_macros.html" import errors_box, field %}
+{% block title %}{{ 'Thêm' if is_new else 'Sửa' }} tài xế{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">{{ 'Thêm tài xế' if is_new else 'Sửa tài xế ' ~ form.driver_id }}</h1>
+  {{ errors_box(errors) }}
+  <form method="post" action="{{ '/admin/drivers' if is_new else '/admin/drivers/' ~ form.driver_id }}" style="max-width: 560px">
+    {% if is_new %}{{ field('driver_id', 'Mã tài xế', form.driver_id, hint='Dạng DRV_...: chữ in hoa, số, gạch dưới') }}{% endif %}
+    {{ field('full_name', 'Họ tên', form.full_name) }}
+    {{ field('license_number', 'Số bằng lái', form.license_number, hint='Đúng 12 chữ số') }}
+    {{ field('phone', 'Điện thoại', form.phone, hint='10 chữ số, bắt đầu bằng 0') }}
+    {% if is_new %}<p class="text-muted small">Tài xế mới có trạng thái OFFLINE và điểm 5.0.</p>{% endif %}
+    <button class="btn btn-primary" type="submit">Lưu</button>
+    <a class="btn btn-link" href="/admin/drivers">Hủy</a>
+  </form>
+{% endblock %}

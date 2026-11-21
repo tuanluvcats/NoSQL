@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "admin/_form_macros.html" import errors_box, field %}
+{% block title %}{{ 'Thêm' if is_new else 'Sửa' }} khuyến mãi{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">{{ 'Thêm mã khuyến mãi' if is_new else 'Sửa mã khuyến mãi ' ~ form.promo_code }}</h1>
+  {{ errors_box(errors) }}
+  <form method="post" action="{{ '/admin/promotions' if is_new else '/admin/promotions/' ~ form.promo_code }}" style="max-width: 560px">
+    {% if is_new %}{{ field('promo_code', 'Mã', form.promo_code, hint='3-20 ký tự chữ in hoa hoặc số') }}{% endif %}
+    {{ field('description', 'Mô tả', form.description, required=False) }}
+    {{ field('discount_percent', 'Giảm (%)', form.discount_percent, type='number', hint='1 đến 100') }}
+    {{ field('max_discount', 'Giảm tối đa (đồng)', form.max_discount, type='number') }}
+    {{ field('min_fare', 'Cước tối thiểu (đồng)', form.min_fare, type='number') }}
+    {% if is_new %}
+      {{ field('cities', 'Thành phố áp dụng', form.cities, required=False, hint='Mã cách nhau bằng dấu phẩy, ví dụ HCM, HN. Sau đó thêm/bớt từng thành phố ở trang danh sách.') }}
+    {% else %}
+      <p class="text-muted small">Thành phố áp dụng: {{ form.cities or '(trống)' }}. Thêm/bớt ở trang danh sách (thao tác set riêng).</p>
+    {% endif %}
+    {{ field('usage_limit', 'Giới hạn lượt dùng', form.usage_limit, type='number', hint='Không nhỏ hơn số lượt đã dùng') }}
+    {{ field('valid_from', 'Hiệu lực từ (giờ VN)', form.valid_from, type='datetime-local') }}
+    {{ field('valid_to', 'Hiệu lực đến (giờ VN)', form.valid_to, type='datetime-local') }}
+    <button class="btn btn-primary" type="submit">Lưu</button>
+    <a class="btn btn-link" href="/admin/promotions">Hủy</a>
+  </form>
+{% endblock %}

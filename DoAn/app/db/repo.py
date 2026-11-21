@@ -33,6 +33,18 @@ def _fmt(v, limit: int = 200) -> str:
     return s if len(s) <= limit else s[: limit - 3] + "..."
 
 
+_SECRET_COLS = frozenset({"password_hash"})
+
+
+def _redact_param(p) -> str:
+    """Không để mật khẩu đã băm hiện ra ở panel CQL (tham số T01)."""
+    return "***" if isinstance(p, str) and p.startswith("pbkdf2_sha256$") else _fmt(p)
+
+
+def _redact_row(row: dict) -> dict:
+    return {k: ("***" if k in _SECRET_COLS else v) for k, v in row.items()}
+
+
 class CassandraDb:
     def __init__(self, session, keyspace: str, consistency_name: str = "LOCAL_QUORUM"):
         self.session = session
@@ -57,7 +69,7 @@ class CassandraDb:
         params = list(params)
         entry = trace.TraceEntry(
             name=name, code=code, q=q, table=table, cql=cql,
-            params=[_fmt(p) for p in params],
+            params=[_redact_param(p) for p in params],
             partition_key={col: _fmt(params[i]) for col, i in pk if i < len(params)},
             consistency=self.consistency_name, kind=kind, applied=None, current=None,
             row_count=0, elapsed_ms=0.0, error=None,
@@ -81,7 +93,7 @@ class CassandraDb:
         if kind == "lwt":
             if rows and "[applied]" in rows[0]:
                 entry.applied = bool(rows[0]["[applied]"])
-                cur = {k: v for k, v in rows[0].items() if k != "[applied]"}
+                cur = _redact_row({k: v for k, v in rows[0].items() if k != "[applied]"})
                 entry.current = cur or None
             entry.row_count = len(rows)
         else:

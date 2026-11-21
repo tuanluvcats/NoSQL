@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
@@ -14,7 +14,8 @@ from db import trace
 from db.repo import CassandraDb
 from db.trace import TraceStore
 from domain.tz import now_vn
-from routes.deps import render
+from routes import admin_accounts, auth as auth_routes
+from routes.deps import AuthRedirect, auth_redirect_handler, optional_user, render
 
 
 def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI:
@@ -55,6 +56,8 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
 
     app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="static")
 
+    app.add_exception_handler(AuthRedirect, auth_redirect_handler)
+
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(request: Request, exc: StarletteHTTPException):
         return render(request, "error.html", {"status": exc.status_code, "detail": exc.detail},
@@ -70,9 +73,11 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
         return {"status": "ok"}
 
     @app.get("/")
-    def home(request: Request):
+    def home(request: Request, user: dict | None = Depends(optional_user)):
         return render(request, "home.html", {})
 
+    app.include_router(auth_routes.router)
+    app.include_router(admin_accounts.router)
     return app
 
 

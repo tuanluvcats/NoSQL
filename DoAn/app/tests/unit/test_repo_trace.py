@@ -167,3 +167,15 @@ def test_trace_store_lru():
     assert st.get(t2)[0].table == "b"
     assert st.get(t3)[0].table == "c"
     assert len({t1, t2, t3}) == 3
+
+
+def test_trace_redacts_password_hash_in_params_and_lwt_current():
+    """LWT T01 bị từ chối trả cả dòng cũ (có password_hash); trace hiển thị trên trang nên phải che."""
+    old_hash = "8d969eef" * 8
+    s = FakeSession([[{"[applied]": False, "username": "cust001", "password_hash": old_hash}]])
+    db = CassandraDb(s, "ride_booking_test")
+    r = db.lwt("T01_account_insert", ["cust001", "pbkdf2_sha256$100000$ab$cd", "CUSTOMER", "C", "n", "now"])
+    (e,) = trace.current()
+    assert "pbkdf2_sha256" not in " ".join(e.params)
+    assert e.current["password_hash"] == "***" and e.current["username"] == "cust001"
+    assert r.current["password_hash"] == old_hash  # service vẫn nhận giá trị thật

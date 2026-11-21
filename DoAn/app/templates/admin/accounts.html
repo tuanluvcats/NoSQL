@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Tài khoản{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Quản lý tài khoản</h1>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Mã tham chiếu</th><th>Họ tên</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for a in accounts %}
+        <tr>
+          <td class="font-monospace">{{ a.username }}</td>
+          <td>{{ a.role }}</td>
+          <td class="font-monospace">{{ a.ref_id or '-' }}</td>
+          <td>{{ a.full_name }}</td>
+          <td>{% if a.is_active %}<span class="badge text-bg-success">Hoạt động</span>{% else %}<span class="badge text-bg-danger">Đã khóa</span>{% endif %}</td>
+          <td class="small">{{ a.last_login_at or '-' }}</td>
+          <td>
+            {% if a.is_active %}
+              <form method="post" action="/admin/accounts/{{ a.username }}/lock" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Khóa</button>
+              </form>
+            {% else %}
+              <form method="post" action="/admin/accounts/{{ a.username }}/unlock" class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Mở khóa</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

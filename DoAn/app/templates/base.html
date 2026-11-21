@@ -12,8 +12,16 @@
 <nav class="navbar navbar-expand navbar-dark bg-dark mb-3">
   <div class="container">
     <a class="navbar-brand" href="/">Đặt xe công nghệ</a>
-    <span class="navbar-text small">
-      {% if user %}{{ user.full_name or user.username }} ({{ user.role }}){% else %}Chưa đăng nhập{% endif %}
+    <span class="navbar-text small d-flex align-items-center gap-2">
+      {% if user %}
+        {{ user.full_name or user.username }} ({{ user.role }})
+        {% if user.role in ('ADMIN', 'OPERATOR') %}<a class="btn btn-sm btn-outline-light" href="/admin/accounts">Tài khoản</a>{% endif %}
+        <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-light" type="submit">Đăng xuất</button></form>
+      {% else %}
+        Chưa đăng nhập
+        <a class="btn btn-sm btn-outline-light" href="/login">Đăng nhập</a>
+        <a class="btn btn-sm btn-outline-light" href="/register">Đăng ký</a>
+      {% endif %}
     </span>
   </div>
 </nav>
@@ -25,6 +33,9 @@
   {% endif %}
   {% if maintenance %}
     <div class="alert alert-warning" role="alert">Đang ở chế độ bảo trì: các thao tác ghi bị chặn.</div>
+  {% endif %}
+  {% if flash %}
+    <div class="alert alert-{{ 'success' if flash.ok else 'danger' }}" role="alert">{{ flash.message }}</div>
   {% endif %}
   {% block content %}{% endblock %}
   <hr>

@@ -50,3 +50,21 @@ def raw(cassandra_session, test_keyspace):
 @pytest.fixture
 def db(raw, test_keyspace):
     return CassandraDb(raw, test_keyspace)
+
+
+@pytest.fixture
+def client_factory(settings_test, db):
+    """client_factory(clock=None) -> TestClient gắn vào keyspace _test (mỗi client có cookie session riêng)."""
+    from fastapi.testclient import TestClient
+
+    from main import create_app
+
+    def make(clock=None):
+        return TestClient(create_app(settings_test, db=db, clock=clock), follow_redirects=False)
+
+    return make
+
+
+def login(client, username, password="123456"):
+    """POST /login; trả response (303 nếu thành công)."""
+    return client.post("/login", data={"username": username, "password": password})

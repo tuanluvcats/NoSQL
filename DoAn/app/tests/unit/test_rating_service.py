@@ -34,7 +34,9 @@ def test_rate_order_when_driver_offline_and_no_area_write():
     calls = dict(db.calls)
     assert calls["APP14_ride_rate"] == (NOW, "RIDE_1010", "CUST003")
     assert calls["T09_rating_insert"] == ("DRV_555", NOW, "RIDE_1010", "CUST003", 5.0, "Tốt", ["Lịch sự"])
-    assert calls["T09_driver_rating"] == (4.67, "DRV_555")  # làm tròn 2 chữ số
+    ts, avg, drv = calls["T09_driver_rating"]
+    assert (avg, drv) == (4.67, "DRV_555")  # làm tròn 2 chữ số
+    assert isinstance(ts, int) and ts > 1_600_000_000_000_000  # micro giây: USING TIMESTAMP
     assert set(WRITE_MATRIX["rate"]["required"]) <= _written_tables(db)
 
 
@@ -44,8 +46,22 @@ def test_rate_updates_every_area_row_with_rounded_average():
     r = rating.rate_ride(db, "RIDE_1010", "CUST003", 5, "", [], NOW)
     assert r.ok
     assert db.names()[-3:] == ["A06_area_find_driver", "A06_area_find_driver", "T09_area_rating"]
-    assert db.calls[-1] == ("T09_area_rating", (4.67, "HCM", "Q3", "DRV_555"))
+    name, (ts, *rest) = db.calls[-1]
+    assert name == "T09_area_rating" and tuple(rest) == (4.67, "HCM", "Q3", "DRV_555")
+    assert ts == dict(db.calls)["T09_driver_rating"][0]  # cùng một mốc thời gian cho cả hai bảng
     assert set(WRITE_MATRIX["rate"]["optional"]) <= _written_tables(db)
+
+
+def test_rating_timestamp_taken_before_average_read(monkeypatch):
+    """Hai khách đánh giá cùng lúc: lệnh đọc AVG sau thấy nhiều dữ liệu hơn, nên phải mang timestamp lớn hơn để thắng
+    (last-write-wins của Cassandra), dù lệnh ghi của nó tới sau hay trước."""
+    import services.rating as mod
+    seq = iter([100, 200])
+    monkeypatch.setattr(mod, "_micros", lambda: next(seq))
+    db1, db2 = _db(), _db()
+    rating.rate_ride(db1, "RIDE_1010", "CUST003", 5, "", [], NOW)
+    rating.rate_ride(db2, "RIDE_1010", "CUST003", 5, "", [], NOW)
+    assert dict(db1.calls)["T09_driver_rating"][0] < dict(db2.calls)["T09_driver_rating"][0]
 
 
 def test_rate_lwt_not_applied_means_already_rated_and_no_rating_row():

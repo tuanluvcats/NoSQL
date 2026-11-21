@@ -7,6 +7,8 @@ upsert nên cập nhật mù sẽ sinh dòng ma khiến tài xế offline "hiệ
 """
 from __future__ import annotations
 
+import time
+
 from datetime import datetime
 from typing import Sequence
 
@@ -16,6 +18,11 @@ from services.driver_presence import find_area_rows
 from services.result import ActionResult
 
 MAX_COMMENT = 500
+
+
+def _micros() -> int:
+    """Thời điểm hiện tại theo micro giây (đơn vị của USING TIMESTAMP)."""
+    return time.time_ns() // 1000
 
 
 def _invalid_input(stars, comment, tags) -> str | None:
@@ -54,11 +61,14 @@ def rate_ride(db, ride_id: str, customer_id: str, stars: int, comment: str, tags
 
     try:
         db.exec("T09_rating_insert", [driver_id, now, ride_id, customer_id, float(stars), comment, tags])
+        # Mốc thời gian lấy NGAY TRƯỚC lệnh đọc AVG: lệnh đọc sau thấy nhiều đánh giá hơn nên có timestamp lớn hơn và
+        # thắng theo last-write-wins, kể cả khi lệnh ghi của nó tới Cassandra trước (chống ghi đè điểm cũ).
+        ts = _micros()
         agg = db.one("A05_rating_avg", [driver_id]) or {}
         avg = round(float(agg["diem_tb"]), 2)
-        db.exec("T09_driver_rating", [avg, driver_id])
+        db.exec("T09_driver_rating", [ts, avg, driver_id])
         for row in find_area_rows(db, driver_id):  # không có dòng (tài xế offline) thì không ghi: chống dòng ma
-            db.exec("T09_area_rating", [avg, row["city"], row["district"], driver_id])
+            db.exec("T09_area_rating", [ts, avg, row["city"], row["district"], driver_id])
     except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
         return ActionResult(True, "partial", f"Đã ghi nhận đánh giá nhưng cập nhật điểm lỗi ({type(e).__name__}). "
                             "Hãy dùng Kiểm tra nhất quán.", ride_id=ride_id)

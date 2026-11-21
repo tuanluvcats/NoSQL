@@ -196,7 +196,7 @@ def test_pk_columns_are_partition_keys_and_complete():
 def test_pk_positions_known_examples():
     assert STATEMENTS["B01_account_get"].pk == (("username", 0),)
     assert STATEMENTS["T02_login_touch"].pk == (("username", 1),)
-    assert STATEMENTS["T09_driver_rating"].pk == (("driver_id", 1),)
+    assert STATEMENTS["T09_driver_rating"].pk == (("driver_id", 2),)  # USING TIMESTAMP ? đứng trước SET
     assert STATEMENTS["T07_promo_use"].pk == (("promo_code", 1),)
     assert STATEMENTS["T05_ride_accept"].pk == (("ride_id", 5),)
     assert STATEMENTS["T04_ride_insert"].pk == (("ride_id", 0),)

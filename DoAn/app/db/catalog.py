@@ -162,7 +162,7 @@ _add("APP08_driver_release", "APP08", "Q7", "drivers", "lwt",
 _add("APP09_driver_offline", "APP09", "Q5", "drivers", "lwt",
      "UPDATE drivers SET status = 'OFFLINE' WHERE driver_id = ? IF status = 'AVAILABLE'")
 _add("T09_driver_rating", "T09", "Q15", "drivers", "write",
-     "UPDATE drivers SET rating = ? WHERE driver_id = ?")
+     "UPDATE drivers USING TIMESTAMP ? SET rating = ? WHERE driver_id = ?")
 
 # ---- Q4 vehicles (+ MV vehicles_by_plate) ----
 _add("B04_vehicle_get", "B04", "Q4", "vehicles", "read",
@@ -197,7 +197,7 @@ _add("T03_area_insert", "T03", "Q5", "drivers_by_area", "write",
 _add("T05_area_delete", "T05", "Q5", "drivers_by_area", "write",
      "DELETE FROM drivers_by_area WHERE city = ? AND district = ? AND driver_id = ?")
 _add("T09_area_rating", "T09", "Q5", "drivers_by_area", "write",
-     "UPDATE drivers_by_area SET rating = ? WHERE city = ? AND district = ? AND driver_id = ?")
+     "UPDATE drivers_by_area USING TIMESTAMP ? SET rating = ? WHERE city = ? AND district = ? AND driver_id = ?")
 _add("T03_location_insert", "T03", "Q14", "driver_locations", "write",
      "INSERT INTO driver_locations (driver_id, day, ts, lat, lng, speed_kmh) VALUES (?, ?, ?, ?, ?, ?)")
 _add("B13_location_latest", "B13", "Q14", "driver_locations", "read",

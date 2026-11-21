@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from starlette.responses import RedirectResponse
 
-from config import AREAS, PAYMENT_METHODS
+from config import AREAS, PAYMENT_METHODS, RATING_TAGS
 from domain.auth import CUSTOMER, can_cancel_ride, can_view_ride
 from domain.ids import new_ride_id
 from domain.tz import fmt_vn
@@ -90,4 +90,5 @@ def ride_detail(request: Request, ride_id: str, user: dict = Depends(current_use
     event = pop_trace_event(request)  # sự kiện do route POST đặt (book/accept/start/complete/cancel)
     can_cancel = can_cancel_ride(user.get("role"), user.get("ref_id"), ride)
     return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event,
-                                                 "can_cancel": can_cancel, "areas": AREAS})
+                                                 "can_cancel": can_cancel, "areas": AREAS,
+                                                 "rating_tags": RATING_TAGS})

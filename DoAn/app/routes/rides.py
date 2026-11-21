@@ -4,14 +4,15 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from starlette.responses import RedirectResponse
 
-from domain.auth import DRIVER, effective_role
+from domain.auth import CUSTOMER, DRIVER, effective_role
 from routes.deps import current_user, flash_trace, get_db, require_role, set_flash
 from routes.driver import _float_or_none
-from services import rides_flow
+from services import rating, rides_flow
 from services.result import ActionResult
 
 router = APIRouter()
 _DRIVER = Depends(require_role(DRIVER))
+_CUSTOMER = Depends(require_role(CUSTOMER))
 
 
 def _finish(request: Request, user: dict, ride_id: str, result: ActionResult, event: str | None):
@@ -64,3 +65,16 @@ def cancel(request: Request, ride_id: str, reason: str = Form(""), user: dict = 
     actor = {"role": effective_role(user.get("role")), "ref_id": user.get("ref_id"), "username": user.get("username")}
     result = rides_flow.cancel_ride(get_db(request), ride_id, actor, reason, request.app.state.clock())
     return _finish(request, user, ride_id, result, "cancel")
+
+
+@router.post("/rides/{ride_id}/rate")
+def rate(request: Request, ride_id: str, stars: str = Form(""), comment: str = Form(""),
+         tags: list[str] = Form(default=[]), user: dict = _CUSTOMER):
+    """Khách đánh giá chuyến của chính mình (customer_id lấy từ phiên). Số sao không phải số nguyên thì coi là 0."""
+    try:
+        stars_v = int(stars.strip())
+    except ValueError:
+        stars_v = 0
+    result = rating.rate_ride(get_db(request), ride_id, user["ref_id"], stars_v, comment, tags,
+                              request.app.state.clock())
+    return _finish(request, user, ride_id, result, "rate")

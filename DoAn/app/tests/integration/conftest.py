@@ -7,6 +7,7 @@ from config import CASSANDRA_DIR, Settings, UnsafeKeyspaceError, assert_test_key
 from db.migrate import create_test_keyspace, ensure_app_migration
 from db.repo import CassandraDb
 from db.session import connect
+from services.rating import backfill_rated_at
 from tools.seed import load_seed, reset_tables
 
 
@@ -44,6 +45,7 @@ def raw(cassandra_session, test_keyspace):
     reset_tables(cassandra_session, test_keyspace)
     load_seed(cassandra_session, test_keyspace, CASSANDRA_DIR / "02_data.cql")
     cassandra_session.set_keyspace(test_keyspace)
+    backfill_rated_at(CassandraDb(cassandra_session, test_keyspace))  # D9: seed đã đánh giá thì không cho đánh giá lại
     return cassandra_session
 
 

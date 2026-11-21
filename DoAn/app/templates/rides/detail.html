@@ -48,6 +48,30 @@
       <div class="col-auto"><button class="btn btn-outline-danger" type="submit">Hủy chuyến</button></div>
     </form>
   {% endif %}
+  {% if user and user.role == 'CUSTOMER' and ride.customer_id == user.ref_id and ride.status == 'COMPLETED' and not ride.rated_at %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/rate" class="border rounded p-3 mb-3">
+      <h2 class="h6">Đánh giá tài xế</h2>
+      <div class="mb-2">
+        <label class="form-label small mb-0" for="rate-stars">Số sao</label>
+        <select class="form-select form-select-sm w-auto" id="rate-stars" name="stars" required>
+          {% for n in [5, 4, 3, 2, 1] %}<option value="{{ n }}">{{ n }} sao</option>{% endfor %}
+        </select>
+      </div>
+      <div class="mb-2">
+        {% for t in rating_tags %}
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="tags" id="tag-{{ loop.index }}" value="{{ t }}">
+            <label class="form-check-label small" for="tag-{{ loop.index }}">{{ t }}</label>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="mb-2">
+        <label class="form-label small mb-0" for="rate-comment">Nhận xét (tối đa 500 ký tự)</label>
+        <textarea class="form-control form-control-sm" id="rate-comment" name="comment" rows="2" maxlength="500"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">Gửi đánh giá</button>
+    </form>
+  {% endif %}
   <h2 class="h6">status_history</h2>
   <ul class="font-monospace small">
     {% for t, s in history %}<li>{{ fmt(t) }} &rarr; {{ s }}</li>{% else %}<li>-</li>{% endfor %}

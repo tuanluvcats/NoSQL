@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Kết nối Cassandra{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-2">Kết nối cơ sở dữ liệu (mục 8)</h1>
+  <p class="text-muted small">Ứng dụng nói chuyện với Cassandra bằng driver Python (<code>cassandra-driver</code>) qua giao thức CQL native.
+    Thông tin dưới đây đọc từ cấu hình và từ <code>system.local</code> / <code>system_schema</code> của chính máy chủ đang kết nối.
+    Trang này không hiển thị khóa phiên hay mật khẩu.</p>
+  {% if info.error %}
+    <div class="alert alert-danger" role="alert"><strong>Không đọc được thông tin từ Cassandra.</strong> {{ info.error }}</div>
+  {% endif %}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <h2 class="h6">Cấu hình ứng dụng</h2>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <tr><th class="w-50">Host (contact point)</th><td class="font-monospace">{{ info.hosts | join(', ') }}</td></tr>
+          <tr><th>Port</th><td class="font-monospace">{{ info.port }}</td></tr>
+          <tr><th>Datacenter cấu hình (local_dc)</th><td class="font-monospace">{{ info.local_dc }}</td></tr>
+          <tr><th>Keyspace</th><td class="font-monospace">{{ info.keyspace }}</td></tr>
+          <tr><th>protocol_version</th><td class="font-monospace">{{ info.protocol_version if info.protocol_version is not none else '-' }}</td></tr>
+          <tr><th>Consistency</th><td class="font-monospace">{{ info.consistency or '-' }} (LWT dùng LOCAL_SERIAL)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-6">
+      <h2 class="h6">Máy chủ trả lời (system.local)</h2>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <tr><th class="w-50">release_version</th><td class="font-monospace">{{ info.release_version or '-' }}</td></tr>
+          <tr><th>cql_version</th><td class="font-monospace">{{ info.cql_version or '-' }}</td></tr>
+          <tr><th>cluster_name</th><td class="font-monospace">{{ info.cluster_name or '-' }}</td></tr>
+          <tr><th>data_center</th><td class="font-monospace">{{ info.data_center or '-' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <h2 class="h6 mt-2">Schema của keyspace <code>{{ info.keyspace }}</code></h2>
+  <table class="table table-sm table-bordered w-auto">
+    <tbody>
+      <tr><th>Số bảng</th><td>{{ info.tables | length }}</td>
+          <td class="small font-monospace">{{ info.tables | join(', ') }}</td></tr>
+      <tr><th>Materialized view</th><td>{{ info.views | length }}</td>
+          <td class="small font-monospace">{{ info.views | join(', ') or '-' }}</td></tr>
+      <tr><th>Cột <code>rides.rated_at</code> (06_app_migration.cql)</th>
+          <td>{% if info.migration_ok %}<span class="badge text-bg-success">đã có</span>{% else %}<span class="badge text-bg-danger">chưa có</span>{% endif %}</td>
+          <td class="small text-muted">{% if info.migration_ok %}Ứng dụng đánh giá một lần bằng LWT <code>IF rated_at = null</code>.{% else %}Chạy <code>python -m tools.migrate --keyspace {{ info.keyspace }}</code>.{% endif %}</td></tr>
+    </tbody>
+  </table>
+{% endblock %}

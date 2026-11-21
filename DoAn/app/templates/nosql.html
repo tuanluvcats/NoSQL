@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}NoSQL minh họa{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-2">Đặc trưng NoSQL của Cassandra</h1>
+  <p class="text-muted small">Trang này gom các điểm cần trình bày: truy vấn phải theo partition key, ghi nhiều bảng phi chuẩn hóa,
+    collection (map, list, set) và thứ tự clustering. Mọi lệnh CQL trang này vừa chạy hiện ở panel cuối trang.</p>
+  <ul class="small">
+    <li><a href="#missing-pk">Truy vấn thiếu partition key (Q17 / A10)</a></li>
+    <li><a href="#collections">Collection: map, list, set</a></li>
+    <li><a href="#desc">Clustering DESC</a></li>
+    <li><a href="#matrix">Ma trận ghi (CASSANDRA.MD §3.7)</a></li>
+    <li><a href="#catalog">Catalog câu CQL của ứng dụng</a></li>
+  </ul>
+
+  <h2 class="h5 mt-4" id="missing-pk">Truy vấn thiếu partition key (Q17 / A10)</h2>
+  <p class="small">Bảng <code>rides</code> có partition key là <code>ride_id</code>. Câu dưới lọc theo <code>customer_id</code>, không phải partition key
+    và không có index, nên Cassandra từ chối chạy.</p>
+  <pre class="border rounded p-2 bg-light small mb-2"><code>{{ missing_pk_cql }}</code></pre>
+  <form method="post" action="/nosql/missing-pk" class="mb-2">
+    <button class="btn btn-sm btn-danger" type="submit">Chạy câu truy vấn thiếu partition key</button>
+  </form>
+  {% if missing_pk %}
+    <div class="alert alert-danger py-2 mb-2" role="alert">
+      <div class="small fw-bold">Thông báo lỗi nguyên văn từ Cassandra:</div>
+      <code class="d-block text-break">{{ missing_pk.message }}</code>
+    </div>
+    <div class="alert alert-info py-2 small">
+      <strong>Giải thích.</strong> Cassandra chỉ tìm nhanh được khi biết partition key, vì khóa này quyết định dòng nằm ở node nào.
+      Lọc theo <code>customer_id</code> buộc phải quét mọi partition trên mọi node (<em>data filtering</em>), nên bị từ chối.
+      Thêm <code>ALLOW FILTERING</code> sẽ chạy được nhưng chậm dần theo kích thước bảng, vì vậy ứng dụng không dùng.
+      Cách đúng của thiết kế theo truy vấn: ghi thêm bảng phi chuẩn hóa <code>rides_by_customer</code> (partition key <code>customer_id</code>, B07),
+      mỗi lần đặt xe ghi cả hai bảng.
+    </div>
+  {% endif %}
+
+  <h2 class="h5 mt-4" id="collections">Collection: map, list, set</h2>
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <h3 class="h6">map&lt;timestamp, text&gt;: <code>rides.status_history</code></h3>
+      <p class="text-muted small">B06 / A08 cho RIDE_1007. Mỗi trạng thái là một phần tử, khóa là thời điểm (+07).</p>
+      <table class="table table-sm table-bordered font-monospace small">
+        <thead><tr><th>Thời điểm</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+        {% if demo.B06 and demo.B06.status_history %}
+          {% for t, s in demo.B06.status_history | dictsort %}<tr><td>{{ t | dmy_hms }}</td><td>{{ s }}</td></tr>{% endfor %}
+        {% else %}<tr><td colspan="2">-</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-lg-4">
+      <h3 class="h6">list&lt;text&gt;: <code>ratings_by_driver.tags</code></h3>
+      <p class="text-muted small">A08 cho DRV_551 (<code>LIMIT 2</code>) và đánh giá của RIDE_1007. List giữ thứ tự và cho phép trùng.</p>
+      <table class="table table-sm table-bordered font-monospace small">
+        <thead><tr><th>Chuyến</th><th>Sao</th><th>tags</th></tr></thead>
+        <tbody>
+        {% for r in demo.A08_rating_tags %}<tr><td>{{ r.ride_id }}</td><td>{{ r.stars }}</td><td>{{ (r.tags or []) | join(', ') }}</td></tr>{% endfor %}
+        {% for r in demo.A08_rating_ride_1007 %}<tr><td>{{ r.ride_id }} (DRV_552)</td><td>{{ r.stars }}</td><td>{{ (r.tags or []) | join(', ') }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-lg-4">
+      <h3 class="h6">set&lt;text&gt;: <code>promotions.cities</code></h3>
+      <p class="text-muted small">A08 với <code>promo_code IN (...)</code>. Set không trùng, tự sắp xếp; thêm/bớt bằng <code>cities + {'DN'}</code> / <code>cities - {'DN'}</code> (T11).</p>
+      <table class="table table-sm table-bordered font-monospace small">
+        <thead><tr><th>Mã</th><th>cities</th></tr></thead>
+        <tbody>
+        {% for r in demo.A08_promo_cities %}<tr><td>{{ r.promo_code }}</td><td>{{ '{' }}{{ (r.cities or []) | sort | join(', ') }}{{ '}' }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 class="h5 mt-4" id="desc">Clustering DESC</h2>
+  <p class="small"><code>rides_by_driver_month</code> khai báo <code>CLUSTERING ORDER BY (requested_at DESC, ride_id ASC)</code>, nên chuyến mới nhất nằm trước
+    ngay trong lúc lưu, không cần <code>ORDER BY</code> khi đọc (B10, DRV_551, tháng 202610).</p>
+  <table class="table table-sm table-bordered w-auto font-monospace small">
+    <thead><tr><th>requested_at (+07)</th><th>ride_id</th><th>Giá</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    {% for r in demo.B10 %}<tr><td>{{ r.requested_at | dmy_hms }}</td><td>{{ r.ride_id }}</td><td>{{ r.fare | vnd }}</td><td>{{ r.status }}</td></tr>
+    {% else %}<tr><td colspan="4">-</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="h5 mt-4" id="matrix">Ma trận ghi (CASSANDRA.MD §3.7)</h2>
+  <p class="small">Mỗi sự kiện nghiệp vụ ghi vào nhiều bảng (phi chuẩn hóa). Ô bắt buộc phải đủ; ô tùy chọn chỉ ghi khi có liên quan.</p>
+  <table class="table table-sm table-bordered small">
+    <thead><tr><th>Sự kiện</th><th>Bảng bắt buộc</th><th>Bảng tùy chọn</th></tr></thead>
+    <tbody>
+    {% for event, spec in matrix_rows.items() %}
+      <tr><td class="font-monospace">{{ event }}</td>
+          <td class="font-monospace">{{ spec.required | join(', ') }}</td>
+          <td class="font-monospace">{{ spec.optional | join(', ') or '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="h5 mt-4" id="catalog">Catalog câu CQL của ứng dụng ({{ catalog | length }} câu)</h2>
+  <p class="small">Sinh tự động từ <code>STATEMENTS</code>. Mã B/A/T/Q theo CASSANDRA.MD; cột partition key suy ra từ chính câu CQL.</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle small">
+      <thead><tr><th>Mã</th><th>Q</th><th>Bảng</th><th>Partition key</th><th>Loại</th><th>CQL</th></tr></thead>
+      <tbody>
+      {% for s in catalog %}
+        <tr><td><span class="badge text-bg-secondary">{{ s.code }}</span> <span class="text-muted">{{ s.name }}</span></td><td>{{ s.q }}</td>
+            <td class="font-monospace">{{ s.table }}</td><td class="font-monospace">{{ s.pk }}</td><td>{{ s.kind }}</td>
+            <td><code class="text-break">{{ s.cql }}</code></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

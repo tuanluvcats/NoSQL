@@ -25,17 +25,22 @@
           <a class="btn btn-sm btn-outline-light" href="/admin/areas">Khu vực</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/consistency">Nhất quán</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/backup">Backup</a>
+          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
         {% elif user.role == 'CUSTOMER' %}
           <a class="btn btn-sm btn-outline-light" href="/customer/book">Đặt xe</a>
           <a class="btn btn-sm btn-outline-light" href="/customer/rides">Lịch sử</a>
+          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
         {% elif user.role == 'DRIVER' %}
           <a class="btn btn-sm btn-outline-light" href="/driver">Nhận chuyến</a>
           <a class="btn btn-sm btn-outline-light" href="/driver/income">Thu nhập</a>
           <a class="btn btn-sm btn-outline-light" href="/driver/ratings">Đánh giá</a>
+          <a class="btn btn-sm btn-outline-light" href="/nosql">NoSQL</a>
         {% endif %}
+        <a class="btn btn-sm btn-outline-light" href="/connection">Kết nối</a>
         <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-light" type="submit">Đăng xuất</button></form>
       {% else %}
         Chưa đăng nhập
+        <a class="btn btn-sm btn-outline-light" href="/connection">Kết nối</a>
         <a class="btn btn-sm btn-outline-light" href="/login">Đăng nhập</a>
         <a class="btn btn-sm btn-outline-light" href="/register">Đăng ký</a>
       {% endif %}

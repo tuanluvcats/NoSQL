@@ -30,10 +30,13 @@ Toàn bộ Task 0 đến 14 của kế hoạch đã làm xong và commit (Task 1
 | 12 | Trang Kết nối (mục 8), trang NoSQL minh họa, kịch bản T01 đến T12 end-to-end | `9989227` |
 | 13 | README, kịch bản demo, HANDOFF, `tests/unit/test_docs.py` | `245fdbf` |
 | 14 | Vòng chỉnh cuối: trang chủ theo keyspace thật và vai trò, trang 500 ẩn lỗi (log + `APP_DEBUG=1`), menu trang 503 đúng người dùng, `tools.check_env --help` | `b78ecd0` |
+| 15 | Đánh giá đồng thời: `UPDATE ... USING TIMESTAMP ?` cho `drivers.rating` và `drivers_by_area.rating` (lần đọc AVG sau thắng) | `26c6888` |
+| 16 | Rà UX: menu gom nhóm theo mục 9.1-9.4 và tô trang đang mở, trang chủ không lặp nút của menu, nhãn tài xế "Trạng thái"/"Chuyến chờ", xác nhận khi xóa/khóa, tài xế BUSY có link tới chuyến đang chạy; `tests/unit/test_ux_rules.py` | `a17eee9` |
+| 17 | `app/docs/hoi_dap_bao_ve.md`: hỏi đáp khi bảo vệ (Jinja2, FastAPI, LWT, phi chuẩn hóa, last-write-wins) kèm nguồn tham khảo | commit docs kế tiếp |
 
 Kết quả test ở HEAD `9989227` (trước Task 13): 545 test xanh trên Cassandra 3.11.4 (cài trực tiếp, Windows 11, Python 3.12.7), cả chế độ reset thường và đầy đủ.
 Task 13 thêm `tests/unit/test_docs.py` (13 test), tổng 558 test (325 unit, 233 integration). Task 14 thêm test cho trang chủ, trang 500/503, `APP_DEBUG` và `check_env`
-(số test cuối xem dòng tóm tắt pytest khi chạy lại).
+(số test cuối xem dòng tóm tắt pytest khi chạy lại). Sau Task 16: 611 test xanh (chạy đủ unit và integration, 2026-11-22).
 
 ## 2. Đang dở
 
@@ -127,4 +130,6 @@ e5b230f fix(app): trang lỗi 404/403/500 hiển thị đúng người dùng đ�
 9989227 feat(app): trang Kết nối, trang NoSQL minh họa và kịch bản T01–T12 end-to-end
 245fdbf docs(app): README, kịch bản demo, HANDOFF
 b78ecd0 fix(app): vòng chỉnh cuối (trang chủ theo vai trò, trang 500 ẩn lỗi, menu 503, check_env --help)
+26c6888 fix(app): cập nhật điểm tài xế bằng USING TIMESTAMP để hai lượt đánh giá đồng thời không ghi đè điểm cũ
+a17eee9 fix(app): rà UX (menu gom nhóm, bỏ nút trùng, xác nhận xóa/khóa, link chuyến đang chạy cho tài xế)
 ```

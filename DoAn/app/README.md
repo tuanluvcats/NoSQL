@@ -9,7 +9,7 @@ của `DoAn/CASSANDRA.MD`.
 danh sách bảng bị ghi so với ma trận ghi §3.7). Các bảng phi chuẩn hóa luôn khớp với `rides` nhờ quy tắc "ghi `rides` bằng LWT trước, chỉ khi
 `[applied] = True` mới ghi các bảng phụ", và có công cụ Kiểm tra nhất quán để đối chiếu hoặc ghi lại (reconcile).
 
-Tài liệu đi kèm: [`docs/kich_ban_demo.md`](docs/kich_ban_demo.md) (kịch bản demo 5 đến 7 phút), `HANDOFF.md` ở gốc repo (trạng thái công việc,
+Tài liệu đi kèm: [`docs/kich_ban_demo.md`](docs/kich_ban_demo.md) (kịch bản demo 5 đến 7 phút), [`docs/hoi_dap_bao_ve.md`](docs/hoi_dap_bao_ve.md) (hỏi đáp khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa), `HANDOFF.md` ở gốc repo (trạng thái công việc,
 việc còn mở), thiết kế và kế hoạch ở `docs/superpowers/specs/` và `docs/superpowers/plans/` (gốc repo).
 
 ## Tính năng theo vai trò
@@ -254,6 +254,9 @@ kế hoạch triển khai). Kết quả cuối của kịch bản vẫn khớp `
 - **T09 (đánh giá) bổ sung.** 05 chỉ chèn `ratings_by_driver` rồi `UPDATE drivers SET rating`. Ứng dụng thêm (a) LWT `IF rated_at = null` trên `rides` để
   mỗi chuyến chỉ đánh giá một lần (cần cột `rated_at`, xem phần 06) và (b) cập nhật cả `drivers_by_area.rating`, nhưng **chỉ khi** tài xế đang có dòng ở khu vực nào
   đó (không tạo "dòng ma" cho tài xế offline). Chỉ khách của chuyến, chuyến COMPLETED mới đánh giá được; điểm trung bình làm tròn 2 chữ số.
+  (c) Hai lệnh `UPDATE ... SET rating` dùng `USING TIMESTAMP ?` với mốc lấy ngay trước lệnh đọc `AVG`: hai khách đánh giá cùng một tài xế cùng lúc thì
+  lần đọc sau (thấy nhiều đánh giá hơn) luôn thắng theo last-write-wins, dù lệnh ghi của nó tới Cassandra trước. Mốc lấy từ đồng hồ của tiến trình ứng dụng,
+  nên chỉ đúng tuyệt đối khi chạy một tiến trình (đúng với bản demo).
 - **T10 (hủy) – D3.** 05 dùng `IF status IN ('REQUESTED', 'ACCEPTED')`. Ứng dụng dùng `IF status = <trạng thái vừa đọc>` (tối đa 2 vòng đọc lại), vì khi chuyến vừa
   đổi REQUESTED sang ACCEPTED giữa lúc đọc và lúc ghi thì cần biết để trả tài xế về AVAILABLE. Lệnh `IF ... IN` vẫn chạy được trên 3.11.4 (xem phần probe).
 - **T11 (set `cities`) và CRUD – D13.** Thêm/bớt phần tử set dùng `... IF EXISTS`; CRUD dùng `IF NOT EXISTS` khi tạo, `IF EXISTS` khi sửa, vì `INSERT`/`UPDATE` của
@@ -309,7 +312,7 @@ routes/              FastAPI router (khai báo bằng def vì driver chạy đ�
 templates/ static/   Jinja2 và Bootstrap 5 (đã chép sẵn vào static/, không cần mạng)
 tools/               check_env, setup_db, migrate, seed (CLI chỉ dùng driver, không cần cqlsh)
 tests/               unit (domain, service với FakeDb) và integration (Cassandra thật, keyspace _test)
-docs/                kich_ban_demo.md
+docs/                kich_ban_demo.md, hoi_dap_bao_ve.md
 ```
 
 ## Giới hạn đã biết

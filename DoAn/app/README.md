@@ -214,6 +214,22 @@ nodetool clearsnapshot -- ride_booking_test
 docker exec nosql-cassandra-doan nodetool clearsnapshot -- ride_booking_test
 ```
 
+## Đo hiệu năng và so sánh baseline
+
+```powershell
+.venv\Scripts\python -m tools.bench --out docs/ket_qua_do_hieu_nang.md
+```
+
+Chạy trên keyspace riêng `ride_booking_bench_test` (tạo lại schema + seed, thêm 20.000 chuyến giả), không đụng `ride_booking`. Thời gian lấy từ
+query trace phía server. Kết quả một lần đo trên máy phát triển (Cassandra 3.11.4 một node), chi tiết ở
+[`docs/ket_qua_do_hieu_nang.md`](docs/ket_qua_do_hieu_nang.md):
+
+- Đọc theo partition key: khoảng 1-2 ms, không đổi khi bảng tăng từ 36 lên 20.036 chuyến. Truy vấn thiếu partition key (`ALLOW FILTERING`): 3,6 ms lên 99,8 ms.
+- LWT khoảng 9,8 ms so với 0,8 ms của ghi thường (Paxos), nên ứng dụng chỉ dùng LWT ở chỗ có tranh chấp.
+- Tranh nhận chuyến, 8 luồng, 30 vòng: cách "đọc rồi UPDATE" cho từ 2 người thắng trở lên ở cả 30 vòng; LWT đúng 1 người thắng ở cả 30 vòng.
+
+Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 89 % (3.050 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
+
 ## Đối chiếu barem chấm điểm
 
 Thang điểm: mục 8 (0,5đ) và bốn ý của mục 9 (mỗi ý 0,5đ). Cột "Test" là file test chính, chạy bằng marker ở cột cuối.

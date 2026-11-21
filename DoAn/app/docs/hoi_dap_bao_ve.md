@@ -109,6 +109,13 @@ Khoảng 600 test pytest: unit test dùng `FakeDb` (không cần Cassandra) ki�
 `ride_booking_test` (từ chối chạy nếu tên không kết thúc bằng `_test`) gồm kịch bản T01-T12 cho đúng kết quả `CASSANDRA.MD` §8 (khách trả 65000,
 điểm tài xế 4.67), hai luồng tranh nhận cùng chuyến, hai luồng tranh mã khuyến mãi, backup rồi restore.
 
+### Có số liệu chứng minh không, so với cách làm nào?
+
+Có (`docs/ket_qua_do_hieu_nang.md`, đo bằng query trace phía server). Baseline là cách làm thông thường "đọc trạng thái rồi UPDATE": 8 tài xế cùng nhận
+một chuyến, 30 vòng, cả 30 vòng đều có từ 2 người "nhận được"; dùng LWT thì cả 30 vòng đúng 1 người. Cái giá: LWT khoảng 9,8 ms so với 0,8 ms của ghi
+thường. Đọc theo partition key giữ khoảng 1 ms khi bảng tăng lên 20.036 chuyến, còn `ALLOW FILTERING` tăng từ 3,6 ms lên khoảng 100 ms: đó là lý do thiết
+kế theo truy vấn. Độ bao phủ mã của bộ test là 89 %.
+
 ## 5. Tài liệu tham khảo đã đối chiếu
 
 - DataStax, *How do I accomplish lightweight transactions with linearizable consistency?* (Cassandra 3.0): LWT giới hạn trong một partition, 4 vòng mạng,

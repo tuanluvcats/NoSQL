@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from config import Settings
+from config import Settings, ensure_utf8_stdout
 from db.session import connect
 
 
@@ -43,6 +43,7 @@ def check_env(settings: Settings) -> dict:
 
 
 def main() -> int:
+    ensure_utf8_stdout()
     settings = Settings.from_env()
     r = check_env(settings)
     print(f"Máy chủ: {','.join(settings.hosts)}:{settings.port}  keyspace: {settings.keyspace}")

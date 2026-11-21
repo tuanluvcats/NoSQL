@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from config import CASSANDRA_DIR, Settings
+from config import CASSANDRA_DIR, Settings, ensure_utf8_stdout
 from db.migrate import apply_schema, ensure_app_migration
 from tools.seed import load_seed, reset_tables, seed_statements
 
@@ -22,6 +22,7 @@ def setup_db(session, keyspace: str, *, seed: bool, schema_path: Path) -> dict[s
 
 
 def main(argv=None) -> int:
+    ensure_utf8_stdout()
     ap = argparse.ArgumentParser(description="Tạo keyspace/bảng/MV, tùy chọn nạp seed")
     ap.add_argument("--keyspace", required=True)
     ap.add_argument("--seed", action="store_true", help="TRUNCATE 13 bảng rồi nạp seed")

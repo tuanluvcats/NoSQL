@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -34,6 +35,14 @@ BASE_TABLES = (
     "payments_by_city_date",
     "promotions",
 )
+
+def ensure_utf8_stdout() -> None:
+    """Để CLI in được tiếng Việt trên console Windows cp1252 mà không cần đặt biến môi trường."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
 
 _KEYSPACE_RE = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
 

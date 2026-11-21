@@ -7,7 +7,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from config import BASE_TABLES, CASSANDRA_DIR, Settings
+from config import BASE_TABLES, CASSANDRA_DIR, Settings, ensure_utf8_stdout
 from db.cql_loader import split_statements
 
 EXPECTED_SEED_COUNTS = {
@@ -78,6 +78,7 @@ def load_seed(session, keyspace: str, path: Path) -> dict[str, int]:
 
 
 def main(argv=None) -> int:
+    ensure_utf8_stdout()
     ap = argparse.ArgumentParser(description="TRUNCATE 13 bảng rồi nạp seed từ 02_data.cql")
     ap.add_argument("--keyspace", required=True)
     ap.add_argument("--yes", action="store_true", help="xác nhận xóa dữ liệu hiện có")

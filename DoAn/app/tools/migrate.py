@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import argparse
 
-from config import Settings
+from config import Settings, ensure_utf8_stdout
 
 
 def main(argv=None) -> int:
+    ensure_utf8_stdout()
     ap = argparse.ArgumentParser(description="Áp dụng 06_app_migration (ALTER TABLE rides ADD rated_at)")
     ap.add_argument("--keyspace", required=True)
     args = ap.parse_args(argv)

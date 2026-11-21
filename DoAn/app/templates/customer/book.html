@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "admin/_form_macros.html" import errors_box %}
+{% from "_lwt.html" import lwt_badge %}
+{% block title %}Đặt xe{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Đặt xe</h1>
+  {{ errors_box(errors) }}
+  {% if lwt_current %}
+    <div class="mb-3">
+      <span class="small text-muted">Bản ghi hiện có (LWT bị từ chối):</span>
+      {{ lwt_badge(false, lwt_current) }}
+    </div>
+  {% endif %}
+  {% if quote %}
+    <div class="alert alert-info" role="status">
+      Cước: <strong>{{ '{:,.0f}'.format(quote.fare) | replace(',', '.') }}đ</strong>
+      &middot; Giảm: <strong>{{ '{:,.0f}'.format(quote.discount) | replace(',', '.') }}đ</strong>
+      &middot; Phải trả: <strong>{{ '{:,.0f}'.format(quote.payable) | replace(',', '.') }}đ</strong>
+      {% if quote.promo_error %}<br><span class="text-danger">Mã khuyến mãi không áp dụng được: {{ quote.promo_error }}</span>{% endif %}
+      <div class="small text-muted">Báo giá chỉ đọc (B16), chưa giữ lượt khuyến mãi.</div>
+    </div>
+  {% endif %}
+  <form method="post" action="/customer/book" style="max-width: 640px">
+    <input type="hidden" name="ride_id" value="{{ form.ride_id }}">
+    <p class="small text-muted">Mã chuyến: <code>{{ form.ride_id }}</code> (gửi lại form không tạo chuyến thứ hai)</p>
+    <div class="row">
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_city">Thành phố</label>
+        <select class="form-select" id="f_city" name="city">
+          {% for c in areas %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_district">Quận</label>
+        <select class="form-select" id="f_district" name="district">
+          {% for c, ds in areas.items() %}{% for d in ds %}
+            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d }}</option>
+          {% endfor %}{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="f_pickup_address">Điểm đón</label>
+      <input class="form-control" id="f_pickup_address" name="pickup_address" maxlength="200" required value="{{ form.pickup_address }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="f_destination_address">Điểm đến</label>
+      <input class="form-control" id="f_destination_address" name="destination_address" maxlength="200" required value="{{ form.destination_address }}">
+    </div>
+    <div class="row">
+      <div class="col-sm-4 mb-3">
+        <label class="form-label" for="f_distance_km">Quãng đường (km)</label>
+        <input class="form-control" id="f_distance_km" name="distance_km" inputmode="decimal" required value="{{ form.distance_km }}">
+      </div>
+      <div class="col-sm-4 mb-3">
+        <label class="form-label" for="f_payment_method">Thanh toán</label>
+        <select class="form-select" id="f_payment_method" name="payment_method">
+          {% for m in methods %}<option value="{{ m }}" {{ 'selected' if form.payment_method == m }}>{{ m }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4 mb-3">
+        <label class="form-label" for="f_promo_code">Mã khuyến mãi</label>
+        <input class="form-control" id="f_promo_code" name="promo_code" value="{{ form.promo_code }}">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Đặt xe</button>
+    <button class="btn btn-outline-secondary" type="submit" formaction="/customer/book/quote">Xem báo giá</button>
+  </form>
+  <script>
+    (function () {
+      var city = document.getElementById('f_city'), dist = document.getElementById('f_district');
+      function sync() {
+        var first = null;
+        Array.prototype.forEach.call(dist.options, function (o) {
+          var show = o.getAttribute('data-city') === city.value;
+          o.hidden = !show; o.disabled = !show;
+          if (show && first === null) first = o;
+        });
+        if (dist.selectedOptions[0] && dist.selectedOptions[0].disabled && first) dist.value = first.value;
+      }
+      city.addEventListener('change', sync); sync();
+    })();
+  </script>
+{% endblock %}

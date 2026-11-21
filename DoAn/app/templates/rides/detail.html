@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Chuyến {{ ride.ride_id }}{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Chi tiết chuyến <code>{{ ride.ride_id }}</code>
+    <span class="badge text-bg-secondary">{{ ride.status }}</span></h1>
+  <table class="table table-sm table-bordered w-auto">
+    <tbody>
+    {% for col in ['customer_id', 'customer_name', 'customer_phone', 'driver_id', 'driver_name', 'vehicle_plate',
+                   'city', 'district', 'pickup_address', 'destination_address', 'distance_km', 'fare', 'discount',
+                   'promo_code', 'payment_method', 'status', 'ride_date', 'requested_at', 'accepted_at',
+                   'started_at', 'completed_at', 'cancel_reason', 'rated_at'] %}
+      <tr><th class="font-monospace">{{ col }}</th>
+          <td class="font-monospace">{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <h2 class="h6">status_history</h2>
+  <ul class="font-monospace small">
+    {% for t, s in history %}<li>{{ fmt(t) }} &rarr; {{ s }}</li>{% else %}<li>-</li>{% endfor %}
+  </ul>
+{% endblock %}

@@ -46,7 +46,7 @@
   {% block content %}{% endblock %}
   <hr>
   {% if last_trace %}
-    {{ panel("CQL của thao tác vừa rồi", last_trace) }}
+    {{ panel("CQL của thao tác vừa rồi", last_trace, last_written, last_matrix) }}
   {% endif %}
   {{ panel("CQL đã chạy", trace, written, matrix) }}
 </main>

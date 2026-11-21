@@ -108,7 +108,13 @@ def render(request: Request, template: str, ctx: dict | None = None, status_code
     ctx.setdefault("db_error", getattr(request.app.state, "db_error", None))
     ctx["event"] = event
     ctx["written"] = trace.tables_written(entries)
-    ctx["matrix"] = matrix_check(entries, event)
+    if last_trace is not None and event:
+        # trang sau redirect (PRG): ma trận ghi áp cho thao tác POST vừa rồi, không áp cho các lệnh đọc của trang này
+        ctx["last_written"] = trace.tables_written(last_trace)
+        ctx["last_matrix"] = matrix_check(last_trace, event)
+        ctx["matrix"] = None
+    else:
+        ctx["matrix"] = matrix_check(entries, event)
     return templates.TemplateResponse(request, template, ctx, status_code=status_code)
 
 

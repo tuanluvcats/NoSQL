@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Chuyến chờ{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Chuyến đang chờ tài xế</h1>
+  <form method="get" action="/driver/waiting" class="row g-2 mb-3" style="max-width: 640px">
+    <div class="col-sm-4">
+      <select class="form-select" id="w_city" name="city" aria-label="Thành phố">
+        {% for c in areas %}<option value="{{ c }}" {{ 'selected' if city == c }}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-4">
+      <select class="form-select" id="w_district" name="district" aria-label="Quận">
+        {% for c, ds in areas.items() %}{% for d in ds %}
+          <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if district == d and city == c }}>{{ d }}</option>
+        {% endfor %}{% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <input class="form-control" type="date" name="day" value="{{ day }}" aria-label="Ngày">
+    </div>
+    <div class="col-sm-1"><button class="btn btn-outline-primary" type="submit">Xem</button></div>
+  </form>
+  <p class="text-muted small">Lấy từ <code>rides_by_area_date</code> (city, district, ride_date) lọc <code>status = 'REQUESTED'</code>, ngày tính theo +07:00.
+    Quận đã chọn: <code>{{ city }} / {{ district }}</code> ngày <code>{{ day }}</code>.</p>
+  {% if rides %}
+    <table class="table table-sm table-bordered align-middle">
+      <thead><tr><th>Giờ yêu cầu</th><th>Mã chuyến</th><th>Điểm đón</th><th>Điểm đến</th><th>Cước</th><th>Thanh toán</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rides %}
+        <tr>
+          <td>{{ fmt(r.requested_at) }}</td>
+          <td><code>{{ r.ride_id }}</code></td>
+          <td>{{ r.pickup_address }}</td>
+          <td>{{ r.destination_address }}</td>
+          <td>{{ '{:,.0f}'.format(r.fare) | replace(',', '.') }}đ</td>
+          <td>{{ r.payment_method }}</td>
+          <td>
+            <form method="post" action="/rides/{{ r.ride_id }}/accept" class="d-inline">
+              <button class="btn btn-sm btn-success" type="submit">Nhận chuyến</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-muted">Không có chuyến nào đang chờ.</p>
+  {% endif %}
+  <a class="btn btn-outline-secondary btn-sm" href="/driver">Về trang tài xế</a>
+  <script>
+    (function () {
+      var city = document.getElementById('w_city'), dist = document.getElementById('w_district');
+      function sync() {
+        var first = null;
+        Array.prototype.forEach.call(dist.options, function (o) {
+          var show = o.getAttribute('data-city') === city.value;
+          o.hidden = !show; o.disabled = !show;
+          if (show && first === null) first = o;
+        });
+        if (dist.selectedOptions[0] && dist.selectedOptions[0].disabled && first) dist.value = first.value;
+      }
+      city.addEventListener('change', sync); sync();
+    })();
+  </script>
+{% endblock %}

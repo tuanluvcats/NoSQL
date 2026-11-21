@@ -118,9 +118,22 @@ def render(request: Request, template: str, ctx: dict | None = None, status_code
     return templates.TemplateResponse(request, template, ctx, status_code=status_code)
 
 
-def flash_trace(request: Request) -> None:
-    """Giữ trace của request POST hiện tại để trang sau redirect hiển thị 'CQL của thao tác vừa rồi'."""
+def flash_trace(request: Request, event: str | None = None) -> None:
+    """Giữ trace của request POST hiện tại để trang sau redirect hiển thị 'CQL của thao tác vừa rồi'.
+
+    `event` (khóa của WRITE_MATRIX) cho trang sau biết áp ma trận ghi nào; trang đó lấy bằng `pop_trace_event`."""
     entries = trace.current()
     store = request.app.state.trace_store
     if entries:
         request.session["trace_token"] = store.put(entries)
+        if event:
+            request.session["trace_event"] = event
+        else:
+            request.session.pop("trace_event", None)
+
+
+def pop_trace_event(request: Request) -> str | None:
+    """Sự kiện của thao tác POST vừa rồi (chỉ có khi còn trace_token tương ứng)."""
+    session = _session(request)
+    event = session.pop("trace_event", None) if session else None
+    return event if session and "trace_token" in session else None

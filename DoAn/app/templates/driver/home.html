@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "admin/_form_macros.html" import errors_box %}
+{% block title %}Tài xế{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-3">Tài xế {{ driver.full_name }} <code>{{ driver.driver_id }}</code>
+    <span class="badge {{ 'text-bg-success' if driver.status == 'AVAILABLE' else ('text-bg-warning' if driver.status == 'BUSY' else 'text-bg-secondary') }}">{{ driver.status }}</span></h1>
+  {{ errors_box(errors) }}
+  <p class="text-muted">Điểm đánh giá: {{ driver.rating }} &middot; Chỉ có mặt ở một khu vực trong <code>drivers_by_area</code>.</p>
+
+  <h2 class="h6">Khu vực đang nhận chuyến</h2>
+  {% if areas %}
+    <ul>
+      {% for a in areas %}
+        <li><code>{{ a.city }} / {{ a.district }}</code>, biển số <code>{{ a.vehicle_plate }}</code></li>
+      {% endfor %}
+    </ul>
+    <a class="btn btn-outline-primary btn-sm mb-3" href="/driver/waiting?city={{ areas[0].city }}&amp;district={{ areas[0].district }}">Xem chuyến chờ ở khu vực này</a>
+  {% else %}
+    <p class="text-muted">Chưa có (tài xế đang OFFLINE hoặc đang BUSY).</p>
+  {% endif %}
+
+  {% if driver.status != 'BUSY' %}
+  <form method="post" action="/driver/online" style="max-width: 560px" class="mb-3">
+    <div class="row">
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_city">Thành phố</label>
+        <select class="form-select" id="f_city" name="city">
+          {% for c in area_config %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_district">Quận</label>
+        <select class="form-select" id="f_district" name="district">
+          {% for c, ds in area_config.items() %}{% for d in ds %}
+            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d }}</option>
+          {% endfor %}{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="f_plate">Biển số xe</label>
+      <input class="form-control" id="f_plate" name="plate" required value="{{ form.plate }}">
+      <div class="form-text">Được kiểm tra qua materialized view <code>vehicles_by_plate</code> (xe phải thuộc về bạn).</div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_lat">Vĩ độ (tùy chọn)</label>
+        <input class="form-control" id="f_lat" name="lat" inputmode="decimal" value="{{ form.lat }}">
+      </div>
+      <div class="col-sm-6 mb-3">
+        <label class="form-label" for="f_lng">Kinh độ (tùy chọn)</label>
+        <input class="form-control" id="f_lng" name="lng" inputmode="decimal" value="{{ form.lng }}">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Bật nhận chuyến</button>
+  </form>
+  <script>
+    (function () {
+      var city = document.getElementById('f_city'), dist = document.getElementById('f_district');
+      function sync() {
+        var first = null;
+        Array.prototype.forEach.call(dist.options, function (o) {
+          var show = o.getAttribute('data-city') === city.value;
+          o.hidden = !show; o.disabled = !show;
+          if (show && first === null) first = o;
+        });
+        if (dist.selectedOptions[0] && dist.selectedOptions[0].disabled && first) dist.value = first.value;
+      }
+      city.addEventListener('change', sync); sync();
+    })();
+  </script>
+  {% else %}
+    <div class="alert alert-warning">Đang có chuyến (BUSY): chưa thể bật hoặc tắt nhận chuyến.</div>
+  {% endif %}
+
+  <form method="post" action="/driver/offline" class="mb-3">
+    <button class="btn btn-outline-danger" type="submit" {{ 'disabled' if driver.status == 'BUSY' }}>Tắt nhận chuyến</button>
+  </form>
+{% endblock %}

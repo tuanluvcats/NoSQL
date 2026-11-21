@@ -8,7 +8,7 @@ from config import AREAS, PAYMENT_METHODS
 from domain.auth import CUSTOMER, can_view_ride
 from domain.ids import new_ride_id
 from domain.tz import fmt_vn
-from routes.deps import current_user, flash_trace, get_db, render, require_role, set_flash
+from routes.deps import current_user, flash_trace, get_db, pop_trace_event, render, require_role, set_flash
 from services import booking
 from services.booking import BookingForm
 
@@ -87,5 +87,5 @@ def ride_detail(request: Request, ride_id: str, user: dict = Depends(current_use
     if not can_view_ride(user.get("role"), user.get("ref_id"), ride):
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem chuyến này.")
     history = sorted(((t, s) for t, s in (ride.get("status_history") or {}).items()), key=lambda x: x[0])
-    event = "book" if "trace_token" in request.scope.get("session", {}) else None
+    event = pop_trace_event(request) or ("book" if "trace_token" in request.scope.get("session", {}) else None)
     return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event})

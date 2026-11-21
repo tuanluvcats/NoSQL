@@ -24,6 +24,7 @@
           <a class="btn btn-sm btn-outline-light" href="/admin/reports">Báo cáo</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/areas">Khu vực</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/consistency">Nhất quán</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/backup">Backup</a>
         {% elif user.role == 'CUSTOMER' %}
           <a class="btn btn-sm btn-outline-light" href="/customer/book">Đặt xe</a>
           <a class="btn btn-sm btn-outline-light" href="/customer/rides">Lịch sử</a>
@@ -48,7 +49,7 @@
     </div>
   {% endif %}
   {% if maintenance %}
-    <div class="alert alert-warning" role="alert">Đang ở chế độ bảo trì: các thao tác ghi bị chặn.</div>
+    <div class="alert alert-warning" role="alert">Đang ở chế độ bảo trì (đang khôi phục dữ liệu): các thao tác ghi bị chặn.</div>
   {% endif %}
   {% if flash %}
     <div class="alert alert-{{ 'success' if flash.ok else 'danger' }}" role="alert">{{ flash.message }}</div>

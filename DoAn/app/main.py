@@ -14,8 +14,11 @@ from db import trace
 from db.repo import CassandraDb
 from db.trace import TraceStore
 from domain.tz import now_vn
-from routes import admin_accounts, admin_catalog, admin_tools, auth as auth_routes, customer as customer_routes, driver as driver_routes, rides as rides_routes, reports as reports_routes
+from routes import admin_accounts, admin_backup, admin_catalog, admin_tools, auth as auth_routes, customer as customer_routes, driver as driver_routes, rides as rides_routes, reports as reports_routes
 from routes.deps import AuthRedirect, auth_redirect_handler, optional_user, render
+from services.maintenance import MaintenanceState
+
+RESTORE_PATH = "/admin/backup/restore"
 
 
 def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI:
@@ -44,7 +47,7 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
     app.state.clock = clock or now_vn
     app.state.db = injected_db
     app.state.db_error = None
-    app.state.maintenance = False
+    app.state.maintenance = MaintenanceState()
     app.state.trace_store = TraceStore(maxlen=100)
 
     app.add_middleware(SessionMiddleware, secret_key=settings.secret_key, same_site="lax")
@@ -52,6 +55,11 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
     @app.middleware("http")
     async def _start_trace(request: Request, call_next):
         trace.start_request()
+        # chế độ bảo trì (đang restore): chặn mọi ghi, trừ chính lệnh restore (tự kiểm cờ bằng state.begin())
+        if (app.state.maintenance.active and request.method not in ("GET", "HEAD", "OPTIONS")
+                and request.url.path != RESTORE_PATH):
+            return render(request, "error.html", {"status": 503, "detail": "Đang khôi phục dữ liệu, vui lòng thử lại sau ít phút."},
+                          status_code=503)
         return await call_next(request)
 
     app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="static")
@@ -80,6 +88,7 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
     app.include_router(admin_accounts.router)
     app.include_router(admin_catalog.router)
     app.include_router(admin_tools.router)
+    app.include_router(admin_backup.router)
     app.include_router(customer_routes.router)
     app.include_router(driver_routes.router)
     app.include_router(rides_routes.router)

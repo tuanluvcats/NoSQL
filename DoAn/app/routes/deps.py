@@ -104,7 +104,7 @@ def render(request: Request, template: str, ctx: dict | None = None, status_code
     ctx.setdefault("last_trace", last_trace)
     ctx.setdefault("user", getattr(request.state, "user", None))
     ctx.setdefault("flash", session.pop("flash", None) if session else None)
-    ctx.setdefault("maintenance", bool(getattr(request.app.state, "maintenance", False)))
+    ctx.setdefault("maintenance", bool(getattr(getattr(request.app.state, "maintenance", None), "active", False)))
     ctx.setdefault("db_error", getattr(request.app.state, "db_error", None))
     ctx["event"] = event
     ctx["written"] = trace.tables_written(entries)

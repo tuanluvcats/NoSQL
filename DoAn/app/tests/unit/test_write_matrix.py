@@ -26,3 +26,15 @@ def test_additions_over_section_3_7():
 def test_cancel_optional_matches_parenthesized_cells():
     assert set(WRITE_MATRIX['cancel']['optional']) == {
         'rides_by_driver_month', 'drivers', 'drivers_by_area', 'promotions'}
+
+
+def test_every_event_has_vietnamese_label():
+    from domain.write_matrix import EVENT_LABELS
+    assert set(EVENT_LABELS) == set(WRITE_MATRIX)
+    assert EVENT_LABELS["book"] == "Đặt xe"
+
+
+def test_panel_does_not_show_internal_identifier():
+    from pathlib import Path
+    text = (Path(__file__).resolve().parents[2] / "templates" / "_trace.html").read_text(encoding="utf-8")
+    assert "WRITE_MATRIX" not in text

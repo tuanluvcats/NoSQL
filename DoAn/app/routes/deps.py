@@ -7,11 +7,14 @@ from starlette.templating import Jinja2Templates
 
 from config import APP_DIR
 from db import trace
+from db.trace import fmt_param
 from domain.auth import effective_role
-from domain.write_matrix import WRITE_MATRIX
+from domain.write_matrix import EVENT_LABELS, WRITE_MATRIX
 from services.accounts import load_active_user
 
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
+templates.env.globals["event_labels"] = EVENT_LABELS
+templates.env.filters["cql"] = fmt_param  # tham số CQL hiển thị theo cú pháp CQL, không theo repr của Python
 
 
 def get_db(request: Request):

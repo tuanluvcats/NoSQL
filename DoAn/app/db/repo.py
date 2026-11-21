@@ -9,6 +9,7 @@ from typing import Protocol, Sequence
 from cassandra import ConsistencyLevel
 
 from db import trace
+from db.trace import fmt_param
 from db.catalog import STATEMENTS, Stmt
 
 
@@ -29,7 +30,7 @@ class Db(Protocol):
 
 
 def _fmt(v, limit: int = 200) -> str:
-    s = v if isinstance(v, str) else str(v)
+    s = v if isinstance(v, str) else fmt_param(v)
     return s if len(s) <= limit else s[: limit - 3] + "..."
 
 

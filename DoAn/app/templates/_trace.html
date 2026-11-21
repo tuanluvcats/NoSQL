@@ -22,7 +22,7 @@
           <td class="small">{{ e.consistency }}{% if e.kind == 'lwt' %}<br>serial: LOCAL_SERIAL{% endif %}</td>
           <td>
             <code class="d-block text-break">{{ e.cql }}</code>
-            {% if e.params %}<small class="text-muted font-monospace text-break">? = {{ e.params | join(', ') }}</small>{% endif %}
+            {% if e.params %}<small class="text-muted font-monospace text-break">? = {{ e.params | map('cql') | join(', ') }}</small>{% endif %}
           </td>
           <td>
             {% if e.error %}
@@ -56,7 +56,7 @@
       {% endif %}
       {% if matrix %}
         <p class="mb-0 matrix-check">
-          So với WRITE_MATRIX[{{ matrix.event }}]:
+          So với ma trận ghi của sự kiện “{{ event_labels.get(matrix.event, matrix.event) }}”:
           {% if matrix.complete %}
             <span class="badge text-bg-success">đủ</span>
           {% else %}

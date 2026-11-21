@@ -84,7 +84,7 @@ def test_customer_cancels_own_ride_via_http_and_sees_trace(client_factory, db):
     page = c.get("/rides/RIDE_1024")
     assert page.status_code == 200 and "CANCELLED" in page.text and "Đổi ý" in page.text
     assert "CQL của thao tác vừa rồi" in page.text and "T10" in page.text
-    assert "WRITE_MATRIX[cancel]" in page.text and "thiếu" not in page.text
+    assert "ma trận ghi của sự kiện “Hủy chuyến”" in page.text and "thiếu" not in page.text
     again = c.post("/rides/RIDE_1024/cancel", data={"reason": "lần hai"})
     assert again.status_code == 303  # không còn hủy được: flash lỗi, không đổi gì
     assert db.one("B06_ride_get", ["RIDE_1024"])["cancel_reason"] == "Đổi ý"
@@ -98,14 +98,14 @@ def test_driver_flow_over_http_start_then_complete(client_factory, db):
     r = d.post("/rides/RIDE_1023/start", data={"lat": "10.827", "lng": "106.688"})
     assert r.status_code == 303 and r.headers["location"] == "/rides/RIDE_1023"
     page = d.get("/rides/RIDE_1023")
-    assert "ONGOING" in page.text and "WRITE_MATRIX[start]" in page.text and "thiếu" not in page.text
+    assert "ONGOING" in page.text and "ma trận ghi của sự kiện “Bắt đầu chuyến”" in page.text and "thiếu" not in page.text
     assert "/rides/RIDE_1023/complete" in page.text and "drop_district" in page.text
     bad = d.post("/rides/RIDE_1023/complete", data={"drop_district": "XYZ"})
     assert bad.status_code in (303, 400) and _status(db, "RIDE_1023") == "ONGOING"
     r = d.post("/rides/RIDE_1023/complete", data={"drop_district": "TAN_BINH", "lat": "10.8185", "lng": "106.6588"})
     assert r.status_code == 303 and r.headers["location"] == "/rides/RIDE_1023"
     page = d.get("/rides/RIDE_1023")
-    assert "COMPLETED" in page.text and "WRITE_MATRIX[complete]" in page.text and "thiếu" not in page.text
+    assert "COMPLETED" in page.text and "ma trận ghi của sự kiện “Hoàn thành chuyến”" in page.text and "thiếu" not in page.text
     assert db.one("B03_driver_get", ["DRV_556"])["status"] == "AVAILABLE"
 
 

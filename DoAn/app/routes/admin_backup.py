@@ -3,6 +3,8 @@
 Restore: service tự bật chế độ bảo trì (middleware chặn mọi POST khác) và luôn tắt khi xong hoặc lỗi."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Form, Request
 from starlette.responses import RedirectResponse
 
@@ -18,6 +20,16 @@ def _dest(request: Request):
     return request.app.state.settings.backup_dir
 
 
+def _display_dir(path) -> str:
+    """Đường dẫn thư mục backup để hiển thị: tương đối so với thư mục ứng dụng nếu nằm trong đó, không lộ đường dẫn máy chủ."""
+    p = Path(path).resolve()
+    root = Path(__file__).resolve().parents[1]
+    try:
+        return str(p.relative_to(root)) + "\\"
+    except ValueError:
+        return p.name + "\\"
+
+
 def _done(request: Request, ok: bool, message: str):
     set_flash(request, ok, message)
     flash_trace(request)
@@ -31,7 +43,7 @@ def backup_page(request: Request, user: dict = _ADMIN):
         "files": backup.list_backups(_dest(request)),
         "counts": backup.table_counts(db),
         "base_tables": backup.BASE_TABLES,
-        "backup_dir": str(_dest(request)),
+        "backup_dir": _display_dir(_dest(request)),
     })
 
 

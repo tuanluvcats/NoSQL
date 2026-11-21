@@ -41,7 +41,7 @@
           <td class="small font-monospace">{{ info.tables | join(', ') }}</td></tr>
       <tr><th>Materialized view</th><td>{{ info.views | length }}</td>
           <td class="small font-monospace">{{ info.views | join(', ') or '-' }}</td></tr>
-      <tr><th>Cột <code>rides.rated_at</code> (06_app_migration.cql)</th>
+      <tr><th>Cột <code>rides.rated_at</code> (thêm bằng <code>ALTER TABLE</code>)</th>
           <td>{% if info.migration_ok %}<span class="badge text-bg-success">đã có</span>{% else %}<span class="badge text-bg-danger">chưa có</span>{% endif %}</td>
           <td class="small text-muted">{% if info.migration_ok %}Ứng dụng đánh giá một lần bằng LWT <code>IF rated_at = null</code>.{% else %}Chạy <code>python -m tools.migrate --keyspace {{ info.keyspace }}</code>.{% endif %}</td></tr>
     </tbody>

@@ -194,7 +194,7 @@ def test_http_driver_accepts_ride_and_sees_trace(client_factory, db):
     page = c.get("/rides/RIDE_1024")
     assert page.status_code == 200 and "ACCEPTED" in page.text and "DRV_551" in page.text
     assert "CQL của thao tác vừa rồi" in page.text and "APP07" in page.text and "T05" in page.text
-    assert "WRITE_MATRIX[accept]" in page.text and "thiếu" not in page.text
+    assert "ma trận ghi của sự kiện “Nhận chuyến”" in page.text and "thiếu" not in page.text
     assert _status(db, "DRV_551") == "BUSY"
 
 
@@ -256,7 +256,7 @@ def test_http_driver_flow_online_waiting_accept_offline(client_factory, db):
     assert r.status_code == 303 and r.headers["location"] == "/driver"
     home = c.get("/driver")
     assert home.status_code == 200 and "AVAILABLE" in home.text and "TAN_PHU" in home.text
-    assert "WRITE_MATRIX[driver_online]" in home.text and "thiếu" not in home.text
+    assert "ma trận ghi của sự kiện “Tài xế bật nhận chuyến”" in home.text and "thiếu" not in home.text
     wrong = c.post("/driver/online", data={"city": "HCM", "district": "Q1", "plate": "51G-234.56"})
     assert wrong.status_code == 400
     assert driver_presence.find_area_rows(db, "DRV_555") and len(driver_presence.find_area_rows(db, "DRV_555")) == 1

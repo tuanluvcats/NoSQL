@@ -3,7 +3,7 @@
 {% block content %}
   <h1 class="h4 mb-2">Backup và khôi phục dữ liệu (JSON)</h1>
   <p class="text-muted small">Backup đọc từng bảng thật bằng <code>SELECT JSON</code> và lưu thành một file JSON (kèm kiểu cột) trong
-    <code>{{ backup_dir }}</code>. Khôi phục: kiểm toàn bộ file trước, sau đó bật chế độ bảo trì (chặn mọi thao tác ghi khác),
+    thư mục <code>{{ backup_dir }}</code> của ứng dụng. Khôi phục: kiểm toàn bộ file trước, sau đó bật chế độ bảo trì (chặn mọi thao tác ghi khác),
     tạo bản an toàn <code>*_prerestore.json</code>, <code>TRUNCATE</code> 13 bảng rồi <code>INSERT ... JSON</code> lại.
     View <code>vehicles_by_plate</code> không bị ghi trực tiếp, Cassandra tự dựng lại từ <code>vehicles</code>.
     Không dùng <code>nodetool</code>. File backup chứa mật khẩu đã băm nên hãy giữ kín.

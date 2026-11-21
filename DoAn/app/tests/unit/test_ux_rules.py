@@ -94,3 +94,11 @@ def test_busy_driver_sees_link_to_current_ride():
     }
     html = _client("DRIVER", "DRV_1", extra).get("/driver").text
     assert 'href="/rides/RIDE_X"' in html
+
+
+def test_backup_page_does_not_show_absolute_server_path():
+    from pathlib import Path as _P
+    app_root = str(_P(__file__).resolve().parents[2])
+    html = _client("ADMIN").get("/admin/backup").text
+    assert app_root not in html
+    assert "backups" in html

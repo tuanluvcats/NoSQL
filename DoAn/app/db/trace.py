@@ -8,6 +8,32 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 
 
+def _quote(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def fmt_param(v, top: bool = True) -> str:
+    """Giá trị tham số theo cú pháp gần CQL (timestamp, date, map, set, list) để hiển thị trong panel CQL.
+    Chuỗi ở mức ngoài cùng giữ nguyên (dễ đọc), chuỗi nằm trong collection thì đặt trong nháy đơn."""
+    from datetime import date as _date, datetime as _dt
+    if v is None:
+        return "null"
+    if isinstance(v, _dt):
+        ms = v.microsecond // 1000
+        return _quote(v.strftime("%Y-%m-%d %H:%M:%S") + f".{ms:03d}" + (v.strftime("%z") or ""))
+    if isinstance(v, _date):
+        return _quote(v.isoformat())
+    if isinstance(v, dict):
+        return "{" + ", ".join(f"{fmt_param(k, False)}: {fmt_param(x, False)}" for k, x in v.items()) + "}"
+    if isinstance(v, (set, frozenset)):
+        return "{" + ", ".join(sorted(fmt_param(x, False) for x in v)) + "}"
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(fmt_param(x, False) for x in v) + "]"
+    if isinstance(v, str):
+        return v if top else _quote(v)
+    return str(v)
+
+
 @dataclass
 class TraceEntry:
     name: str

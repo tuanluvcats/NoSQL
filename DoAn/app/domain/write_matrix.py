@@ -38,3 +38,16 @@ WRITE_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
         'optional': ('drivers_by_area',),
     },
 }
+
+
+# Tên sự kiện hiển thị trên giao diện (panel CQL), thay cho khóa nội bộ của WRITE_MATRIX.
+EVENT_LABELS: dict[str, str] = {
+    "register": "Đăng ký",
+    "driver_online": "Tài xế bật nhận chuyến",
+    "book": "Đặt xe",
+    "accept": "Nhận chuyến",
+    "start": "Bắt đầu chuyến",
+    "complete": "Hoàn thành chuyến",
+    "cancel": "Hủy chuyến",
+    "rate": "Đánh giá",
+}

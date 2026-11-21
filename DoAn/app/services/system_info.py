@@ -34,6 +34,17 @@ def connection_info(db, settings) -> dict:
     return info
 
 
+def cassandra_version(db) -> str | None:
+    """`release_version` từ system.local (một dòng, không quét bảng) cho trang chủ; None nếu không có DB hoặc lỗi."""
+    if db is None:
+        return None
+    try:
+        row = db.one("SYS_local") or {}
+    except Exception:  # noqa: BLE001 - trang chủ không được sập hay lộ lỗi DB chỉ vì không lấy được phiên bản
+        return None
+    return row.get("release_version")
+
+
 def missing_pk_demo(db) -> str:
     """Chạy câu thiếu partition key (A10) và trả NGUYÊN VĂN thông điệp lỗi do Cassandra trả về."""
     try:

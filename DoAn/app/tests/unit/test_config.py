@@ -35,3 +35,13 @@ def test_guard_accepts_test_keyspace():
 def test_base_tables():
     assert len(BASE_TABLES) == 13
     assert "vehicles_by_plate" not in BASE_TABLES
+
+
+def test_app_debug_defaults_off():
+    assert Settings.from_env({}).debug is False
+
+
+@pytest.mark.parametrize("value,expected", [("1", True), ("true", True), ("TRUE", True), ("yes", True), ("on", True),
+                                            ("0", False), ("", False), ("false", False), ("no", False), ("2", False)])
+def test_app_debug_parsing(value, expected):
+    assert Settings.from_env({"APP_DEBUG": value}).debug is expected

@@ -85,8 +85,8 @@ Nếu còn thời gian: khách hủy một chuyến khi còn REQUESTED (nút **H
 
 | Thời lượng | Nội dung | Màn hình | Ghi chú |
 |---|---|---|---|
-| 6:10–6:40 | Hạn chế: ghi nhiều bảng **không nguyên tử** (có Reconcile); tài xế có thể kẹt BUSY nếu LWT nhận chuyến gặp `WriteTimeout` (có công cụ giải phóng); biển số duy nhất chỉ kiểm bằng đọc MV; tên phi chuẩn hóa trong bảng chuyến cũ là bản chụp lịch sử; một số trang quét toàn bảng; cờ bảo trì nằm trong bộ nhớ một tiến trình; file backup chứa `password_hash` và không phải ảnh chụp nhất quán giữa các bảng; không có CSRF token; trang lỗi 500 còn in thông điệp lỗi | Slide hạn chế | Danh sách đầy đủ ở mục "Giới hạn đã biết" của `README.md` |
-| 6:40–7:00 | Hướng phát triển: chạy nhiều node và nhiều datacenter, thêm index/bảng cho các truy vấn quét, bản đồ và định vị thật, thanh toán thật, chuyển CSRF và kiểm soát lỗi 500 | Slide hướng phát triển | – |
+| 6:10–6:40 | Hạn chế: ghi nhiều bảng **không nguyên tử** (có Reconcile); tài xế có thể kẹt BUSY nếu LWT nhận chuyến gặp `WriteTimeout` (có công cụ giải phóng); biển số duy nhất chỉ kiểm bằng đọc MV; tên phi chuẩn hóa trong bảng chuyến cũ là bản chụp lịch sử; một số trang quét toàn bảng; cờ bảo trì nằm trong bộ nhớ một tiến trình; file backup chứa `password_hash` và không phải ảnh chụp nhất quán giữa các bảng; không có CSRF token; trang lỗi 500 ẩn thông điệp lỗi (chỉ ghi vào log, hiện khi đặt `APP_DEBUG=1`) | Slide hạn chế | Danh sách đầy đủ ở mục "Giới hạn đã biết" của `README.md` |
+| 6:40–7:00 | Hướng phát triển: chạy nhiều node và nhiều datacenter, thêm index/bảng cho các truy vấn quét, bản đồ và định vị thật, thanh toán thật, chuyển CSRF và giám sát log lỗi 500 | Slide hướng phát triển | – |
 
 ## Sau khi quay
 

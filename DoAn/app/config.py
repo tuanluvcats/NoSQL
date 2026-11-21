@@ -44,6 +44,7 @@ def ensure_utf8_stdout() -> None:
             reconfigure(encoding="utf-8", errors="replace")
 
 
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
 _KEYSPACE_RE = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
 
 
@@ -65,6 +66,7 @@ class Settings:
     secret_key: str
     backup_dir: Path
     first_month: int = 202609
+    debug: bool = False  # APP_DEBUG=1: trang lỗi 500 mới hiện loại lỗi và thông điệp (mặc định ẩn)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -83,4 +85,5 @@ class Settings:
             local_dc=e.get("CASSANDRA_LOCAL_DC", "datacenter1"),
             secret_key=e.get("APP_SECRET_KEY", "dev-secret-change-me"),
             backup_dir=Path(e.get("APP_BACKUP_DIR", str(APP_DIR / "backups"))),
+            debug=e.get("APP_DEBUG", "").strip().lower() in _TRUTHY,
         )

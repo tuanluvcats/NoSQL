@@ -60,6 +60,7 @@ nên không cần `Activate.ps1`. Mọi lệnh `python -m tools.…` và `uvicor
 | `CASSANDRA_KEYSPACE` | `ride_booking` | Keyspace ứng dụng làm việc |
 | `CASSANDRA_LOCAL_DC` | `datacenter1` | Datacenter cục bộ cho chính sách cân bằng tải |
 | `APP_SECRET_KEY` | `dev-secret-change-me` | Khóa ký cookie phiên; nên đặt khi chạy ngoài máy cá nhân |
+| `APP_DEBUG` | (tắt) | Đặt `1` (hoặc `true`, `yes`, `on`) để trang lỗi 500 hiện loại lỗi và thông điệp; mặc định ẩn, lỗi chỉ ghi vào log máy chủ |
 | `APP_BACKUP_DIR` | `DoAn\app\backups` | Thư mục lưu file backup JSON (đã nằm trong `.gitignore`) |
 | `CASSANDRA_TEST_KEYSPACE` | `ride_booking_test` | Keyspace của integration test (phải kết thúc bằng `_test`) |
 
@@ -76,6 +77,7 @@ Biến chỉ có hiệu lực trong cửa sổ PowerShell đó. Ứng dụng đ�
 
 ```powershell
 .venv\Scripts\python -m tools.check_env
+.venv\Scripts\python -m tools.check_env --help        # trợ giúp; tùy chọn --keyspace <tên> kiểm keyspace khác biến môi trường
 ```
 
 Lệnh in máy chủ, keyspace và các trường `connected`, `release_version`, `keyspace_exists`, `tables`, `has_rated_at`, `error`. Mã thoát 0 khi kết nối được và
@@ -134,7 +136,8 @@ vẹn và chạy ứng dụng trên keyspace riêng ở Trường hợp 1.
 .venv\Scripts\python -m uvicorn main:app --port 8000
 ```
 
-Mở <http://127.0.0.1:8000>. Trang `/connection` cho biết ứng dụng đang nối tới đâu (host, protocol 4, `release_version` lấy từ `system.local`, keyspace,
+Mở <http://127.0.0.1:8000>. Trang chủ `/` hiện keyspace đang dùng, phiên bản Cassandra (`release_version` đọc một dòng từ `system.local`) và các lối vào nhanh theo vai trò
+của người đã đăng nhập (quản trị: tài khoản, danh mục, báo cáo, khu vực, nhất quán, backup; khách: đặt xe, lịch sử; tài xế: nhận chuyến, thu nhập, đánh giá; chưa đăng nhập: đăng nhập, đăng ký, kết nối). Trang `/connection` cho biết ứng dụng đang nối tới đâu (host, protocol 4, `release_version` lấy từ `system.local`, keyspace,
 danh sách bảng, `rides.rated_at` đã có hay chưa). `/health` trả `{"status": "ok"}` kể cả khi chưa nối được Cassandra.
 
 ## Tài khoản đăng nhập thử
@@ -340,7 +343,8 @@ docs/                kich_ban_demo.md
 
 **Bảo mật**
 
-- **Trang lỗi 500 vẫn in loại lỗi và thông điệp** (`TênLỗi: nội dung`), có thể làm lộ chuỗi lỗi từ CSDL. Chấp nhận cho môi trường demo; không dùng nguyên trạng trên mạng thật.
+- **Trang lỗi 500 không in loại lỗi và thông điệp** (tránh lộ chuỗi lỗi CSDL, đường dẫn): người dùng chỉ thấy thông báo chung, lỗi đầy đủ kèm traceback được ghi vào log của máy chủ
+  (logger `ride_booking`, hiện ở cửa sổ chạy `uvicorn`). Đặt `APP_DEBUG=1` thì trang 500 mới hiện `TênLỗi: nội dung` (chỉ để gỡ lỗi trên máy cá nhân, không bật trên mạng thật).
 - **Không có CSRF token.** Chỉ dựa vào cookie phiên `SameSite=lax`. Khóa ký phiên mặc định là `dev-secret-change-me` trừ khi đặt `APP_SECRET_KEY`.
 - **Mật khẩu seed là SHA-256 không salt của `123456`** (cho khớp dữ liệu mẫu trong Word, chỉ dùng demo). Tài khoản đăng ký mới dùng PBKDF2-SHA256 có salt (100.000 vòng, thư viện chuẩn).
   `verify_password` nhận được cả hai kiểu.

@@ -63,6 +63,18 @@ def test_readme_lists_known_limitations_recorded_across_tasks():
         assert needle in limits, needle
 
 
+def test_readme_documents_app_debug_and_hidden_500_page():
+    text = _read(README)
+    assert "APP_DEBUG" in text.split("## Chạy test tự động")[0]  # có trong bảng biến môi trường
+    security = _section(text, "**Bảo mật**", "**Dữ liệu mẫu và môi trường**")
+    assert "APP_DEBUG" in security and "log" in security
+    assert "vẫn in loại lỗi" not in text  # giới hạn cũ đã được sửa
+
+
+def test_handoff_no_longer_lists_fixed_500_leak():
+    assert "Trang lỗi 500 vẫn in" not in _read(HANDOFF)
+
+
 def test_demo_script_covers_scenarios():
     text = _read(DEMO)
     for needle in ("T05", "9.4", "9.1", "9.2", "9.3", "[applied]", "DbSchema", "ALLOW FILTERING",

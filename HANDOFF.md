@@ -7,7 +7,7 @@ Mã nguồn: `DoAn/app/`. Cách chạy, tài khoản thử, đối chiếu barem
 
 ## 1. Đã xong
 
-Toàn bộ Task 0 đến 13 của kế hoạch đã làm xong và commit (Task 13 là commit tài liệu này).
+Toàn bộ Task 0 đến 14 của kế hoạch đã làm xong và commit (Task 14 là vòng chỉnh cuối, xem dòng cuối bảng).
 
 | Task | Nội dung | Commit |
 |---|---|---|
@@ -28,10 +28,12 @@ Toàn bộ Task 0 đến 13 của kế hoạch đã làm xong và commit (Task 1
 | 11 | Backup/restore JSON logical, chế độ bảo trì (9.2) | `13e9e01` |
 | (sửa) | Trang lỗi 404/403/500 đúng người dùng đã đăng nhập, không lộ lỗi DB khi tra cứu người dùng | `e5b230f` |
 | 12 | Trang Kết nối (mục 8), trang NoSQL minh họa, kịch bản T01 đến T12 end-to-end | `9989227` |
-| 13 | README, kịch bản demo, HANDOFF, `tests/unit/test_docs.py` | commit "docs(app): README, kịch bản demo, HANDOFF" (xem `git log`) |
+| 13 | README, kịch bản demo, HANDOFF, `tests/unit/test_docs.py` | `245fdbf` |
+| 14 | Vòng chỉnh cuối: trang chủ theo keyspace thật và vai trò, trang 500 ẩn lỗi (log + `APP_DEBUG=1`), menu trang 503 đúng người dùng, `tools.check_env --help` | commit "fix(app): vòng chỉnh cuối ..." (xem `git log`) |
 
 Kết quả test ở HEAD `9989227` (trước Task 13): 545 test xanh trên Cassandra 3.11.4 (cài trực tiếp, Windows 11, Python 3.12.7), cả chế độ reset thường và đầy đủ.
-Task 13 thêm `tests/unit/test_docs.py` (13 test), tổng 558 test (325 unit, 233 integration).
+Task 13 thêm `tests/unit/test_docs.py` (13 test), tổng 558 test (325 unit, 233 integration). Task 14 thêm test cho trang chủ, trang 500/503, `APP_DEBUG` và `check_env`
+(số test cuối xem dòng tóm tắt pytest khi chạy lại).
 
 ## 2. Đang dở
 
@@ -76,7 +78,7 @@ Danh sách đầy đủ, có giải thích, ở mục "Giới hạn đã biết"
 - Quét toàn bảng ở trang admin và trang Nhất quán; `first_month` cố định 202609 cho phép kiểm "đã có chuyến".
 - Cờ bảo trì nằm trong bộ nhớ một tiến trình; request chạy dở trước `begin()` có thể ghi chen.
 - File backup chứa `password_hash`, không phải ảnh chụp nhất quán giữa các bảng; restore không rollback tự động (có file `*_prerestore.json`).
-- Trang lỗi 500 vẫn in loại lỗi và thông điệp; không có CSRF token (cookie `SameSite=lax`); khóa phiên mặc định `dev-secret-change-me` nếu không đặt `APP_SECRET_KEY`.
+- Không có CSRF token (cookie `SameSite=lax`); khóa phiên mặc định `dev-secret-change-me` nếu không đặt `APP_SECRET_KEY`.
 - Mã khuyến mãi seed hết hạn 2026-12-31; mật khẩu seed là SHA-256 không salt của `123456` (chỉ demo), tài khoản mới dùng PBKDF2.
 - Trong demo, thao tác nhận chuyến lần hai bằng tay bị chặn ở bước kiểm trạng thái trước khi tới LWT, nên không hiện `[applied] False` của T05; nhánh đó được chứng minh bằng
   `tests/integration/test_accept.py::test_two_drivers_race_exactly_one_wins`. Dòng `[applied] False` hiện được ngay trong demo ở đăng ký trùng tên (T01).
@@ -123,5 +125,6 @@ b7198fd feat(app): tài xế online/offline một khu vực, nhận chuyến LWT
 13e9e01 feat(app): backup/restore JSON logical, kiểm file trước TRUNCATE, chế độ bảo trì
 e5b230f fix(app): trang lỗi 404/403/500 hiển thị đúng người dùng đã đăng nhập, không lộ lỗi DB khi tra cứu người dùng
 9989227 feat(app): trang Kết nối, trang NoSQL minh họa và kịch bản T01–T12 end-to-end
-(kế tiếp) docs(app): README, kịch bản demo, HANDOFF
+245fdbf docs(app): README, kịch bản demo, HANDOFF
+(kế tiếp) fix(app): vòng chỉnh cuối (trang chủ theo vai trò, trang 500 ẩn lỗi, menu 503, check_env --help)
 ```

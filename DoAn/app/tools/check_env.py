@@ -1,6 +1,8 @@
 """Kiểm môi trường Cassandra của máy hiện tại (chỉ dùng driver, không cần cqlsh)."""
 from __future__ import annotations
 
+import argparse
+import dataclasses
 import sys
 
 from config import Settings, ensure_utf8_stdout
@@ -42,9 +44,16 @@ def check_env(settings: Settings) -> dict:
     return result
 
 
-def main() -> int:
+def main(argv=None) -> int:
     ensure_utf8_stdout()
+    ap = argparse.ArgumentParser(
+        prog="python -m tools.check_env",
+        description="Kiểm tra kết nối Cassandra, keyspace và schema. Mã thoát 0 khi kết nối được và keyspace đã có, ngược lại 1.")
+    ap.add_argument("--keyspace", help="keyspace cần kiểm (mặc định: biến CASSANDRA_KEYSPACE, hoặc ride_booking)")
+    args = ap.parse_args(argv)
     settings = Settings.from_env()
+    if args.keyspace:
+        settings = dataclasses.replace(settings, keyspace=Settings.from_env({"CASSANDRA_KEYSPACE": args.keyspace}).keyspace)
     r = check_env(settings)
     print(f"Máy chủ: {','.join(settings.hosts)}:{settings.port}  keyspace: {settings.keyspace}")
     for k, v in r.items():

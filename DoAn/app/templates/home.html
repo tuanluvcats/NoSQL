@@ -1,6 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
   <h1 class="h3">Ứng dụng minh họa đặt xe công nghệ</h1>
-  <p class="text-muted">Cassandra 3.11, keyspace <code>ride_booking</code>. Mỗi thao tác hiển thị các lệnh CQL đã chạy ở cuối trang.</p>
+  <p class="text-muted">Cassandra{% if cassandra_version %} {{ cassandra_version }}{% endif %}, keyspace <code>{{ keyspace }}</code>. Mỗi thao tác hiển thị các lệnh CQL đã chạy ở cuối trang.</p>
   <p>Trạng thái: <a href="/health">/health</a></p>
+
+  <h2 class="h5 mt-4">Lối vào nhanh</h2>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% if not user %}
+      <a class="btn btn-primary" href="/login">Đăng nhập</a>
+      <a class="btn btn-outline-primary" href="/register">Đăng ký</a>
+      <a class="btn btn-outline-secondary" href="/connection">Kết nối</a>
+    {% elif user.role in ('ADMIN', 'OPERATOR') %}
+      <a class="btn btn-outline-primary" href="/admin/accounts">Tài khoản</a>
+      <a class="btn btn-outline-primary" href="/admin/customers">Khách</a>
+      <a class="btn btn-outline-primary" href="/admin/drivers">Tài xế</a>
+      <a class="btn btn-outline-primary" href="/admin/vehicles">Xe</a>
+      <a class="btn btn-outline-primary" href="/admin/promotions">Khuyến mãi</a>
+      <a class="btn btn-outline-primary" href="/admin/reports">Báo cáo</a>
+      <a class="btn btn-outline-primary" href="/admin/areas">Khu vực</a>
+      <a class="btn btn-outline-primary" href="/admin/consistency">Nhất quán</a>
+      <a class="btn btn-outline-primary" href="/admin/backup">Backup</a>
+    {% elif user.role == 'CUSTOMER' %}
+      <a class="btn btn-primary" href="/customer/book">Đặt xe</a>
+      <a class="btn btn-outline-primary" href="/customer/rides">Lịch sử</a>
+    {% elif user.role == 'DRIVER' %}
+      <a class="btn btn-primary" href="/driver">Bật/tắt nhận chuyến</a>
+      <a class="btn btn-outline-primary" href="/driver/waiting">Nhận chuyến</a>
+      <a class="btn btn-outline-primary" href="/driver/income">Thu nhập</a>
+      <a class="btn btn-outline-primary" href="/driver/ratings">Đánh giá</a>
+    {% endif %}
+  </div>
 {% endblock %}

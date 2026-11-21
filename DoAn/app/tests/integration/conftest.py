@@ -7,8 +7,7 @@ from config import CASSANDRA_DIR, Settings, UnsafeKeyspaceError, assert_test_key
 from db.migrate import create_test_keyspace, ensure_app_migration
 from db.repo import CassandraDb
 from db.session import connect
-from services.rating import backfill_rated_at
-from tools.seed import load_seed, reset_tables
+from tests.seed_state import SeedState
 
 
 @pytest.fixture(scope="session")
@@ -40,18 +39,40 @@ def test_keyspace(settings_test, cassandra_session):
     return settings_test.keyspace
 
 
+@pytest.fixture(scope="session")
+def seed_state(cassandra_session, test_keyspace):
+    """Theo dõi bảng bị ghi để mỗi test chỉ phải reset phần bẩn (xem tests/seed_state.py)."""
+    state = SeedState(cassandra_session, test_keyspace, CASSANDRA_DIR / "02_data.cql")
+    yield state
+    state.close()
+
+
 @pytest.fixture
-def raw(cassandra_session, test_keyspace):
-    reset_tables(cassandra_session, test_keyspace)
-    load_seed(cassandra_session, test_keyspace, CASSANDRA_DIR / "02_data.cql")
-    cassandra_session.set_keyspace(test_keyspace)
-    backfill_rated_at(CassandraDb(cassandra_session, test_keyspace))  # D9: seed đã đánh giá thì không cho đánh giá lại
+def raw(cassandra_session, seed_state):
+    """Session đã set_keyspace, dữ liệu đúng seed + dấu rated_at (D9). Test được tự do ghi."""
+    seed_state.reset()
     return cassandra_session
+
+
+@pytest.fixture
+def raw_readonly(cassandra_session, seed_state):
+    """Như `raw` nhưng cam kết test CHỈ ĐỌC: nếu test ghi bất kỳ bảng nào thì fail ở teardown
+    (để không ai chuyển nhầm test ghi sang fixture này)."""
+    seed_state.reset()
+    before = seed_state.write_count
+    yield cassandra_session
+    wrote = seed_state.write_count - before
+    assert wrote == 0, f"Test dùng raw_readonly nhưng đã ghi {wrote} lệnh; hãy dùng fixture `raw`/`db`."
 
 
 @pytest.fixture
 def db(raw, test_keyspace):
     return CassandraDb(raw, test_keyspace)
+
+
+@pytest.fixture
+def db_readonly(raw_readonly, test_keyspace):
+    return CassandraDb(raw_readonly, test_keyspace)
 
 
 @pytest.fixture

@@ -6,8 +6,8 @@ from tools.seed import EXPECTED_SEED_COUNTS
 from tools.setup_db import setup_db
 
 
-def test_tables_and_view(raw, test_keyspace):
-    s = raw
+def test_tables_and_view(raw_readonly, test_keyspace):
+    s = raw_readonly
     tables = {r["table_name"] for r in s.execute(
         "SELECT table_name FROM system_schema.tables WHERE keyspace_name = %s", (test_keyspace,))}
     views = {r["view_name"] for r in s.execute(
@@ -16,18 +16,18 @@ def test_tables_and_view(raw, test_keyspace):
     assert views == {"vehicles_by_plate"}
 
 
-def test_rated_at_column(raw, test_keyspace):
-    assert has_column(raw, test_keyspace, "rides", "rated_at") is True
+def test_rated_at_column(raw_readonly, test_keyspace):
+    assert has_column(raw_readonly, test_keyspace, "rides", "rated_at") is True
 
 
-def test_seed_counts(raw):
+def test_seed_counts(raw_readonly):
     for table, expected in EXPECTED_SEED_COUNTS.items():
-        n = raw.execute(f"SELECT COUNT(*) FROM {table}").one()["count"]
+        n = raw_readonly.execute(f"SELECT COUNT(*) FROM {table}").one()["count"]
         assert n == expected, table
 
 
-def test_ensure_app_migration_second_call_false(raw, test_keyspace):
-    assert ensure_app_migration(raw, test_keyspace) is False
+def test_ensure_app_migration_second_call_false(raw_readonly, test_keyspace):
+    assert ensure_app_migration(raw_readonly, test_keyspace) is False
 
 
 def test_setup_db_twice_keeps_data(raw, test_keyspace):

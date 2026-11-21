@@ -3,8 +3,8 @@ import pytest
 pytestmark = pytest.mark.nosql
 
 
-def test_vehicle_by_plate_via_mv(db):
-    assert db.one("B05_vehicle_by_plate", ["51K-567.89"])["vehicle_id"] == "VEH_555"
+def test_vehicle_by_plate_via_mv(db_readonly):
+    assert db_readonly.one("B05_vehicle_by_plate", ["51K-567.89"])["vehicle_id"] == "VEH_555"
 
 
 def test_lwt_on_missing_row_not_applied_and_no_ghost(db):
@@ -12,24 +12,24 @@ def test_lwt_on_missing_row_not_applied_and_no_ghost(db):
     assert db.one("B01_account_get", ["nobody_x"]) is None
 
 
-def test_every_catalog_statement_prepares(raw):
+def test_every_catalog_statement_prepares(raw_readonly):
     """Mỗi câu CQL trong catalog phải được Cassandra thật prepare được (đúng cú pháp, đúng cột)."""
     from db.catalog import STATEMENTS
 
     failed = {}
     for name, s in STATEMENTS.items():
         try:
-            raw.prepare(s.cql)
+            raw_readonly.prepare(s.cql)
         except Exception as e:  # noqa: BLE001 - gom lỗi để báo hết một lần
             failed[name] = f"{type(e).__name__}: {e}"
     assert not failed, failed
 
 
-def test_prepared_param_counts_match_catalog(raw):
+def test_prepared_param_counts_match_catalog(raw_readonly):
     from db.catalog import STATEMENTS
 
     for name, s in STATEMENTS.items():
-        p = raw.prepare(s.cql)
+        p = raw_readonly.prepare(s.cql)
         assert len(p.column_metadata or []) == s.cql.count("?"), name
 
 

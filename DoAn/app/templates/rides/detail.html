@@ -73,7 +73,11 @@
     </form>
   {% endif %}
   <h2 class="h6">status_history</h2>
-  <ul class="font-monospace small">
-    {% for t, s in history %}<li>{{ fmt(t) }} &rarr; {{ s }}</li>{% else %}<li>-</li>{% endfor %}
-  </ul>
+  <p class="text-muted small">Cột <code>status_history map&lt;timestamp, text&gt;</code> của <code>rides</code>, sắp theo thời gian, giờ +07.</p>
+  <table class="table table-sm table-bordered w-auto font-monospace small">
+    <thead><tr><th>Thời điểm (+07)</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    {% for t, s in history %}<tr><td>{{ fmt(t) }}</td><td>{{ s }}</td></tr>{% else %}<tr><td colspan="2">-</td></tr>{% endfor %}
+    </tbody>
+  </table>
 {% endblock %}

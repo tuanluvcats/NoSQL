@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Thu nhập tháng{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-2">Thu nhập tháng {{ month }}</h1>
+  <p class="text-muted small">Đọc từ <code>rides_by_driver_month</code> (partition key <code>(driver_id, yyyymm)</code>, tháng tính theo +07).
+    Tổng hợp A01: <code>COUNT/SUM/AVG/MIN/MAX(fare)</code> các chuyến COMPLETED ngay trong một partition. {{ hint }}.</p>
+  <form method="get" action="/driver/income" class="row g-2 align-items-end mb-3">
+    <div class="col-auto"><label class="form-label small mb-0" for="inc-month">Tháng (YYYYMM)</label>
+      <input class="form-control form-control-sm font-monospace" id="inc-month" name="yyyymm" value="{{ month }}" maxlength="6"></div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Xem</button></div>
+  </form>
+  <table class="table table-sm table-bordered w-auto">
+    <tbody>
+      <tr><th>Số chuyến hoàn thành</th><td class="text-end">{{ income.so_chuyen }}</td></tr>
+      <tr><th>Tổng cước (VND)</th><td class="text-end">{{ income.tong_cuoc|vnd }}</td></tr>
+      <tr><th>Cước trung bình</th><td class="text-end">{{ income.cuoc_tb|vnd }}</td></tr>
+      <tr><th>Cước thấp nhất</th><td class="text-end">{{ income.cuoc_thap_nhat|vnd }}</td></tr>
+      <tr><th>Cước cao nhất</th><td class="text-end">{{ income.cuoc_cao_nhat|vnd }}</td></tr>
+    </tbody>
+  </table>
+  <h2 class="h6">Các chuyến trong tháng (mới nhất trước)</h2>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead><tr><th>Thời gian đặt</th><th>Mã chuyến</th><th>Điểm đón</th><th>Điểm đến</th><th class="text-end">Km</th><th class="text-end">Cước (VND)</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+      {% for r in rides %}
+        <tr><td>{{ r.requested_at|dmy_hms }}</td><td class="font-monospace">{{ r.ride_id }}</td><td>{{ r.pickup_address }}</td>
+          <td>{{ r.destination_address }}</td><td class="text-end">{{ r.distance_km }}</td><td class="text-end">{{ r.fare|vnd }}</td>
+          <td><span class="badge text-bg-secondary">{{ r.status }}</span></td></tr>
+      {% else %}
+        <tr><td colspan="7" class="text-muted">Không có chuyến nào trong tháng này.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

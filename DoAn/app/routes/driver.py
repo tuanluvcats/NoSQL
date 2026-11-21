@@ -10,7 +10,7 @@ from config import AREAS
 from domain.auth import DRIVER
 from domain.tz import fmt_vn, to_date, vn_date
 from routes.deps import flash_trace, get_db, pop_trace_event, render, require_role, set_flash
-from services import driver_presence, rides_flow
+from services import driver_presence, reports, rides_flow
 from services.result import ActionResult
 
 router = APIRouter()
@@ -108,4 +108,22 @@ def accept(request: Request, ride_id: str, user: dict = _DRIVER):
         raise HTTPException(status_code=404, detail=result.message)
     if result.ok:
         return _done(request, result, f"/rides/{ride_id}", "accept" if result.code == "ok" else None)
+    return _done(request, result, "/driver")
+
+
+@router.post("/driver/location")
+def driver_location(request: Request, lat: str = Form(""), lng: str = Form(""), speed: str = Form(""),
+                    user: dict = _DRIVER):
+    """Ghi điểm GPS của CHÍNH tài xế đăng nhập (driver_id từ phiên, bỏ qua giá trị form). Tốc độ bỏ trống thì là 0."""
+    lat_v, err_lat = _float_or_none(lat, "Vĩ độ")
+    lng_v, err_lng = _float_or_none(lng, "Kinh độ")
+    speed_v, err_speed = _float_or_none(speed, "Tốc độ")
+    errs = [e for e in (err_lat, err_lng, err_speed) if e]
+    if errs:
+        set_flash(request, False, " ".join(errs))
+        return RedirectResponse("/driver", status_code=303)
+    result = reports.record_location(get_db(request), user["ref_id"], lat_v, lng_v, speed_v or 0.0,
+                                     request.app.state.clock())
+    if result.code == "not_found":
+        raise HTTPException(status_code=404, detail=result.message)
     return _done(request, result, "/driver")

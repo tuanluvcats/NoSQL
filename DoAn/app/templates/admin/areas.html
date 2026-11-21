@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Tài xế theo khu vực{% endblock %}
+{% block content %}
+  <h1 class="h4 mb-2">Tài xế đang nhận chuyến theo khu vực</h1>
+  <p class="text-muted small">Đọc từ <code>drivers_by_area</code> (partition key <code>(city, district)</code>) bằng một câu duy nhất
+    <code>district IN (...)</code> (A06) thay cho nhiều truy vấn.</p>
+  <form method="get" action="/admin/areas" class="mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-auto"><label class="form-label small mb-0" for="a-city">Thành phố</label>
+        <select class="form-select form-select-sm" id="a-city" name="city" onchange="this.form.submit()">
+          {% for c in areas %}<option value="{{ c }}"{% if c == city %} selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select></div>
+      <div class="col">
+        {% for d in areas[city] %}
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="districts" id="a-d-{{ loop.index }}" value="{{ d }}"{% if d in chosen %} checked{% endif %}>
+            <label class="form-check-label small" for="a-d-{{ loop.index }}">{{ d }}</label>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Xem</button></div>
+    </div>
+  </form>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead><tr><th>Quận</th><th>Tài xế</th><th>Họ tên</th><th>Điểm</th><th>Biển số</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.district }}</td><td class="font-monospace">{{ r.driver_id }}</td><td>{{ r.full_name }}</td>
+          <td>{{ r.rating }}</td><td class="font-monospace">{{ r.vehicle_plate }}</td>
+          <td><a class="btn btn-sm btn-outline-secondary" href="/admin/drivers/{{ r.driver_id }}/track">Lộ trình hôm nay</a></td></tr>
+      {% else %}
+        <tr><td colspan="6" class="text-muted">Không có tài xế nào đang nhận chuyến ở các quận đã chọn.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

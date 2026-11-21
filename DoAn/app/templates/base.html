@@ -21,7 +21,16 @@
           <a class="btn btn-sm btn-outline-light" href="/admin/drivers">Tài xế</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/vehicles">Xe</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/promotions">Khuyến mãi</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/reports">Báo cáo</a>
+          <a class="btn btn-sm btn-outline-light" href="/admin/areas">Khu vực</a>
           <a class="btn btn-sm btn-outline-light" href="/admin/consistency">Nhất quán</a>
+        {% elif user.role == 'CUSTOMER' %}
+          <a class="btn btn-sm btn-outline-light" href="/customer/book">Đặt xe</a>
+          <a class="btn btn-sm btn-outline-light" href="/customer/rides">Lịch sử</a>
+        {% elif user.role == 'DRIVER' %}
+          <a class="btn btn-sm btn-outline-light" href="/driver">Nhận chuyến</a>
+          <a class="btn btn-sm btn-outline-light" href="/driver/income">Thu nhập</a>
+          <a class="btn btn-sm btn-outline-light" href="/driver/ratings">Đánh giá</a>
         {% endif %}
         <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-light" type="submit">Đăng xuất</button></form>
       {% else %}

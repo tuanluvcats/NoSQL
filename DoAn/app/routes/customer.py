@@ -9,7 +9,7 @@ from domain.auth import CUSTOMER, can_cancel_ride, can_view_ride
 from domain.ids import new_ride_id
 from domain.tz import fmt_vn
 from routes.deps import current_user, flash_trace, get_db, pop_trace_event, render, require_role, set_flash
-from services import booking
+from services import booking, reports
 from services.booking import BookingForm
 
 router = APIRouter()
@@ -81,12 +81,12 @@ def book_submit(request: Request, ride_id: str = Form(""), city: str = Form(""),
 
 @router.get("/rides/{ride_id}")
 def ride_detail(request: Request, ride_id: str, user: dict = Depends(current_user)):
-    ride = get_db(request).one("B06_ride_get", [ride_id])
+    ride = reports.ride_detail(get_db(request), ride_id)
     if ride is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy chuyến đi.")
     if not can_view_ride(user.get("role"), user.get("ref_id"), ride):
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem chuyến này.")
-    history = sorted(((t, s) for t, s in (ride.get("status_history") or {}).items()), key=lambda x: x[0])
+    history = ride["history"]  # [(thời điểm +07, trạng thái)] đã sắp theo thời gian
     event = pop_trace_event(request)  # sự kiện do route POST đặt (book/accept/start/complete/cancel)
     can_cancel = can_cancel_ride(user.get("role"), user.get("ref_id"), ride)
     return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event,

@@ -14,6 +14,14 @@
   {% set payable = (ride.fare or 0) - discount %}
   {% set method = ride.payment_method|pay_method %}
   <h1 class="h4 mb-2">{{ ride_headline(ride.status, viewer, ride.driver_name) }}</h1>
+  {# Chuyến còn chạy: trình duyệt hỏi /status theo nhịp; thanh này chỉ hiện khi cần tải lại (chế độ kỹ thuật thì không tự tải lại) #}
+  {% if watch_every %}
+  <div class="refresh-bar ride-watch" data-ride-watch="/rides/{{ ride.ride_id }}/status" data-stamp="{{ stamp }}"
+       data-every="{{ watch_every }}"{% if tech %} data-manual{% endif %} hidden>
+    <span role="status" data-watch-msg>Chuyến vừa được cập nhật.</span>
+    <button class="btn btn-primary btn-sm" type="button" data-watch-reload>Tải lại</button>
+  </div>
+  {% endif %}
   {{ ride_route(ride) }}
 
   {# Tờ thông tin: một bề mặt, các phần chia bằng đường kẻ #}
@@ -167,4 +175,88 @@
       </table>
     </div>
   </details>
+  {% if watch_every %}
+  <script>
+    (function () {
+      var bar = document.querySelector('[data-ride-watch]');
+      if (!bar) return;
+      var url = bar.getAttribute('data-ride-watch'), stamp = bar.getAttribute('data-stamp');
+      var base = parseInt(bar.getAttribute('data-every'), 10) * 1000;
+      var manual = bar.dataset.manual !== undefined;
+      var msg = bar.querySelector('[data-watch-msg]'), btn = bar.querySelector('[data-watch-reload]');
+      var MAX = 60000, TIMEOUT = 8000;
+      var timer = null, ctrl = null, inflight = false, stopped = false, failures = 0;
+      function rnd(a, b) { return a + Math.random() * (b - a); }
+      function show(text) { msg.textContent = text; bar.hidden = false; }
+      function stop() {
+        stopped = true;
+        clearTimeout(timer); timer = null;
+        if (ctrl) ctrl.abort();
+      }
+      function busy() {
+        if (document.querySelector('details.confirm[open]')) return true;
+        var a = document.activeElement;
+        if (a && a.closest && a.closest('form')) return true;
+        var rate = document.querySelector('form[action$="/rate"]');
+        if (rate) {
+          if (rate.querySelector('input:checked')) return true;
+          var c = rate.querySelector('textarea');
+          if (c && c.value.trim() !== '') return true;
+        }
+        return false;
+      }
+      function changed() {
+        stop();
+        if (manual || busy()) { show('Chuyến vừa được cập nhật.'); return; }
+        location.reload();
+      }
+      function schedule(ms) {
+        clearTimeout(timer); timer = null;
+        if (stopped) return;
+        timer = setTimeout(poll, ms);
+      }
+      function next() {
+        // nhịp gốc nhân hệ số 0,8-1,2; mỗi lỗi liên tiếp nhân đôi, tối đa 60 giây
+        schedule(Math.min(MAX, base * Math.pow(2, failures) * rnd(0.8, 1.2)));
+      }
+      function done() { inflight = false; clearTimeout(abortTimer); ctrl = null; }
+      var abortTimer = null;
+      function poll() {
+        timer = null;
+        if (stopped || inflight || document.hidden) return;  // tab ẩn: chờ visibilitychange
+        inflight = true;
+        ctrl = new AbortController();
+        var mine = ctrl;
+        abortTimer = setTimeout(function () { mine.abort(); }, TIMEOUT);
+        fetch(url, {credentials: 'same-origin', cache: 'no-store', signal: mine.signal}).then(function (r) {
+          if (r.redirected || r.status === 401 || r.status === 403 || r.status === 404) return {gone: true};
+          if (r.status !== 200) throw new Error('status ' + r.status);
+          return r.json();
+        }).then(function (d) {
+          done();
+          if (stopped) return;
+          if (d && d.gone) { stop(); show('Chuyến vừa thay đổi.'); return; }
+          if (!d || typeof d.stamp !== 'string') throw new Error('bad json');
+          failures = 0;
+          if (d.stamp !== stamp) { changed(); return; }
+          next();
+        }).catch(function () {
+          done();
+          if (stopped) return;
+          failures += 1;
+          next();
+        });
+      }
+      btn.addEventListener('click', function () { location.reload(); });
+      document.addEventListener('visibilitychange', function () {
+        if (stopped) return;
+        if (document.hidden) { clearTimeout(timer); timer = null; return; }
+        if (!inflight) schedule(rnd(500, 1500));
+      });
+      document.addEventListener('submit', stop, true);
+      window.addEventListener('pagehide', stop);
+      schedule(base * rnd(0.8, 1.2));
+    })();
+  </script>
+  {% endif %}
 {% endblock %}

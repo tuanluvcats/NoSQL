@@ -9,6 +9,8 @@ của `DoAn/CASSANDRA.MD`.
 danh sách bảng bị ghi so với ma trận ghi §3.7). Các bảng phi chuẩn hóa luôn khớp với `rides` nhờ quy tắc "ghi `rides` bằng LWT trước, chỉ khi
 `[applied] = True` mới ghi các bảng phụ", và có công cụ Kiểm tra nhất quán để đối chiếu hoặc ghi lại (reconcile).
 
+Trang chi tiết của chuyến đang chạy (REQUESTED, ACCEPTED, ONGOING) tự hỏi trạng thái qua `GET /rides/{ride_id}/status` mỗi 5, 10, 15 giây tùy trạng thái, có lệch ngẫu nhiên 0,8 đến 1,2 lần để các trình duyệt không hỏi cùng lúc, giãn dần khi lỗi (tối đa 60 giây), và dừng khi tab ẩn hoặc chuyến đã kết thúc. Mỗi lần hỏi là một request độc lập, chỉ đọc 1 dòng `rides` theo `ride_id` và không đụng tới thông báo hay panel CQL đang chờ. Khi dấu phiên bản của chuyến đổi, trang tự tải lại; ở chế độ kỹ thuật chỉ hiện thanh "Tải lại" để giữ panel CQL.
+
 Tài liệu đi kèm: [`docs/kich_ban_demo.md`](docs/kich_ban_demo.md) (kịch bản demo 5 đến 7 phút), [`docs/hoi_dap_bao_ve.md`](docs/hoi_dap_bao_ve.md) (hỏi đáp khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa), `HANDOFF.md` ở gốc repo (trạng thái công việc,
 việc còn mở).
 

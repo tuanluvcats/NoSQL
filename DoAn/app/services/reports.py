@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import io
 import math
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 
 from config import AREAS, PAYMENT_METHODS
@@ -48,6 +49,18 @@ def ride_detail(db, ride_id: str) -> dict | None:
     ride = dict(ride)
     ride["history"] = history_entries(ride.get("status_history"))  # [(thời điểm +07, trạng thái)] theo thời gian
     return ride
+
+
+# Trang chi tiết chuyến tự hỏi trạng thái (GET /rides/{id}/status): chuyến còn chạy thì hỏi theo nhịp dưới đây (giây).
+ACTIVE_RIDE_STATUSES = ("REQUESTED", "ACCEPTED", "ONGOING")
+WATCH_EVERY_SECONDS = {"REQUESTED": 5, "ACCEPTED": 10, "ONGOING": 15}
+
+
+def ride_stamp(ride: Mapping) -> str:
+    """Dấu phiên bản của chuyến: đổi khi trạng thái, lịch sử trạng thái hoặc tài xế đổi. Trang chi tiết và đường dẫn hỏi trạng thái dùng chung."""
+    history = ride.get("status_history") or {}
+    latest = max((truncate_ms(to_vn(t)) for t in history), default=None)  # mốc mới nhất, về +07 và mili giây
+    return f"{ride.get('status') or ''}|{latest.isoformat() if latest else ''}|{ride.get('driver_id') or ''}"
 
 
 # ------------------------------------------------------------------ tài xế

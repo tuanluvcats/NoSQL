@@ -21,7 +21,7 @@ DbSchema (mở dữ liệu bảng, làm mới) có thể khác chút giữa các
 | 0.6 | Cửa sổ khác | Thư mục `DoAn\app\backups` (để thấy file backup JSON xuất hiện), một slide bìa, slide sơ đồ 13 bảng + MV |
 | 0.7 | Kiểm tra trạng thái ban đầu | `drv555` đang OFFLINE, `drv554` AVAILABLE ở HCM / Q3, mã `GIAM20` có `used_count = 5` (xem bảng `promotions`) |
 
-Mật khẩu của mọi tài khoản seed là `123456`. Biển số của `drv555` là `51K-567.89`.
+Mật khẩu của mọi tài khoản seed là `123456`. Biển số của `drv555` là `51K-567.89`. Khi bật chế độ kỹ thuật, trang chuyến không tự tải lại mà hiện thanh "Chuyến vừa được cập nhật" kèm nút Tải lại, để panel CQL đang trình diễn không bị mất.
 
 ## 1. Giới thiệu và kết nối CSDL, mục 8 (0:00–0:45)
 

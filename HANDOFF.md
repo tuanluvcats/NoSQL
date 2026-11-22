@@ -100,7 +100,8 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
   - chuyến chờ dạng thẻ, tự làm mới;
   - trang trạng thái tài xế theo 3 trạng thái;
   - lịch sử và thu nhập dạng thẻ;
-  - nút cao 44px trên màn cảm ứng.
+  - nút cao 44px trên màn cảm ứng;
+  - trang chi tiết chuyến đang chạy tự hỏi `GET /rides/{ride_id}/status` mỗi 5/10/15 giây (có lệch ngẫu nhiên, giãn khi lỗi, dừng khi tab ẩn hoặc chuyến kết thúc), mỗi lần đọc 1 dòng `rides` theo `ride_id`; chế độ kỹ thuật chỉ hiện thanh "Tải lại" để giữ panel CQL (cơ chế riêng của web, không ghi vào báo cáo Word).
 
   Ảnh màn hình ở `DoAn/app/docs/giao_dien/`.
 - Tài liệu: `DoAn/app/docs/kich_ban_demo.md` (kịch bản demo), `DoAn/app/docs/hoi_dap_bao_ve.md` (câu hỏi khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa).

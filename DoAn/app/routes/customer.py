@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from starlette.responses import RedirectResponse
+from starlette.responses import JSONResponse, RedirectResponse
 
 from config import AREAS, PAYMENT_METHODS, RATING_TAGS
 from domain.auth import CUSTOMER, can_cancel_ride, can_view_ride
 from domain.ids import new_ride_id
 from domain.tz import fmt_vn
-from routes.deps import current_user, flash_trace, get_db, pop_trace_event, render, require_role, set_flash
+from routes.deps import (AuthRedirect, current_user, flash_trace, get_db, optional_user, pop_trace_event, render,
+                         require_role, set_flash)
 from services import booking, reports
 from services.booking import BookingForm
 
@@ -107,4 +108,28 @@ def ride_detail(request: Request, ride_id: str, user: dict = Depends(current_use
     can_cancel = can_cancel_ride(user.get("role"), user.get("ref_id"), ride)
     return render(request, "rides/detail.html", {"ride": ride, "history": history, "fmt": fmt_vn, "event": event,
                                                  "can_cancel": can_cancel, "areas": AREAS,
-                                                 "rating_tags": RATING_TAGS})
+                                                 "rating_tags": RATING_TAGS, "stamp": reports.ride_stamp(ride),
+                                                 "watch_every": reports.WATCH_EVERY_SECONDS.get(ride.get("status"))})
+
+
+@router.get("/rides/{ride_id}/status")
+def ride_status(request: Request, ride_id: str):
+    """Trình duyệt hỏi định kỳ xem chuyến có đổi không. Stateless: mỗi lần là 1 lệnh B06 theo ride_id.
+
+    Trả JSON thuần (không redirect sang /login vì fetch sẽ nhận HTML) và không đụng flash, trace hay session,
+    nên thông báo và panel "CQL của thao tác vừa rồi" đang chờ vẫn còn cho trang kế tiếp."""
+    headers = {"Cache-Control": "no-store"}
+    try:
+        user = optional_user(request)
+    except AuthRedirect:  # tài khoản vừa bị khóa
+        user = None
+    if user is None:
+        return JSONResponse({"error": "login"}, status_code=401, headers=headers)
+    ride = get_db(request).one("B06_ride_get", [ride_id])
+    if ride is None:
+        return JSONResponse({"error": "not_found"}, status_code=404, headers=headers)
+    if not can_view_ride(user.get("role"), user.get("ref_id"), ride):
+        return JSONResponse({"error": "forbidden"}, status_code=403, headers=headers)
+    status = ride.get("status")
+    return JSONResponse({"status": status, "stamp": reports.ride_stamp(ride),
+                         "active": status in reports.ACTIVE_RIDE_STATUSES}, headers=headers)

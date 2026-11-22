@@ -1,52 +1,58 @@
 {% extends "base.html" %}
+{% from "_trip.html" import trip %}
+{% from "_icons.html" import icon %}
 {% block title %}Chuyến chờ{% endblock %}
 {% block content %}
-  <h1 class="h4 mb-3">Chuyến đang chờ tài xế</h1>
-  <form method="get" action="/driver/waiting" class="row g-2 mb-3" style="max-width: 640px">
-    <div class="col-sm-4">
-      <select class="form-select" id="w_city" name="city" aria-label="Thành phố">
-        {% for c in areas %}<option value="{{ c }}" {{ 'selected' if city == c }}>{{ c|city_label }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="col-sm-4">
-      <select class="form-select" id="w_district" name="district" aria-label="Quận">
-        {% for c, ds in areas.items() %}{% for d in ds %}
-          <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if district == d and city == c }}>{{ d|district_label }}</option>
-        {% endfor %}{% endfor %}
-      </select>
-    </div>
-    <div class="col-sm-3">
-      <input class="form-control" type="date" name="day" value="{{ day }}" aria-label="Ngày">
-    </div>
-    <div class="col-sm-1"><button class="btn btn-outline-primary" type="submit">Xem</button></div>
-  </form>
-  <p class="text-muted small">Chuyến đang chờ ở {{ district|district_label }}, {{ city|city_label }} ngày {{ day|dmy }}</p>
+  <h1 class="h4 mb-3">Chuyến chờ ở {{ district|district_label }}</h1>
+  <p class="page-meta"><span>{{ city|city_label }} · {% if is_today %}hôm nay{% else %}ngày {{ day|dmy }}{% endif %}</span>
+    <a href="/driver/waiting?city={{ city }}&amp;district={{ district }}&amp;day={{ day }}">Tải lại danh sách</a></p>
+  <div class="refresh-bar" data-autorefresh="20"{% if tech %} data-start-paused{% endif %} hidden>
+    <span data-refresh-status role="status">Tự làm mới mỗi 20 giây.</span>
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-refresh-toggle>Tạm dừng tự làm mới</button>
+  </div>
   {% if tech %}<p class="text-muted small tech-note">Lấy từ <code>rides_by_area_date</code> (city, district, ride_date) lọc <code>status = 'REQUESTED'</code>, ngày tính theo +07:00.</p>{% endif %}
+  <details class="disclosure filter"{% if not rides %} open{% endif %}>
+    <summary>{{ icon('chevron-right', 'disclosure-icon') }}Đổi khu vực hoặc ngày</summary>
+    <form method="get" action="/driver/waiting" class="row g-2 align-items-end mt-1" style="max-width: 40rem">
+      <div class="col-sm-4"><label class="form-label" for="w_city">Thành phố</label>
+        <select class="form-select" id="w_city" name="city">
+          {% for c in areas %}<option value="{{ c }}" {{ 'selected' if city == c }}>{{ c|city_label }}</option>{% endfor %}
+        </select></div>
+      <div class="col-sm-4"><label class="form-label" for="w_district">Quận</label>
+        <select class="form-select" id="w_district" name="district">
+          {% for c, ds in areas.items() %}{% for d in ds %}
+            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if district == d and city == c }}>{{ d|district_label }}</option>
+          {% endfor %}{% endfor %}
+        </select></div>
+      <div class="col-sm-3"><label class="form-label" for="w_day">Ngày</label>
+        <input class="form-control" type="text" id="w_day" name="day" value="{{ day|dmy }}" placeholder="ngày/tháng/năm"
+               pattern="\d{1,2}/\d{1,2}/\d{4}|\d{4}-\d{2}-\d{2}" title="Ví dụ 04/10/2026" autocomplete="off"></div>
+      <div class="col-sm-auto"><button class="btn btn-outline-primary" type="submit">Xem</button></div>
+    </form>
+  </details>
   {% if rides %}
-    <table class="table table-sm table-bordered align-middle">
-      <thead><tr><th>Giờ yêu cầu</th><th>Mã chuyến</th><th>Điểm đón</th><th>Điểm đến</th><th>Cước</th><th>Thanh toán</th><th></th></tr></thead>
-      <tbody>
+    <ol class="ride-list" aria-label="Chuyến đang chờ">
       {% for r in rides %}
-        <tr>
-          <td>{{ fmt(r.requested_at) }}</td>
-          <td>{{ r.ride_id }}</td>
-          <td>{{ r.pickup_address }}</td>
-          <td>{{ r.destination_address }}</td>
-          <td>{{ '{:,.0f}'.format(r.fare) | replace(',', '.') }}đ</td>
-          <td>{{ r.payment_method|pay_method }}</td>
-          <td>
-            <form method="post" action="/rides/{{ r.ride_id }}/accept" class="d-inline">
-              <button class="btn btn-sm btn-success" type="submit">Nhận chuyến</button>
-            </form>
-          </td>
-        </tr>
+        <li class="ride-card">
+          <div class="ride-card-head">
+            <span class="ride-fare ride-fare-lg">{{ r.fare|vnd }}</span>
+            <span class="chip{{ ' chip-cash' if r.payment_method == 'CASH' }}">{{ r.payment_method|pay_method }}</span>
+            <span class="ride-when ms-auto">{% if is_today %}{{ r.requested_at|ago(now) }}{% else %}Đặt lúc {{ r.requested_at|hm }}{% endif %}</span>
+          </div>
+          {{ trip(r.pickup_address, r.destination_address) }}
+          {% if tech %}<p class="small text-muted tech-note mt-2 mb-0">Mã chuyến: <code>{{ r.ride_id }}</code></p>{% endif %}
+          <form method="post" action="/rides/{{ r.ride_id }}/accept" class="mt-3">
+            <button class="btn btn-primary w-100" type="submit" aria-label="Nhận chuyến số {{ loop.index }}, đón tại {{ r.pickup_address }}">Nhận chuyến</button>
+          </form>
+        </li>
       {% endfor %}
-      </tbody>
-    </table>
+    </ol>
   {% else %}
-    <p class="text-muted">Không có chuyến nào đang chờ.</p>
+    <div class="empty-state">
+      <p class="fw-semibold mb-1">Chưa có chuyến nào đang chờ ở {{ district|district_label }}.</p>
+      <p class="mb-0 text-muted">Chuyến mới sẽ hiện ở đây. Bạn có thể đổi khu vực hoặc ngày ở trên.</p>
+    </div>
   {% endif %}
-  <a class="btn btn-outline-secondary btn-sm" href="/driver">Về trang tài xế</a>
   <script>
     (function () {
       var city = document.getElementById('w_city'), dist = document.getElementById('w_district');
@@ -60,6 +66,37 @@
         if (dist.selectedOptions[0] && dist.selectedOptions[0].disabled && first) dist.value = first.value;
       }
       city.addEventListener('change', sync); sync();
+    })();
+    (function () {
+      var bar = document.querySelector('[data-autorefresh]');
+      if (!bar) return;
+      var every = parseInt(bar.getAttribute('data-autorefresh'), 10) * 1000;
+      var statusEl = bar.querySelector('[data-refresh-status]'), btn = bar.querySelector('[data-refresh-toggle]');
+      var KEY = 'waitingAutoRefresh', stored = null;
+      try { stored = sessionStorage.getItem(KEY); } catch (e) {}
+      var paused = stored ? stored === 'off' : bar.dataset.startPaused !== undefined;
+      var due = Date.now() + every;
+      function render() {
+        statusEl.textContent = paused ? 'Đã tạm dừng tự làm mới.' : 'Tự làm mới mỗi ' + (every / 1000) + ' giây.';
+        btn.textContent = paused ? 'Tiếp tục tự làm mới' : 'Tạm dừng tự làm mới';
+      }
+      function busy() {
+        var a = document.activeElement;
+        return !!(a && a.closest && a.closest('form'));
+      }
+      btn.addEventListener('click', function () {
+        paused = !paused;
+        try { sessionStorage.setItem(KEY, paused ? 'off' : 'on'); } catch (e) {}
+        due = Date.now() + every;
+        render();
+      });
+      setInterval(function () {
+        if (paused || document.hidden || Date.now() < due) return;
+        if (busy()) { due = Date.now() + 5000; return; }
+        location.reload();
+      }, 1000);
+      bar.hidden = false;
+      render();
     })();
   </script>
 {% endblock %}

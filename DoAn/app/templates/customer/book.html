@@ -11,61 +11,74 @@
       {{ lwt_badge(false, lwt_current) }}
     </div>
   {% endif %}
-  {% if quote %}
-    <div class="alert alert-info" role="status">
-      Cước: <strong>{{ '{:,.0f}'.format(quote.fare) | replace(',', '.') }}đ</strong>
-      &middot; Giảm: <strong>{{ '{:,.0f}'.format(quote.discount) | replace(',', '.') }}đ</strong>
-      &middot; Phải trả: <strong>{{ '{:,.0f}'.format(quote.payable) | replace(',', '.') }}đ</strong>
-      {% if quote.promo_error %}<br><span class="text-danger">Mã khuyến mãi không áp dụng được: {{ quote.promo_error }}</span>{% endif %}
-      <div class="small text-muted">Giá tạm tính. Mã khuyến mãi chỉ bị trừ lượt khi bạn xác nhận đặt xe.</div>
-      {% if tech %}<div class="small text-muted tech-note">Báo giá chỉ đọc (B16), chưa giữ lượt khuyến mãi.</div>{% endif %}
-    </div>
-  {% endif %}
-  <form method="post" action="/customer/book" style="max-width: 640px">
+  {% set bookable = quote and not quote.promo_error %}
+  {# Form gửi tới báo giá: nhấn Enter ở bất kỳ ô nào cũng chỉ xem lại giá, việc đặt xe chỉ xảy ra ở nút có formaction. #}
+  <form method="post" action="/customer/book/quote#price" id="book-form" class="book-form">
     <input type="hidden" name="ride_id" value="{{ form.ride_id }}">
     {% if tech %}<p class="small text-muted tech-note">Mã chuyến: <code>{{ form.ride_id }}</code> (gửi lại form không tạo chuyến thứ hai)</p>{% endif %}
-    <div class="row">
-      <div class="col-sm-6 mb-3">
+    <fieldset class="mb-3">
+      <legend class="visually-hidden">Lộ trình</legend>
+      <div class="trip trip-fields">
+        <div class="trip-stop trip-pickup">
+          <label class="form-label" for="f_pickup_address">Điểm đón</label>
+          <input class="form-control" id="f_pickup_address" name="pickup_address" maxlength="200" required value="{{ form.pickup_address }}">
+        </div>
+        <div class="trip-stop trip-dropoff">
+          <label class="form-label" for="f_destination_address">Điểm đến</label>
+          <input class="form-control" id="f_destination_address" name="destination_address" maxlength="200" required value="{{ form.destination_address }}">
+        </div>
+      </div>
+    </fieldset>
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6">
         <label class="form-label" for="f_city">Thành phố</label>
         <select class="form-select" id="f_city" name="city">
           {% for c in areas %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c|city_label }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" for="f_district">Quận</label>
+      <div class="col-sm-6">
+        <label class="form-label" for="f_district">Quận đón</label>
         <select class="form-select" id="f_district" name="district">
           {% for c, ds in areas.items() %}{% for d in ds %}
             <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d|district_label }}</option>
           {% endfor %}{% endfor %}
         </select>
       </div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label" for="f_pickup_address">Điểm đón</label>
-      <input class="form-control" id="f_pickup_address" name="pickup_address" maxlength="200" required value="{{ form.pickup_address }}">
-    </div>
-    <div class="mb-3">
-      <label class="form-label" for="f_destination_address">Điểm đến</label>
-      <input class="form-control" id="f_destination_address" name="destination_address" maxlength="200" required value="{{ form.destination_address }}">
-    </div>
-    <div class="row">
-      <div class="col-sm-4 mb-3">
+      <div class="col-sm-6">
         <label class="form-label" for="f_distance_km">Quãng đường (km)</label>
         <input class="form-control" id="f_distance_km" name="distance_km" inputmode="decimal" required value="{{ form.distance_km }}">
       </div>
-      <div class="col-sm-4 mb-3">
+      <div class="col-sm-6">
         <label class="form-label" for="f_payment_method">Thanh toán</label>
         <select class="form-select" id="f_payment_method" name="payment_method">
           {% for m in methods %}<option value="{{ m }}" {{ 'selected' if form.payment_method == m }}>{{ m|pay_method }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-sm-4 mb-3">
-        <label class="form-label" for="f_promo_code">Mã khuyến mãi</label>
-        <input class="form-control" id="f_promo_code" name="promo_code" value="{{ form.promo_code }}">
+      <div class="col-sm-6">
+        <label class="form-label" for="f_promo_code">Mã khuyến mãi (không bắt buộc)</label>
+        <input class="form-control" id="f_promo_code" name="promo_code" autocomplete="off" autocapitalize="characters" value="{{ form.promo_code }}">
       </div>
     </div>
-    <button class="btn btn-primary" type="submit">Đặt xe</button>
-    <button class="btn btn-outline-secondary" type="submit" formaction="/customer/book/quote">Xem báo giá</button>
+    {% if quote %}
+      <div class="price-summary" id="price" role="status">
+        {% if price_changed %}<p class="price-note">Giá đã thay đổi theo thông tin mới, chưa đặt xe.{% if bookable %} Kiểm tra lại rồi bấm Đặt xe.{% endif %}</p>{% endif %}
+        <p class="price-total"><span class="price-label">Phải trả</span><span class="price-amount">{{ quote.payable|vnd }}</span></p>
+        <p class="price-breakdown">{% if quote.discount %}Cước {{ quote.fare|vnd }} − {{ quote.discount|vnd }} ({{ form.promo_code }}) · {% endif %}{{ form.distance_km }} km · {{ form.payment_method|pay_method }}</p>
+        {% if promo_message %}<p class="price-note price-note-danger">{{ promo_message }} Xóa mã hoặc nhập mã khác rồi bấm Xem lại giá.</p>{% endif %}
+        <p class="price-note" data-stale-note hidden>Giá có thể đã đổi, hãy xem lại giá.</p>
+        {% if bookable and quote.discount %}<p class="price-fineprint">Mã khuyến mãi chỉ bị trừ lượt khi bạn đặt xe.</p>{% endif %}
+        {% if tech %}<p class="small text-muted tech-note mt-2 mb-0">Báo giá chỉ đọc (B16), chưa giữ lượt khuyến mãi.</p>{% endif %}
+      </div>
+    {% endif %}
+    <div class="action-bar">
+      {% if not quote %}
+        <button class="btn btn-primary btn-lg" type="submit">Xem giá</button>
+      {% else %}
+        {% if bookable %}<input type="hidden" name="quoted_payable" value="{{ quote.payable|int }}">{% endif %}
+        <button class="btn btn-primary btn-lg" type="submit" data-requote{% if bookable %} hidden{% endif %}>Xem lại giá</button>
+        {% if bookable %}<button class="btn btn-primary btn-lg" type="submit" formaction="/customer/book" data-book>Đặt xe · {{ quote.payable|vnd }}</button>{% endif %}
+      {% endif %}
+    </div>
   </form>
   <script>
     (function () {
@@ -80,6 +93,21 @@
         if (dist.selectedOptions[0] && dist.selectedOptions[0].disabled && first) dist.value = first.value;
       }
       city.addEventListener('change', sync); sync();
+      // Giá đang hiện chỉ đúng với thông tin lúc xem giá: sửa bất kỳ ô nào thì gạch giá, ẩn nút Đặt xe, hiện Xem lại giá.
+      var form = document.getElementById('book-form'), price = document.getElementById('price');
+      var book = form.querySelector('[data-book]'), requote = form.querySelector('[data-requote]');
+      if (!price || !book) return;
+      var stale = false;
+      function markStale(e) {
+        if (stale || !e.target.name || e.target.type === 'hidden') return;
+        stale = true;
+        price.classList.add('is-stale');
+        price.querySelector('[data-stale-note]').hidden = false;
+        requote.hidden = false;
+        book.hidden = true; book.disabled = true;
+      }
+      form.addEventListener('input', markStale);
+      form.addEventListener('change', markStale);
     })();
   </script>
 {% endblock %}

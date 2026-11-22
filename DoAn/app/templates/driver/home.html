@@ -1,61 +1,82 @@
 {% extends "base.html" %}
 {% from "admin/_form_macros.html" import errors_box %}
-{% block title %}Tài xế{% endblock %}
+{% from "_trip.html" import trip %}
+{% from "_fields.html" import gps_fields %}
+{% from "_icons.html" import icon %}
+{% block title %}Trạng thái nhận chuyến{% endblock %}
 {% block content %}
-  <h1 class="h4 mb-3">Tài xế {{ driver.full_name }} ({{ driver.driver_id }})
-    <span class="status-pill status-{{ (driver.status or '')|lower }}">{{ driver.status|driver_status }}</span></h1>
+  {% macro area_form(form, area_config, submit_label, tech) -%}
+    <form method="post" action="/driver/online">
+      <div class="row g-3 mb-2">
+        <div class="col-sm-6">
+          <label class="form-label" for="f_city">Thành phố</label>
+          <select class="form-select" id="f_city" name="city">
+            {% for c in area_config %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c|city_label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="f_district">Quận</label>
+          <select class="form-select" id="f_district" name="district">
+            {% for c, ds in area_config.items() %}{% for d in ds %}
+              <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d|district_label }}</option>
+            {% endfor %}{% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="f_plate">Biển số xe</label>
+          <input class="form-control" id="f_plate" name="plate" required autocapitalize="characters" value="{{ form.plate }}">
+          <div class="form-text">Nhập biển số một xe đã đăng ký của bạn.</div>
+          {% if tech %}<div class="form-text tech-note">Được kiểm tra qua materialized view <code>vehicles_by_plate</code> (xe phải thuộc về bạn).</div>{% endif %}
+        </div>
+      </div>
+      {{ gps_fields('online', form, tech) }}
+      <button class="btn btn-primary btn-lg mt-3" type="submit">{{ submit_label }}</button>
+    </form>
+  {%- endmacro %}
+  {% set busy = driver.status == 'BUSY' %}
+  {% set area = areas[0] if areas else none %}
+  {% set online = driver.status == 'AVAILABLE' and area %}
   {{ errors_box(errors) }}
-  <p class="text-muted">Điểm đánh giá: {{ driver.rating }}</p>
-  {% if tech %}<p class="text-muted small tech-note">Tài xế chỉ có mặt ở một khu vực trong <code>drivers_by_area</code>.</p>{% endif %}
-
-  <h2 class="h6">Khu vực đang nhận chuyến</h2>
-  {% if areas %}
-    <ul>
-      {% for a in areas %}
-        <li>{{ a.district|district_label }}, {{ a.city|city_label }}, biển số {{ a.vehicle_plate }}</li>
-      {% endfor %}
-    </ul>
-    <a class="btn btn-outline-primary btn-sm mb-3" href="/driver/waiting?city={{ areas[0].city }}&amp;district={{ areas[0].district }}">Xem chuyến chờ ở khu vực này</a>
+  {% if busy %}
+    <section class="status-card status-card-busy" aria-labelledby="state-title">
+      <h1 class="h4" id="state-title">Bạn đang có chuyến</h1>
+      <p class="status-meta"><span class="status-pill status-busy">{{ driver.status|driver_status }}</span></p>
+      {% if current %}
+        <p class="fw-semibold mb-2">{{ ride_headline(current.status, 'driver') }}</p>
+        {% if current.pickup_address or current.destination_address %}{{ trip(current.pickup_address, current.destination_address) }}{% endif %}
+        <a class="btn btn-primary btn-lg mt-3" href="/rides/{{ current.ride_id }}">Mở chuyến đang chạy</a>
+        <p class="sheet-note mb-0">Hoàn thành chuyến này trước khi bật hoặc tắt nhận chuyến.</p>
+      {% else %}
+        <p class="mb-0">Không tìm thấy chuyến đang chạy trong tháng này. Hãy báo quản trị viên kiểm tra.</p>
+      {% endif %}
+    </section>
+  {% elif online %}
+    <section class="status-card status-card-online" aria-labelledby="state-title">
+      <h1 class="h4" id="state-title">Đang nhận chuyến ở {{ area.district|district_label }}</h1>
+      <p class="status-meta"><span class="status-pill status-available">{{ driver.status|driver_status }}</span>
+        <span>{{ area.city|city_label }}</span>
+        {% if area.vehicle_plate %}<span class="plate plate-sm"><span class="visually-hidden">Biển số </span>{{ area.vehicle_plate }}</span>{% endif %}</p>
+      <a class="btn btn-primary btn-lg" href="/driver/waiting?city={{ area.city }}&amp;district={{ area.district }}">Xem chuyến chờ</a>
+    </section>
+    <details class="disclosure"{% if errors %} open{% endif %}>
+      <summary>{{ icon('chevron-right', 'disclosure-icon') }}Đổi khu vực hoặc xe</summary>
+      {{ area_form(form, area_config, 'Chuyển sang khu vực này', tech) }}
+    </details>
   {% else %}
-    <p class="text-muted">Chưa có khu vực nào (bạn đang ngoại tuyến hoặc đang chở khách).</p>
+    <section class="status-card" aria-labelledby="state-title">
+      <h1 class="h4" id="state-title">{{ 'Chọn khu vực để nhận chuyến' if driver.status == 'AVAILABLE' else 'Bạn đang nghỉ' }}</h1>
+      <p class="status-meta"><span class="status-pill status-{{ (driver.status or '')|lower }}">{{ driver.status|driver_status }}</span></p>
+      <p>Bật nhận chuyến để thấy các chuyến đang chờ quanh bạn.</p>
+      {{ area_form(form, area_config, 'Bật nhận chuyến', tech) }}
+    </section>
   {% endif %}
-
-  {% if driver.status != 'BUSY' %}
-  <form method="post" action="/driver/online" style="max-width: 560px" class="mb-3">
-    <div class="row">
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" for="f_city">Thành phố</label>
-        <select class="form-select" id="f_city" name="city">
-          {% for c in area_config %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c|city_label }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" for="f_district">Quận</label>
-        <select class="form-select" id="f_district" name="district">
-          {% for c, ds in area_config.items() %}{% for d in ds %}
-            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d|district_label }}</option>
-          {% endfor %}{% endfor %}
-        </select>
-      </div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label" for="f_plate">Biển số xe</label>
-      <input class="form-control" id="f_plate" name="plate" required value="{{ form.plate }}">
-      <div class="form-text">Chọn một xe đã đăng ký của bạn.</div>
-      {% if tech %}<div class="form-text tech-note">Được kiểm tra qua materialized view <code>vehicles_by_plate</code> (xe phải thuộc về bạn).</div>{% endif %}
-    </div>
-    <div class="row">
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" for="f_lat">Vĩ độ (tùy chọn)</label>
-        <input class="form-control" id="f_lat" name="lat" inputmode="decimal" value="{{ form.lat }}">
-      </div>
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" for="f_lng">Kinh độ (tùy chọn)</label>
-        <input class="form-control" id="f_lng" name="lng" inputmode="decimal" value="{{ form.lng }}">
-      </div>
-    </div>
-    <button class="btn btn-primary" type="submit">Bật nhận chuyến</button>
-  </form>
+  {% if tech %}<p class="text-muted small tech-note">Tài xế chỉ có mặt ở một khu vực trong <code>drivers_by_area</code>.</p>{% endif %}
+  {% if not busy and (areas or driver.status == 'AVAILABLE') %}
+    <form method="post" action="/driver/offline" class="offline-form">
+      <button class="btn btn-outline-danger" type="submit">Tắt nhận chuyến</button>
+    </form>
+  {% endif %}
+  {% if not busy %}
   <script>
     (function () {
       var city = document.getElementById('f_city'), dist = document.getElementById('f_district');
@@ -71,15 +92,5 @@
       city.addEventListener('change', sync); sync();
     })();
   </script>
-  {% else %}
-    <div class="alert alert-warning">Bạn đang có chuyến: chưa thể bật hoặc tắt nhận chuyến.
-      {% if current_ride %}<a class="alert-link" href="/rides/{{ current_ride }}">Mở chuyến {{ current_ride }}</a> để bắt đầu hoặc hoàn thành.
-      {% else %}Không tìm thấy chuyến đang chạy trong tháng này: báo quản trị dùng trang Nhất quán để giải phóng.{% endif %}</div>
-  {% endif %}
-
-  {% if driver.status != 'BUSY' and (areas or driver.status == 'AVAILABLE') %}
-  <form method="post" action="/driver/offline" class="mb-3">
-    <button class="btn btn-outline-danger" type="submit">Tắt nhận chuyến</button>
-  </form>
   {% endif %}
 {% endblock %}

@@ -118,3 +118,14 @@ def test_remove_from_all_areas_deletes_every_configured_area():
     pairs = driver_presence.remove_from_all_areas(db, "DRV_551")
     assert len(pairs) == N_AREAS == db.names().count("T05_area_delete")
     assert set(pairs) == {(c, d) for c, ds in AREAS.items() for d in ds}
+
+
+def test_lost_race_results_carry_area_and_day():
+    want = {"city": "HCM", "district": "TAN_PHU", "day": "2026-10-04"}
+    lost = rides_flow.accept_ride(_db(T05_ride_accept=[LwtResult(False, {"status": "ACCEPTED"})]),
+                                  "RIDE_1024", "DRV_551", NOW)
+    assert lost.code == "lwt_lost" and lost.data == want
+    taken_db = FakeDb({"B06_ride_get": [dict(RIDE, status="ACCEPTED", driver_id="DRV_553")]})
+    taken = rides_flow.accept_ride(taken_db, "RIDE_1024", "DRV_551", NOW)
+    assert taken.code == "invalid_transition" and taken.data == want
+    assert taken_db.names() == ["B06_ride_get"]

@@ -1,0 +1,19 @@
+{# Ô vị trí GPS không bắt buộc, gập lại mặc định; mở sẵn khi bật chế độ kỹ thuật hoặc khi đã có giá trị. #}
+{% from "_icons.html" import icon %}
+{% macro gps_fields(prefix, form=none, expanded=false) -%}
+{% set lat = (form.lat if form else '') or '' %}
+{% set lng = (form.lng if form else '') or '' %}
+<details class="disclosure gps-fields"{% if expanded or lat or lng %} open{% endif %}>
+  <summary>{{ icon('chevron-right', 'disclosure-icon') }}Vị trí hiện tại (không bắt buộc)</summary>
+  <div class="row g-2 mt-1">
+    <div class="col-6">
+      <label class="form-label" for="{{ prefix }}-lat">Vĩ độ</label>
+      <input class="form-control" id="{{ prefix }}-lat" name="lat" inputmode="decimal" placeholder="10.8270" value="{{ lat }}">
+    </div>
+    <div class="col-6">
+      <label class="form-label" for="{{ prefix }}-lng">Kinh độ</label>
+      <input class="form-control" id="{{ prefix }}-lng" name="lng" inputmode="decimal" placeholder="106.6880" value="{{ lng }}">
+    </div>
+  </div>
+</details>
+{%- endmacro %}

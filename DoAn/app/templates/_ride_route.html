@@ -1,14 +1,26 @@
-{# Hành trình chuyến: các trạm nối nhau như một tuyến đường, trạm hiện tại tô màu hổ phách #}
+{# Tiến trình chuyến: trạm đã qua có dấu kiểm và chữ ẩn "(đã xong)", trạm hiện tại tô hổ phách, trạm hủy có dấu x #}
+{% from "_icons.html" import icon %}
 {% macro ride_route(ride) -%}
-  {% set steps = [('REQUESTED', 'Đặt xe'), ('ACCEPTED', 'Tài xế nhận'), ('ONGOING', 'Đang chở'), ('COMPLETED', 'Hoàn thành')] %}
+  {% set steps = [('REQUESTED', 'Đặt xe', ride.requested_at), ('ACCEPTED', 'Tài xế nhận', ride.accepted_at),
+                  ('ONGOING', 'Đang trong chuyến', ride.started_at), ('COMPLETED', 'Hoàn thành', ride.completed_at)] %}
   {% set order = ['REQUESTED', 'ACCEPTED', 'ONGOING', 'COMPLETED'] %}
   {% set cancelled = ride.status == 'CANCELLED' %}
   {% set reached = (order.index(ride.status) if ride.status in order else (1 if ride.accepted_at else 0)) %}
-  <ol class="ride-route" aria-label="Hành trình chuyến">
-    {% for code, label in steps %}
-      {% if cancelled and loop.index0 > reached %}{% if loop.index0 == reached + 1 %}<li class="stop-cancel" aria-current="step">Đã hủy</li>{% endif %}
+  {% set ns = namespace(cancel_at=none) %}
+  {% for t, s in (ride.history or []) %}{% if s == 'CANCELLED' %}{% set ns.cancel_at = t %}{% endif %}{% endfor %}
+  <ol class="ride-route" aria-label="Tiến trình chuyến">
+    {% for code, label, at in steps %}
+      {% set i = loop.index0 %}
+      {% if cancelled and i > reached %}
+        {% if i == reached + 1 %}<li class="stop-cancel" aria-current="step"><span class="stop-dot">{{ icon('x') }}</span><span class="stop-label">Đã hủy</span>{% if ns.cancel_at %}<span class="stop-time">{{ ns.cancel_at|hm }}</span>{% endif %}</li>{% endif %}
       {% else %}
-        <li class="{{ 'now' if (loop.index0 == reached and not cancelled and ride.status != 'COMPLETED') else ('done' if loop.index0 <= reached else '') }}"{% if loop.index0 == reached and not cancelled %} aria-current="step"{% endif %}>{{ label }}</li>
+        {% set is_now = i == reached and not cancelled and ride.status != 'COMPLETED' %}
+        {% set is_done = i <= reached and not is_now %}
+        <li class="{{ 'now' if is_now else ('done' if is_done else 'todo') }}"{% if i == reached and not cancelled %} aria-current="step"{% endif %}>
+          <span class="stop-dot">{% if is_done %}{{ icon('check') }}{% endif %}</span>
+          <span class="stop-label">{{ label }}</span>{% if is_done %}<span class="visually-hidden"> (đã xong)</span>{% endif %}
+          {% if i <= reached and at %}<span class="stop-time">{{ at|hm }}</span>{% endif %}
+        </li>
       {% endif %}
     {% endfor %}
   </ol>

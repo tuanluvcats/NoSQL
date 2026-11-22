@@ -16,9 +16,12 @@ router = APIRouter()
 _CUSTOMER = Depends(require_role(CUSTOMER))
 
 
-def _page(request: Request, form: dict, errors: list[str], status: int = 200, quote=None, result=None):
+def _page(request: Request, form: dict, errors: list[str], status: int = 200, quote=None, result=None,
+          price_changed: bool = False):
     ctx = {"form": form, "errors": errors, "areas": AREAS, "methods": PAYMENT_METHODS, "quote": quote,
-           "result": result, "lwt_current": result.current if result is not None and not result.ok else None}
+           "result": result, "lwt_current": result.current if result is not None and not result.ok else None,
+           "promo_message": booking.promo_reason(quote.promo_error) if quote is not None else None,
+           "price_changed": price_changed}
     return render(request, "customer/book.html", ctx, status_code=status)
 
 
@@ -38,6 +41,14 @@ def _as_dict(f: BookingForm, raw_distance: str) -> dict:
     return {"ride_id": f.ride_id, "city": f.city, "district": f.district, "pickup_address": f.pickup_address,
             "destination_address": f.destination_address, "distance_km": raw_distance,
             "payment_method": f.payment_method, "promo_code": f.promo_code or ""}
+
+
+def _same_price(raw: str, payable: float) -> bool:
+    """Giá khách đã thấy (ô ẩn quoted_payable) còn khớp giá tính lại không; sai định dạng coi như đã đổi."""
+    try:
+        return abs(float(raw.strip()) - float(payable)) <= 0.5
+    except ValueError:
+        return False
 
 
 @router.get("/customer/book")
@@ -67,11 +78,16 @@ def book_quote(request: Request, ride_id: str = Form(""), city: str = Form(""), 
 def book_submit(request: Request, ride_id: str = Form(""), city: str = Form(""), district: str = Form(""),
                 pickup_address: str = Form(""), destination_address: str = Form(""),
                 distance_km: str = Form(""), payment_method: str = Form(""), promo_code: str = Form(""),
-                user: dict = _CUSTOMER):
+                quoted_payable: str = Form(""), user: dict = _CUSTOMER):
     f = _parse(ride_id, city, district, pickup_address, destination_address, distance_km,
                payment_method, promo_code)
     form = _as_dict(f, distance_km)
-    result = booking.book_ride(get_db(request), user["ref_id"], f, request.app.state.clock())
+    db, now = get_db(request), request.app.state.clock()
+    if quoted_payable.strip() and not booking.validate_booking(f):
+        q = booking.quote(db, f, now)  # chỉ đọc B16, một lần mỗi lần đặt, không theo dòng
+        if not _same_price(quoted_payable, q.payable):
+            return _page(request, form, [], 409, quote=q, price_changed=True)
+    result = booking.book_ride(db, user["ref_id"], f, now)
     if not result.ok:
         return _page(request, form, [result.message], 400, result=result)
     set_flash(request, True, result.message)

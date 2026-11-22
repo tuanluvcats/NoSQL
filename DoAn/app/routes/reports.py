@@ -12,8 +12,8 @@ from starlette.responses import Response
 
 from config import AREAS, PAYMENT_METHODS
 from domain.auth import ADMIN, CUSTOMER, DRIVER
-from domain.tz import fmt_vn, to_date, to_vn, vn_date, yyyymm as month_of
-from routes.deps import get_db, render, require_role, templates
+from domain.tz import month_label, parse_day, shift_month, vn_date, yyyymm as month_of
+from routes.deps import get_db, render, require_role
 from services import reports
 
 router = APIRouter()
@@ -24,19 +24,14 @@ _DRIVER = Depends(require_role(DRIVER))
 _ID = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
 SAMPLE_HINT = "Dữ liệu mẫu: 04/10/2026"
 
-templates.env.filters["vnd"] = lambda v: f"{float(v or 0):,.0f}".replace(",", ".")  # 1.269.000
-templates.env.filters["hm"] = lambda dt: to_vn(dt).strftime("%H:%M") if dt is not None else "-"
-templates.env.filters["dmy_hms"] = lambda dt: fmt_vn(dt) if dt is not None else "-"
-templates.env.filters["dmy"] = lambda d: to_date(d).strftime("%d/%m/%Y") if d is not None else "-"
-
 
 def _day(raw: str | None, default: date, label: str = "Ngày") -> date:
     if raw is None or not raw.strip():
         return default
     try:
-        return to_date(raw)
+        return parse_day(raw)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"{label} không hợp lệ (cần YYYY-MM-DD).")
+        raise HTTPException(status_code=400, detail=f"{label} không hợp lệ (cần dạng ngày/tháng/năm, ví dụ 04/10/2026).")
 
 
 def _opt_day(raw: str | None, label: str) -> date | None:
@@ -90,10 +85,18 @@ def _month(raw: str | None, default: int) -> int:
 
 @router.get("/driver/income")
 def driver_income(request: Request, yyyymm: str | None = None, user: dict = _DRIVER):
-    month = _month(yyyymm, month_of(request.app.state.clock()))
+    current = month_of(request.app.state.clock())
+    month = _month(yyyymm, current)
     data = reports.driver_month(get_db(request), user["ref_id"], month)  # chỉ của chính tài xế đăng nhập
-    return render(request, "driver/income.html", {"month": month, "income": data["income"], "rides": data["rides"],
-                                                  "hint": SAMPLE_HINT})
+    first = request.app.state.settings.first_month
+    prev_m, next_m = shift_month(month, -1), shift_month(month, 1)
+    prev_m = prev_m if prev_m >= first else None
+    next_m = next_m if next_m <= current else None
+    return render(request, "driver/income.html", {
+        "month": month, "month_label": month_label(month),
+        "prev_month": prev_m, "prev_label": month_label(prev_m) if prev_m else "",
+        "next_month": next_m, "next_label": month_label(next_m) if next_m else "",
+        "income": data["income"], "rides": data["rides"], "hint": SAMPLE_HINT})
 
 
 @router.get("/driver/ratings")

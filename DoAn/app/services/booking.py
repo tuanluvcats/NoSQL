@@ -32,6 +32,15 @@ _PROMO_REASONS = {
 }
 
 
+def promo_reason(code: str | None) -> str | None:
+    """Câu tiếng Việt cho mã lỗi khuyến mãi của báo giá (không hiện mã lỗi cho người dùng)."""
+    if not code:
+        return None
+    if code == "exhausted":
+        return "Mã khuyến mãi đã hết lượt."
+    return _PROMO_REASONS.get(code, "Mã khuyến mãi không hợp lệ.")
+
+
 @dataclass
 class BookingForm:
     ride_id: str

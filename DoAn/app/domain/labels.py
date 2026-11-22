@@ -74,3 +74,20 @@ def city_label(value):
 
 def district_label(value):
     return _lookup(DISTRICT, value)
+
+
+def ride_headline(status, viewer: str = "customer", driver_name: str | None = None) -> str:
+    """Tiêu đề trang chuyến theo trạng thái và người xem: customer = khách của chuyến, driver = tài xế của chuyến,
+    other = điều phối, quản trị hoặc tài xế đang xem chuyến chờ."""
+    coming = f"Tài xế {driver_name} đang đến" if driver_name else "Tài xế đang đến"
+    if status == "REQUESTED":
+        return "Đang tìm tài xế cho bạn" if viewer == "customer" else "Chuyến đang chờ tài xế"
+    if status == "ACCEPTED":
+        return "Đến điểm đón khách" if viewer == "driver" else coming
+    if status == "ONGOING":
+        return "Đang chở khách" if viewer == "driver" else "Đang trong chuyến"
+    if status == "COMPLETED":
+        return "Chuyến đã hoàn thành"
+    if status == "CANCELLED":
+        return "Chuyến đã hủy"
+    return ride_status(status) or "Chuyến đi"

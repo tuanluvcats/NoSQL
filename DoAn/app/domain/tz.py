@@ -55,3 +55,41 @@ def to_date(v) -> date:
     if hasattr(v, 'date'):
         return v.date()
     raise ValueError(f'Không đổi được sang date: {v!r}')
+
+
+_DAY_FORMATS = ('%d/%m/%Y', '%Y-%m-%d')
+
+
+def parse_day(raw: str) -> date:
+    """Ngày người dùng nhập: dd/mm/yyyy (cách viết trên giao diện) hoặc YYYY-MM-DD (liên kết cũ, ô chọn ngày của trình duyệt)."""
+    s = (raw or '').strip()
+    for fmt in _DAY_FORMATS:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f'Ngày không hợp lệ: {raw!r}')
+
+
+def fmt_ago(dt: datetime, now: datetime) -> str:
+    """Thời gian tương đối cho danh sách chuyến chờ: vừa xong, 5 phút trước, 2 giờ trước; quá một ngày thì ghi ngày giờ."""
+    secs = (to_vn(now) - to_vn(dt)).total_seconds()
+    if secs < 60:
+        return 'vừa xong'
+    if secs < 3600:
+        return f'{int(secs // 60)} phút trước'
+    if secs < 86400:
+        return f'{int(secs // 3600)} giờ trước'
+    return to_vn(dt).strftime('%d/%m/%Y %H:%M')
+
+
+def shift_month(ym: int, delta: int) -> int:
+    """Cộng trừ tháng trên số YYYYMM (202601, -1 thành 202512)."""
+    y, m = divmod(ym, 100)
+    idx = y * 12 + (m - 1) + delta
+    return (idx // 12) * 100 + idx % 12 + 1
+
+
+def month_label(ym: int) -> str:
+    """Số YYYYMM thành MM/YYYY để hiển thị."""
+    return f'{ym % 100:02d}/{ym // 100}'

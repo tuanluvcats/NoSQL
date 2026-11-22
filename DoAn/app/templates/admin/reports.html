@@ -15,13 +15,15 @@
         {% for d in areas[city] %}<option value="{{ d }}"{% if d == district %} selected{% endif %}>{{ d|district_label }}</option>{% endfor %}
       </select></div>
     <div class="col-auto"><label class="form-label small mb-0" for="r-day">Ngày</label>
-      <input class="form-control form-control-sm" type="date" id="r-day" name="day" value="{{ day }}"></div>
+      <input class="form-control form-control-sm" type="text" id="r-day" name="day" value="{{ day|dmy if day else '' }}" placeholder="ngày/tháng/năm"
+             pattern="\d{1,2}/\d{1,2}/\d{4}|\d{4}-\d{2}-\d{2}" title="Ví dụ 04/10/2026" autocomplete="off"></div>
     <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Xem</button></div>
   </form>
 
   <h2 class="h6">Doanh thu {{ city|city_label }} ngày {{ today|dmy }}</h2>
+  <div class="table-responsive">
   <table class="table table-sm table-bordered w-auto">
-    <thead><tr><th>Phương thức</th><th class="text-end">Số giao dịch</th><th class="text-end">Doanh thu (VND)</th><th class="text-end">Giảm giá (VND)</th></tr></thead>
+    <thead><tr><th>Phương thức</th><th class="text-end">Số giao dịch</th><th class="text-end">Doanh thu</th><th class="text-end">Giảm giá</th></tr></thead>
     <tbody>
     {% for m in methods %}
       <tr><td>{{ m|pay_method }}</td><td class="text-end">{{ revenue.by_method[m].count }}</td>
@@ -31,19 +33,21 @@
         <td class="text-end">{{ revenue.total_amount|vnd }}</td><td class="text-end">{{ revenue.total_discount|vnd }}</td></tr>
     </tbody>
   </table>
+  </div>
   <a class="btn btn-sm btn-outline-secondary mb-3" href="/admin/export/payments.csv?city={{ city }}&amp;day={{ day }}">Xuất CSV thanh toán ngày này</a>
 
   <h2 class="h6">7 ngày ({{ week.days[0]|dmy }} đến {{ week.days[-1]|dmy }}), {{ city|city_label }}</h2>
-  <p>{{ week.count }} giao dịch, doanh thu <strong>{{ week.amount|vnd }}</strong> VND</p>
+  <p>{{ week.count }} giao dịch, doanh thu <strong>{{ week.amount|vnd }}</strong></p>
 
   <h2 class="h6">Khu vực {{ district|district_label }}, {{ city|city_label }} ngày {{ today|dmy }}</h2>
   <table class="table table-sm table-bordered w-auto">
     <tbody>
       <tr><th>Số chuyến đặt</th><td class="text-end">{{ stats.so_chuyen }}</td></tr>
-      <tr><th>Tổng cước (VND)</th><td class="text-end">{{ stats.tong_cuoc|vnd }}</td></tr>
+      <tr><th>Tổng cước</th><td class="text-end">{{ stats.tong_cuoc|vnd }}</td></tr>
       <tr><th>Chuyến đặt sớm nhất</th><td class="text-end">{{ stats.som_nhat|hm }}</td></tr>
       <tr><th>Chuyến đặt muộn nhất</th><td class="text-end">{{ stats.muon_nhat|hm }}</td></tr>
     </tbody>
   </table>
+  <p class="sheet-note">Tổng cước tính mọi chuyến đặt trong ngày tại quận này (giá trước giảm giá), kể cả chuyến chưa xong hoặc đã hủy. Doanh thu ở trên chỉ tính tiền đã thu của các chuyến hoàn thành trong cả thành phố.</p>
   <p class="small"><a href="/admin/areas?city={{ city }}">Tài xế đang rảnh theo quận</a></p>
 {% endblock %}

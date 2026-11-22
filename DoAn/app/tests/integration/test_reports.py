@@ -2,6 +2,7 @@
 
 Con số kỳ vọng lấy từ dữ liệu seed thật (02_data.cql), múi giờ nghiệp vụ +07. Các test service chỉ đọc nên dùng
 `db_readonly`; test HTTP đăng nhập (ghi last_login_at) hoặc ghi GPS dùng `db`/`client_factory`."""
+import re
 from datetime import date, timedelta
 
 import pytest
@@ -239,6 +240,12 @@ def test_admin_reports_page_shows_seed_numbers(client_factory):
     page = c.get("/admin/reports?city=HCM&district=Q1&day=2026-10-04")
     assert "256.000" in page.text and "07:10" in page.text and "09:30" in page.text
     assert "1.269.000" in page.text  # 7 ngày kết thúc ngày 04/10
+    assert "VND" not in page.text
+    assert 'type="date"' not in page.text and 'value="04/10/2026"' in page.text  # ô ngày theo ngày/tháng/năm
+    assert "Tổng cước tính mọi chuyến đặt trong ngày tại quận này" in page.text
+    assert re.search(r'<div class="table-responsive">\s*<table[^>]*>\s*<thead><tr><th>Phương thức', page.text)
+    vn_day = c.get("/admin/reports?city=HCM&day=04/10/2026")  # nhập dd/mm/yyyy vẫn được nhận
+    assert vn_day.status_code == 200 and "1.269.000" in vn_day.text
     assert c.get("/admin/reports?city=ZZ").status_code == 400
     assert c.get("/admin/reports?day=sai").status_code == 400
 

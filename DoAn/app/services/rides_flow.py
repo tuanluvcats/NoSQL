@@ -18,12 +18,21 @@ from config import AREAS
 from domain.auth import can_cancel_ride, can_view_ride
 from domain.labels import ride_status
 from domain.rides import CANCELLABLE
-from domain.tz import truncate_ms, vn_date, yyyymm
+from domain.tz import to_date, truncate_ms, vn_date, yyyymm
 from services.booking import release_promo
 from services.driver_presence import _valid_coords, find_area_rows, remove_from_all_areas
 from services.result import ActionResult
 
 log = logging.getLogger(__name__)
+
+
+def _area_data(ride: Mapping) -> dict:
+    """Khu vực và ngày của chuyến (đã đọc sẵn), để trang tài xế đưa người thua về đúng danh sách chuyến chờ."""
+    try:
+        day = to_date(ride.get("ride_date")).isoformat()
+    except (TypeError, ValueError):
+        day = None
+    return {"city": ride.get("city"), "district": ride.get("district"), "day": day}
 
 
 def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult:
@@ -34,7 +43,8 @@ def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult
     if ride.get("status") != "REQUESTED":
         return ActionResult(False, "invalid_transition", "Chuyến đã được nhận hoặc không còn ở trạng thái chờ.",
                             ride_id=ride_id,
-                            current={"status": ride.get("status"), "driver_id": ride.get("driver_id")})
+                            current={"status": ride.get("status"), "driver_id": ride.get("driver_id")},
+                            data=_area_data(ride))
     areas = find_area_rows(db, driver_id, [ride["city"]])
     if not areas:
         return ActionResult(False, "driver_not_online",
@@ -44,7 +54,7 @@ def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult
     claim = db.lwt("APP07_driver_claim", [driver_id])
     if not claim.applied:
         return ActionResult(False, "driver_not_available",
-                            "Tài xế không ở trạng thái rảnh (AVAILABLE), không thể nhận chuyến.",
+                            "Bạn đang không ở trạng thái sẵn sàng nên chưa nhận được chuyến.",
                             ride_id=ride_id, current=claim.current)
 
     r = db.lwt("T05_ride_accept", [driver_id, area.get("full_name"), area.get("vehicle_plate"), now,
@@ -52,7 +62,7 @@ def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult
     if not r.applied:
         db.lwt("APP08_driver_release", [driver_id])  # thua ở rides: trả tài xế về AVAILABLE
         return ActionResult(False, "lwt_lost", "Chuyến vừa được tài xế khác nhận.", ride_id=ride_id,
-                            current=r.current)
+                            current=r.current, data=_area_data(ride))
 
     try:
         db.exec("T05_rbc_accept", [driver_id, ride["customer_id"], ride["ride_date"], ride_id])

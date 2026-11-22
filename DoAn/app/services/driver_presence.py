@@ -12,6 +12,7 @@ from datetime import date, datetime
 from typing import Iterable
 
 from config import AREAS
+from domain.labels import city_label, district_label
 from domain.tz import truncate_ms, vn_date
 from services.result import ActionResult
 
@@ -79,7 +80,7 @@ def go_online(db, driver_id: str, city: str, district: str, plate: str, lat: flo
         log.exception("Tài xế %s bật nhận chuyến: ghi khu vực/vị trí lỗi", driver_id)
         return ActionResult(True, "partial", "Đã bật nhận chuyến nhưng khu vực hoặc vị trí chưa được lưu đầy đủ. "
                             "Hãy thử bật lại, hoặc nhờ quản trị viên đối soát.")
-    return ActionResult(True, "ok", f"Đã bật nhận chuyến tại {district}, {city}.",
+    return ActionResult(True, "ok", f"Đã bật nhận chuyến tại {district_label(district)}, {city_label(city)}.",
                         data={"was_offline": was_offline, "location": lat is not None})
 
 

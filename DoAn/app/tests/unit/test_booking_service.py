@@ -214,3 +214,10 @@ def test_book_aux_failure_after_lwt_is_partial_not_rolled_back():
     db = FakeDb({"B02_customer_get": [CUST], "T04_rad_insert": [RuntimeError("boom")]})
     r = booking.book_ride(db, "CUST001", _form(promo_code=None), NOW)
     assert r.ok and r.code == "partial"
+
+
+def test_promo_reason_maps_codes_to_plain_vietnamese():
+    assert booking.promo_reason("not_found") == "Mã khuyến mãi không tồn tại."
+    assert booking.promo_reason("exhausted") == "Mã khuyến mãi đã hết lượt."
+    assert booking.promo_reason("weird") == "Mã khuyến mãi không hợp lệ."
+    assert booking.promo_reason(None) is None

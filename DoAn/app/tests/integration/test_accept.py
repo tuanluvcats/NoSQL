@@ -215,7 +215,7 @@ def test_http_losing_driver_gets_message_and_no_access_to_taken_ride(client_fact
     loser = client_factory(clock=_clock)
     http_login(loser, "drv553")
     r = loser.post("/rides/RIDE_1024/accept")
-    assert r.status_code == 303 and r.headers["location"] == "/driver"
+    assert r.status_code == 303 and r.headers["location"] == "/driver/waiting?city=HCM&district=TAN_PHU&day=2026-10-04"
     assert loser.get("/rides/RIDE_1024").status_code == 403  # chuyến đã của tài xế khác
     assert db.one("B06_ride_get", ["RIDE_1024"])["driver_id"] == "DRV_551"
     assert _status(db, "DRV_553") == "AVAILABLE"

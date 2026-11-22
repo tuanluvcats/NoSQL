@@ -10,6 +10,7 @@ from db import trace
 from domain import labels
 from db.trace import fmt_param
 from domain.auth import effective_role
+from domain.tz import fmt_ago, fmt_vn, to_date, to_vn
 from domain.write_matrix import EVENT_LABELS, WRITE_MATRIX
 from services.accounts import load_active_user
 
@@ -22,6 +23,13 @@ templates.env.filters["pay_method"] = labels.pay_method
 templates.env.filters["role_label"] = labels.role_label
 templates.env.filters["city_label"] = labels.city_label
 templates.env.filters["district_label"] = labels.district_label
+templates.env.filters["vnd"] = lambda v: f"{float(v or 0):,.0f}".replace(",", ".") + "đ"  # 1.269.000đ
+templates.env.filters["hm"] = lambda dt: to_vn(dt).strftime("%H:%M") if dt is not None else "-"
+templates.env.filters["dmy_hms"] = lambda dt: fmt_vn(dt) if dt is not None else "-"
+templates.env.filters["dmy_hm"] = lambda dt: to_vn(dt).strftime("%d/%m/%Y %H:%M") if dt is not None else "-"
+templates.env.filters["dmy"] = lambda d: to_date(d).strftime("%d/%m/%Y") if d is not None else "-"
+templates.env.filters["ago"] = lambda dt, now: fmt_ago(dt, now) if dt is not None else ""
+templates.env.globals["ride_headline"] = labels.ride_headline
 
 TECH_COOKIE = "tech_mode"
 

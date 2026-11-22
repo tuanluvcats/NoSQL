@@ -1,0 +1,13 @@
+{# Bộ biểu tượng SVG tự vẽ: lưới 24, nét 1,75, đầu nét tròn. sprite() đặt một lần trong base.html; icon(name) dùng lại. #}
+{% macro sprite() -%}
+<svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6L14.47 9.2L20.56 9.82L16 13.9L17.29 19.88L12 16.8L6.71 19.88L8 13.9L3.44 9.82L9.53 9.2Z"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+</svg>
+{%- endmacro %}
+{% macro icon(name, cls="") -%}
+<svg class="icon{{ ' ' ~ cls if cls }}" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"></use></svg>
+{%- endmacro %}

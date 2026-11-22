@@ -132,9 +132,9 @@ def _prev_month(ym: int) -> int:
     return (y - 1) * 100 + 12 if m == 1 else ym - 1
 
 
-def _fast_active(db, driver_id: str, now: datetime) -> str | None:
+def _fast_active_row(db, driver_id: str, now: datetime) -> dict | None:
     """Đường nhanh: rides_by_driver_month tháng này và tháng trước; mỗi dòng ứng viên được xác nhận lại bằng `rides`
-    (bảng phụ có thể cũ)."""
+    (bảng phụ có thể cũ). Trả về dòng `rides` đã xác nhận."""
     this_month = yyyymm(now)
     for ym in (this_month, _prev_month(this_month)):
         for row in db.rows("B10_driver_month", [driver_id, ym]):
@@ -142,8 +142,18 @@ def _fast_active(db, driver_id: str, now: datetime) -> str | None:
                 continue
             ride = db.one("B06_ride_get", [row["ride_id"]])
             if ride and ride.get("driver_id") == driver_id and ride.get("status") in ACTIVE:
-                return ride["ride_id"]
+                return ride
     return None
+
+
+def _fast_active(db, driver_id: str, now: datetime) -> str | None:
+    row = _fast_active_row(db, driver_id, now)
+    return row["ride_id"] if row else None
+
+
+def recent_active_ride_row(db, driver_id: str, now: datetime) -> dict | None:
+    """Như recent_active_ride nhưng trả cả dòng `rides` đã đọc khi xác nhận (không đọc thêm lần nào)."""
+    return _fast_active_row(db, driver_id, now)
 
 
 def recent_active_ride(db, driver_id: str, now: datetime) -> str | None:

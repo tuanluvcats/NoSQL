@@ -107,3 +107,26 @@ def test_home_quick_links_are_real_routes():
     for role in (None, "ADMIN", "CUSTOMER", "DRIVER"):
         for link in re.findall(r'href="(/[^"?#]*)"', _home(role=role)):
             assert link in paths or link in ("/", "/static/app.css", "/static/bootstrap.min.css"), (role, link)
+
+
+def test_guest_home_offers_register_and_login_once():
+    text = _home()
+    assert text.count('href="/register"') == 1 and text.count('href="/login"') == 1
+    assert '<a class="btn btn-primary btn-lg" href="/register">Đăng ký</a>' in text
+    assert '<a class="btn btn-outline-primary btn-lg" href="/login">Đăng nhập</a>' in text
+
+
+def test_register_form_supports_autofill():
+    import re
+
+    html = TestClient(create_app(Settings.from_env({}), db=FakeDb())).get("/register").text
+
+    def tag(i):
+        return re.search(rf'<input[^>]*id="{i}"[^>]*>', html).group(0)
+
+    assert 'autocomplete="username"' in tag("username")
+    assert 'autocomplete="new-password"' in tag("password")
+    assert 'autocomplete="name"' in tag("full_name")
+    assert 'type="tel"' in tag("phone") and 'autocomplete="tel"' in tag("phone")
+    assert 'autocomplete="email"' in tag("email") and 'inputmode="email"' in tag("email")
+    assert 'autocomplete="street-address"' in tag("address")

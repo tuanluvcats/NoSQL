@@ -1,0 +1,7 @@
+{# Lộ trình: điểm đón (chấm tròn xanh) nối xuống điểm đến (ô vuông hổ phách); chữ ẩn cho trình đọc màn hình. #}
+{% macro trip(pickup, destination) -%}
+<ol class="trip">
+  <li class="trip-stop trip-pickup"><span class="visually-hidden">Điểm đón: </span>{{ pickup or '' }}</li>
+  <li class="trip-stop trip-dropoff"><span class="visually-hidden">Điểm đến: </span>{{ destination or '' }}</li>
+</ol>
+{%- endmacro %}

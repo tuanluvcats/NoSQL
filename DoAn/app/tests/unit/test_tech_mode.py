@@ -1,5 +1,6 @@
 """Chế độ kỹ thuật: mặc định giao diện sạch (không CQL, không ghi chú kỹ thuật), bật bằng cookie hoặc APP_TECH_MODE."""
 import re
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from starlette.requests import Request
 
 from config import PAYMENT_METHODS, Settings
 from domain import labels
+from domain.tz import VN
 from main import create_app
 from tests.fakes import FakeDb
 
@@ -214,12 +216,53 @@ def test_booking_form_shows_area_names_not_codes():
 
 @pytest.mark.parametrize("ride, now, cls", [
     ({"status": "REQUESTED"}, "Đặt xe", "now"),
-    ({"status": "ONGOING"}, "Đang chở", "now"),
+    ({"status": "ONGOING"}, "Đang trong chuyến", "now"),
     ({"status": "COMPLETED"}, "Hoàn thành", "done"),
-    ({"status": "CANCELLED", "accepted_at": "x"}, "Đã hủy", "stop-cancel"),
+    ({"status": "CANCELLED", "accepted_at": datetime(2026, 10, 4, 3, 0, tzinfo=timezone.utc)}, "Đã hủy", "stop-cancel"),
 ])
 def test_ride_route_marks_current_stop(ride, now, cls):
     from routes.deps import templates
     html = templates.env.from_string('{% from "_ride_route.html" import ride_route %}{{ ride_route(ride) }}').render(ride=ride)
-    current = re.search(r'<li class="([^"]*)" aria-current="step">([^<]+)</li>', html)
-    assert current and current.group(2) == now and cls in current.group(1), html
+    current = re.search(r'<li class="([^"]*)" aria-current="step">(.*?)</li>', html, re.S)
+    assert current, html
+    label = re.search(r'<span class="stop-label">([^<]+)</span>', current.group(2))
+    assert label and label.group(1) == now and cls in current.group(1).split(), html
+
+
+def _route(ride):
+    from routes.deps import templates
+    return templates.env.from_string('{% from "_ride_route.html" import ride_route %}{{ ride_route(ride) }}').render(ride=ride)
+
+
+def test_ride_route_marks_passed_stops_with_icon_and_text():
+    t = datetime(2026, 10, 4, 3, 5, tzinfo=timezone.utc)
+    html = _route({"status": "ONGOING", "requested_at": t, "accepted_at": t})
+    done = re.findall(r'<li class="done">(.*?)</li>', html, re.S)
+    assert len(done) == 2
+    assert all('href="#i-check"' in d and "(đã xong)" in d for d in done)
+    assert "10:05" in done[0]
+    todo = re.findall(r'<li class="todo">(.*?)</li>', html, re.S)
+    assert len(todo) == 1 and "stop-time" not in todo[0]
+
+
+def test_ride_route_cancel_stop_has_icon_and_time():
+    html = _route({"status": "CANCELLED", "history": [(datetime(2026, 10, 4, 10, 0, tzinfo=VN), "REQUESTED"),
+                                                        (datetime(2026, 10, 4, 10, 20, tzinfo=VN), "CANCELLED")]})
+    li = re.search(r'<li class="stop-cancel" aria-current="step">(.*?)</li>', html, re.S).group(1)
+    assert 'href="#i-x"' in li and "10:20" in li
+
+
+@pytest.mark.parametrize("status, viewer, name, want", [
+    ("REQUESTED", "customer", None, "Đang tìm tài xế cho bạn"),
+    ("REQUESTED", "other", None, "Chuyến đang chờ tài xế"),
+    ("ACCEPTED", "customer", "Quang", "Tài xế Quang đang đến"),
+    ("ACCEPTED", "customer", None, "Tài xế đang đến"),
+    ("ACCEPTED", "driver", "Quang", "Đến điểm đón khách"),
+    ("ONGOING", "driver", None, "Đang chở khách"),
+    ("ONGOING", "customer", None, "Đang trong chuyến"),
+    ("COMPLETED", "other", None, "Chuyến đã hoàn thành"),
+    ("CANCELLED", "customer", None, "Chuyến đã hủy"),
+    (None, "customer", None, "Chuyến đi"),
+])
+def test_ride_headline_depends_on_status_and_viewer(status, viewer, name, want):
+    assert labels.ride_headline(status, viewer, name) == want

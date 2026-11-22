@@ -7,17 +7,17 @@
       {% if form_error %}<div class="alert alert-danger">{{ form_error }}</div>{% endif %}
       <form method="post" action="/register" class="card card-body">
         <label class="form-label" for="username">Tên đăng nhập</label>
-        <input class="form-control mb-2" id="username" name="username" value="{{ form.username or '' }}" required>
+        <input class="form-control mb-2" id="username" name="username" autocomplete="username" value="{{ form.username or '' }}" required>
         <label class="form-label" for="password">Mật khẩu (tối thiểu 6 ký tự)</label>
-        <input class="form-control mb-2" id="password" name="password" type="password" required>
+        <input class="form-control mb-2" id="password" name="password" type="password" autocomplete="new-password" required>
         <label class="form-label" for="full_name">Họ tên</label>
-        <input class="form-control mb-2" id="full_name" name="full_name" value="{{ form.full_name or '' }}" required>
+        <input class="form-control mb-2" id="full_name" name="full_name" autocomplete="name" value="{{ form.full_name or '' }}" required>
         <label class="form-label" for="phone">Số điện thoại</label>
-        <input class="form-control mb-2" id="phone" name="phone" value="{{ form.phone or '' }}" required>
+        <input class="form-control mb-2" id="phone" name="phone" type="tel" autocomplete="tel" value="{{ form.phone or '' }}" required>
         <label class="form-label" for="email">Email</label>
-        <input class="form-control mb-2" id="email" name="email" value="{{ form.email or '' }}" required>
+        <input class="form-control mb-2" id="email" name="email" autocomplete="email" inputmode="email" value="{{ form.email or '' }}" required>
         <label class="form-label" for="address">Địa chỉ</label>
-        <input class="form-control mb-3" id="address" name="address" value="{{ form.address or '' }}">
+        <input class="form-control mb-3" id="address" name="address" autocomplete="street-address" value="{{ form.address or '' }}">
         <button class="btn btn-primary" type="submit">Đăng ký</button>
       </form>
       <p class="mt-3"><a href="/login">Đã có tài khoản? Đăng nhập</a></p>

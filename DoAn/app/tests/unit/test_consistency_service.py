@@ -121,3 +121,12 @@ def test_reconcile_writes_secondary_tables_from_rides_only():
     db2 = FakeDb({"B06_ride_get": [ride2]})
     assert consistency.reconcile(db2, "R1") == ["rides_by_customer", "rides_by_area_date"]
     assert consistency.reconcile(FakeDb(), "R_NOPE") == []
+
+
+def test_recent_active_ride_row_returns_loaded_ride_without_extra_reads():
+    db = FakeDb({"B10_driver_month": [[{"ride_id": "RIDE_X", "status": "ONGOING"}]],
+                 "B06_ride_get": [{"ride_id": "RIDE_X", "driver_id": "DRV_1", "status": "ONGOING",
+                                   "pickup_address": "A"}]})
+    row = consistency.recent_active_ride_row(db, "DRV_1", NOW)
+    assert row["pickup_address"] == "A"
+    assert db.names() == ["B10_driver_month", "B06_ride_get"]

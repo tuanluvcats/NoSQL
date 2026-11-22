@@ -1,20 +1,26 @@
 """Tài xế: bật/tắt nhận chuyến, chuyến chờ theo khu vực, nhận chuyến. driver_id luôn lấy từ phiên đăng nhập."""
 from __future__ import annotations
 
-from datetime import date
+import re
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from starlette.responses import RedirectResponse
 
 from config import AREAS
 from domain.auth import DRIVER
-from domain.tz import fmt_vn, to_date, vn_date
+from domain.tz import parse_day, vn_date
 from routes.deps import flash_trace, get_db, pop_trace_event, render, require_role, set_flash
 from services import consistency, driver_presence, reports, rides_flow
 from services.result import ActionResult
 
 router = APIRouter()
 _DRIVER = Depends(require_role(DRIVER))
+
+LAST_AREA_COOKIE = "driver_last_area"
+_LAST_AREA_MAX_AGE = 180 * 24 * 3600
+_PLATE = re.compile(r"^[0-9A-Za-z.\-]{1,20}$")
+_RACE_LOST = ("lwt_lost", "invalid_transition")
 
 
 def _float_or_none(raw: str, label: str) -> tuple[float | None, str | None]:
@@ -27,6 +33,39 @@ def _float_or_none(raw: str, label: str) -> tuple[float | None, str | None]:
         return None, f"{label} không phải số."
 
 
+def _remembered_area(request: Request, driver_id: str) -> dict | None:
+    """Khu vực và biển số lần bật nhận chuyến gần nhất trên trình duyệt này, chỉ khi đúng tài xế đang đăng nhập."""
+    parts = (request.cookies.get(LAST_AREA_COOKIE) or "").split("|")
+    if len(parts) != 4:
+        return None
+    did, city, district, plate = parts
+    if did != driver_id or city not in AREAS or district not in AREAS[city] or not _PLATE.match(plate):
+        return None
+    return {"city": city, "district": district, "plate": plate}
+
+
+def _default_form(request: Request, driver_id: str, areas: list[dict]) -> dict:
+    """Giá trị ban đầu của biểu mẫu bật nhận chuyến: khu vực hiện tại, rồi cookie của chính tài xế, rồi mặc định."""
+    if areas:
+        a = areas[0]
+        return {"city": a["city"], "district": a["district"], "plate": a.get("vehicle_plate") or "", "lat": "", "lng": ""}
+    remembered = _remembered_area(request, driver_id)
+    if remembered:
+        return {**remembered, "lat": "", "lng": ""}
+    return {"city": "HCM", "district": "Q1", "plate": "", "lat": "", "lng": ""}
+
+
+def _waiting_url(data: dict) -> str:
+    """Danh sách chuyến chờ cùng khu vực và ngày của chuyến vừa tranh; thiếu dữ liệu thì về trang tài xế."""
+    city, district, day = data.get("city"), data.get("district"), data.get("day")
+    if city in AREAS and district in AREAS[city]:
+        params = {"city": city, "district": district}
+        if day:
+            params["day"] = day
+        return "/driver/waiting?" + urlencode(params)
+    return "/driver"
+
+
 def _home(request: Request, user: dict, errors: list[str] | None = None, status: int = 200, form: dict | None = None):
     db = get_db(request)
     driver_id = user["ref_id"]
@@ -34,10 +73,10 @@ def _home(request: Request, user: dict, errors: list[str] | None = None, status:
     if driver is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ tài xế.")
     areas = driver_presence.find_area_rows(db, driver_id)
-    current_ride = (consistency.recent_active_ride(db, driver_id, request.app.state.clock())
-                    if driver.get("status") == "BUSY" else None)
-    ctx = {"driver": driver, "areas": areas, "current_ride": current_ride, "area_config": AREAS, "errors": errors or [],
-           "form": form or {"city": "HCM", "district": "Q1", "plate": "", "lat": "", "lng": ""},
+    current = (consistency.recent_active_ride_row(db, driver_id, request.app.state.clock())
+               if driver.get("status") == "BUSY" else None)
+    ctx = {"driver": driver, "areas": areas, "current": current, "area_config": AREAS, "errors": errors or [],
+           "form": form or _default_form(request, driver_id, areas),
            "event": pop_trace_event(request) if status == 200 else None}
     return render(request, "driver/home.html", ctx, status_code=status)
 
@@ -63,7 +102,11 @@ def driver_online(request: Request, city: str = Form(""), district: str = Form("
     event = None
     if result.ok and result.code == "ok" and result.data.get("was_offline") and result.data.get("location"):
         event = "driver_online"  # đủ drivers, drivers_by_area, driver_locations nên áp ma trận ghi
-    return _done(request, result, "/driver", event)
+    response = _done(request, result, "/driver", event)
+    if result.ok and _PLATE.match(form["plate"]):
+        response.set_cookie(LAST_AREA_COOKIE, f"{user['ref_id']}|{form['city']}|{form['district']}|{form['plate']}",
+                            max_age=_LAST_AREA_MAX_AGE, httponly=True, samesite="lax")
+    return response
 
 
 @router.post("/driver/offline")
@@ -90,16 +133,19 @@ def driver_waiting(request: Request, city: str | None = None, district: str | No
         district = district or (here[0] if here else (AREAS[city][0] if city in AREAS else "Q1"))
     if city not in AREAS or district not in AREAS[city]:
         raise HTTPException(status_code=400, detail="Thành phố hoặc quận không hợp lệ.")
+    now = request.app.state.clock()
+    today = vn_date(now)
     if day:
         try:
-            day_v: date = to_date(day)
+            day_v = parse_day(day)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Ngày không hợp lệ (cần YYYY-MM-DD).")
+            raise HTTPException(status_code=400, detail="Ngày không hợp lệ (cần dạng ngày/tháng/năm, ví dụ 04/10/2026).")
     else:
-        day_v = vn_date(request.app.state.clock())
+        day_v = today
     rides = driver_presence.waiting_rides(db, city, district, day_v)
     return render(request, "driver/waiting.html", {"city": city, "district": district, "day": day_v.isoformat(),
-                                                   "areas": AREAS, "rides": rides, "fmt": fmt_vn})
+                                                   "areas": AREAS, "rides": rides, "now": now,
+                                                   "is_today": day_v == today})
 
 
 @router.post("/rides/{ride_id}/accept")
@@ -110,6 +156,8 @@ def accept(request: Request, ride_id: str, user: dict = _DRIVER):
         raise HTTPException(status_code=404, detail=result.message)
     if result.ok:
         return _done(request, result, f"/rides/{ride_id}", "accept" if result.code == "ok" else None)
+    if result.code in _RACE_LOST:
+        return _done(request, result, _waiting_url(result.data))
     return _done(request, result, "/driver")
 
 

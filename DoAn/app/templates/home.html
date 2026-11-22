@@ -3,6 +3,10 @@
   {% if not user %}
     <h1 class="h3">Đặt xe nhanh, giá rõ ràng</h1>
     <p class="lead">Đặt xe trong vài bước, biết trước cước phí và theo dõi chuyến đi của bạn.</p>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <a class="btn btn-primary btn-lg" href="/register">Đăng ký</a>
+      <a class="btn btn-outline-primary btn-lg" href="/login">Đăng nhập</a>
+    </div>
   {% else %}
     <h1 class="h3">Xin chào, {{ user.full_name or user.username }}</h1>
   {% endif %}

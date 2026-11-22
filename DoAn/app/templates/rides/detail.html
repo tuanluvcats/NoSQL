@@ -1,89 +1,170 @@
 {% extends "base.html" %}
 {% from "_ride_route.html" import ride_route %}
-{% block title %}Chuyến {{ ride.ride_id }}{% endblock %}
+{% from "_trip.html" import trip %}
+{% from "_fields.html" import gps_fields %}
+{% from "_icons.html" import icon %}
+{% block title %}Chi tiết chuyến{% endblock %}
 {% block content %}
-  <h1 class="h4 mb-3">Chi tiết chuyến {{ ride.ride_id }}
-    <span class="status-pill status-{{ (ride.status or '')|lower }}">{{ ride.status|ride_status }}</span></h1>
+  {% set is_customer = user.role == 'CUSTOMER' and ride.customer_id == user.ref_id %}
+  {% set is_driver = user.role == 'DRIVER' and ride.driver_id and ride.driver_id == user.ref_id %}
+  {% set is_staff = user.role in ('ADMIN', 'OPERATOR') %}
+  {% set viewer = 'customer' if is_customer else ('driver' if is_driver else 'other') %}
+  {% set cash = ride.payment_method == 'CASH' %}
+  {% set discount = ride.discount or 0 %}
+  {% set payable = (ride.fare or 0) - discount %}
+  {% set method = ride.payment_method|pay_method %}
+  <h1 class="h4 mb-2">{{ ride_headline(ride.status, viewer, ride.driver_name) }}</h1>
   {{ ride_route(ride) }}
-  <table class="table table-sm table-bordered w-auto">
-    <tbody>
-    {% set labels = {'customer_id': 'Mã khách', 'customer_name': 'Khách hàng', 'customer_phone': 'Điện thoại khách',
-                     'driver_id': 'Mã tài xế', 'driver_name': 'Tài xế', 'vehicle_plate': 'Biển số xe',
-                     'city': 'Thành phố', 'district': 'Quận', 'pickup_address': 'Điểm đón', 'destination_address': 'Điểm đến',
-                     'distance_km': 'Quãng đường (km)', 'fare': 'Cước (đồng)', 'discount': 'Giảm giá (đồng)',
-                     'promo_code': 'Mã khuyến mãi', 'payment_method': 'Thanh toán', 'status': 'Trạng thái', 'ride_date': 'Ngày đặt',
-                     'requested_at': 'Giờ đặt', 'accepted_at': 'Giờ nhận chuyến', 'started_at': 'Giờ bắt đầu',
-                     'completed_at': 'Giờ hoàn thành', 'cancel_reason': 'Lý do hủy', 'rated_at': 'Giờ đánh giá'} %}
-    {% for col, label in labels.items() %}
-      <tr><th>{{ label }}{% if tech %} <small class="text-muted font-monospace tech-note">{{ col }}</small>{% endif %}</th>
-          <td>{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% elif col == 'status' %}{{ ride[col]|ride_status }}{% elif col == 'payment_method' %}{{ ride[col]|pay_method }}{% elif col in ('fare', 'discount') %}{{ ride[col]|vnd }}{% elif col == 'ride_date' %}{{ ride[col]|dmy }}{% elif col == 'city' %}{{ ride[col]|city_label }}{% elif col == 'district' %}{{ ride[col]|district_label }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% if user and user.role == 'DRIVER' and ride.status == 'REQUESTED' %}
-    <form method="post" action="/rides/{{ ride.ride_id }}/accept" class="mb-3">
-      <button class="btn btn-success" type="submit">Nhận chuyến</button>
+
+  {# Tờ thông tin: một bề mặt, các phần chia bằng đường kẻ #}
+  <div class="sheet">
+    {% if ride.driver_name and not is_driver %}
+      <section class="sheet-section" aria-labelledby="sec-driver">
+        <h2 id="sec-driver">Tài xế</h2>
+        <p class="person-name">{{ ride.driver_name }}</p>
+        {% if ride.vehicle_plate %}<p class="plate"><span class="visually-hidden">Biển số </span>{{ ride.vehicle_plate }}</p>{% endif %}
+        {% if is_customer and ride.status == 'ACCEPTED' %}<p class="sheet-note">Đối chiếu biển số trước khi lên xe.</p>{% endif %}
+      </section>
+    {% endif %}
+    {% if (is_driver or is_staff) and ride.customer_name %}
+      <section class="sheet-section" aria-labelledby="sec-customer">
+        <h2 id="sec-customer">Khách hàng</h2>
+        <p class="person-name">{{ ride.customer_name }}</p>
+        {% if ride.customer_phone %}<p class="mb-0 mt-1"><a href="tel:{{ ride.customer_phone }}">{{ ride.customer_phone }}</a></p>{% endif %}
+      </section>
+    {% endif %}
+    <section class="sheet-section" aria-labelledby="sec-trip">
+      <h2 id="sec-trip">Lộ trình</h2>
+      {{ trip(ride.pickup_address, ride.destination_address) }}
+      <p class="sheet-note">{% if ride.distance_km is not none %}{{ ride.distance_km }} km · {% endif %}{{ ride.district|district_label }}, {{ ride.city|city_label }} · {{ ride.ride_date|dmy }}</p>
+    </section>
+    <section class="sheet-section" aria-labelledby="sec-pay">
+      <h2 id="sec-pay">Thanh toán</h2>
+      {% if ride.status == 'CANCELLED' %}
+        <p class="mb-0">Chuyến đã hủy nên không tính tiền.</p>
+        {% if ride.cancel_reason %}<p class="sheet-note mb-0">Lý do hủy: {{ ride.cancel_reason }}</p>{% endif %}
+      {% else %}
+        <dl class="receipt">
+          {% if discount %}<div class="receipt-line"><dt>Cước</dt><dd>{{ ride.fare|vnd }}</dd></div>
+          <div class="receipt-line"><dt>Giảm giá{% if ride.promo_code %} ({{ ride.promo_code }}){% endif %}</dt><dd>−{{ discount|vnd }}</dd></div>{% endif %}
+          <div class="receipt-line receipt-total"><dt>{{ 'Đã thanh toán' if ride.status == 'COMPLETED' else ('Khách trả' if is_driver else 'Phải trả') }}</dt><dd>{{ payable|vnd }}</dd></div>
+        </dl>
+        <p class="sheet-note mb-0">
+          {%- if ride.status == 'COMPLETED' %}{{ method }}{% if is_customer and discount %} · tiết kiệm {{ discount|vnd }}{% endif %}
+          {%- elif cash %}{% if is_customer %}Trả tiền mặt cho tài xế khi đến nơi.{% elif is_driver %}Thu tiền mặt của khách khi đến nơi.{% else %}Khách trả tiền mặt khi đến nơi.{% endif %}
+          {%- else %}Thanh toán qua {{ method }} khi hoàn thành chuyến.{% endif -%}
+        </p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# Một thao tác chính cho mỗi vai trò; trên điện thoại nằm trong thanh dính đáy màn hình #}
+  {% if user.role == 'DRIVER' and ride.status == 'REQUESTED' %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/accept" class="action-bar">
+      <button class="btn btn-primary btn-lg" type="submit">Nhận chuyến</button>
     </form>
-  {% endif %}
-  {% if user and user.role == 'DRIVER' and ride.driver_id == user.ref_id and ride.status == 'ACCEPTED' %}
-    <form method="post" action="/rides/{{ ride.ride_id }}/start" class="row g-2 align-items-end mb-3">
-      <div class="col-auto"><label class="form-label small mb-0" for="start-lat">Vĩ độ (tùy chọn)</label>
-        <input class="form-control form-control-sm" id="start-lat" name="lat" inputmode="decimal" placeholder="10.8270"></div>
-      <div class="col-auto"><label class="form-label small mb-0" for="start-lng">Kinh độ (tùy chọn)</label>
-        <input class="form-control form-control-sm" id="start-lng" name="lng" inputmode="decimal" placeholder="106.6880"></div>
-      <div class="col-auto"><button class="btn btn-primary" type="submit">Bắt đầu chuyến</button></div>
+  {% elif is_driver and ride.status == 'ACCEPTED' %}
+    <form method="post" action="/rides/{{ ride.ride_id }}/start" class="ride-action">
+      {{ gps_fields('start', expanded=tech) }}
+      <div class="action-bar"><button class="btn btn-primary btn-lg" type="submit">Bắt đầu chuyến</button></div>
     </form>
+  {% elif is_driver and ride.status == 'ONGOING' %}
+    <div class="action-bar">
+      <details class="confirm">
+        <summary class="btn btn-primary btn-lg w-100"><span class="when-closed">{{ ('Hoàn thành · thu ' ~ (payable|vnd)) if cash else 'Hoàn thành chuyến' }}</span><span class="when-open">Quay lại</span></summary>
+        <div class="confirm-panel">
+          <p>{% if cash %}Thu {{ payable|vnd }} tiền mặt của khách trước khi xác nhận.{% else %}Khách trả qua {{ method }}, bạn không cần thu tiền.{% endif %}</p>
+          <form method="post" action="/rides/{{ ride.ride_id }}/complete">
+            <label class="form-label" for="drop-district">Quận trả khách</label>
+            <select class="form-select mb-2" id="drop-district" name="drop_district" required>
+              {% for d in areas.get(ride.city, []) %}<option value="{{ d }}"{% if d == ride.district %} selected{% endif %}>{{ d|district_label }}</option>{% endfor %}
+            </select>
+            {{ gps_fields('done', expanded=tech) }}
+            <button class="btn btn-primary w-100 mt-2" type="submit">{{ 'Đã thu tiền, hoàn thành chuyến' if cash else 'Xác nhận hoàn thành chuyến' }}</button>
+          </form>
+        </div>
+      </details>
+    </div>
   {% endif %}
-  {% if user and user.role == 'DRIVER' and ride.driver_id == user.ref_id and ride.status == 'ONGOING' %}
-    <form method="post" action="/rides/{{ ride.ride_id }}/complete" class="row g-2 align-items-end mb-3">
-      <div class="col-auto"><label class="form-label small mb-0" for="drop-district">Quận trả khách</label>
-        <select class="form-select form-select-sm" id="drop-district" name="drop_district" required>
-          {% for d in areas.get(ride.city, []) %}<option value="{{ d }}"{% if d == ride.district %} selected{% endif %}>{{ d|district_label }}</option>{% endfor %}
-        </select></div>
-      <div class="col-auto"><label class="form-label small mb-0" for="done-lat">Vĩ độ (tùy chọn)</label>
-        <input class="form-control form-control-sm" id="done-lat" name="lat" inputmode="decimal"></div>
-      <div class="col-auto"><label class="form-label small mb-0" for="done-lng">Kinh độ (tùy chọn)</label>
-        <input class="form-control form-control-sm" id="done-lng" name="lng" inputmode="decimal"></div>
-      <div class="col-auto"><button class="btn btn-success" type="submit">Hoàn thành và thanh toán</button></div>
-    </form>
+
+  {% if is_customer and ride.status == 'COMPLETED' %}
+    {% if not ride.rated_at %}
+      <section class="sheet" aria-labelledby="rate-title">
+        <form method="post" action="/rides/{{ ride.ride_id }}/rate" class="sheet-section">
+          <h2 id="rate-title" class="rate-title">Đánh giá tài xế{% if ride.driver_name %} {{ ride.driver_name }}{% endif %}</h2>
+          <fieldset class="star-field">
+            <legend>Bạn chấm mấy sao?</legend>
+            <div class="stars">
+              {% for n in range(1, 6) %}
+                <input class="btn-check" type="radio" name="stars" id="star-{{ n }}" value="{{ n }}" required>
+                <label class="star" for="star-{{ n }}">{{ icon('star') }}<span class="visually-hidden">{{ n }} sao</span></label>
+              {% endfor %}
+            </div>
+          </fieldset>
+          <fieldset class="chip-field">
+            <legend>Nhận xét nhanh (không bắt buộc)</legend>
+            <div class="chips">
+              {% for t in rating_tags %}
+                <input class="btn-check" type="checkbox" name="tags" id="tag-{{ loop.index }}" value="{{ t }}">
+                <label class="chip chip-toggle" for="tag-{{ loop.index }}">{{ icon('check', 'chip-check') }}{{ t }}</label>
+              {% endfor %}
+            </div>
+          </fieldset>
+          <label class="form-label" for="rate-comment">Viết thêm (không bắt buộc, tối đa 500 ký tự)</label>
+          <textarea class="form-control mb-3" id="rate-comment" name="comment" rows="3" maxlength="500"></textarea>
+          <button class="btn btn-primary" type="submit">Gửi đánh giá</button>
+        </form>
+      </section>
+    {% else %}
+      <p class="sheet-note">Bạn đã đánh giá chuyến này. Cảm ơn bạn!</p>
+    {% endif %}
   {% endif %}
+
   {% if can_cancel %}
-    <form method="post" action="/rides/{{ ride.ride_id }}/cancel" class="row g-2 align-items-end mb-3">
-      <div class="col-auto"><label class="form-label small mb-0" for="cancel-reason">Lý do hủy</label>
-        <input class="form-control form-control-sm" id="cancel-reason" name="reason" maxlength="200" placeholder="Khách hủy"></div>
-      <div class="col-auto"><button class="btn btn-outline-danger" type="submit">Hủy chuyến</button></div>
-    </form>
+    <div class="ride-secondary">
+      <details class="confirm">
+        <summary class="btn btn-outline-danger"><span class="when-closed">Hủy chuyến</span><span class="when-open">Không hủy</span></summary>
+        <div class="confirm-panel is-danger">
+          <p>{{ 'Hủy chuyến này? Bạn sẽ phải đặt lại nếu vẫn cần xe.' if is_customer else 'Hủy chuyến này? Khách sẽ phải đặt chuyến mới.' }}</p>
+          <form method="post" action="/rides/{{ ride.ride_id }}/cancel">
+            <label class="form-label" for="cancel-reason">Lý do hủy (không bắt buộc)</label>
+            <input class="form-control mb-3" id="cancel-reason" name="reason" maxlength="200">
+            <button class="btn btn-danger" type="submit">Xác nhận hủy chuyến</button>
+          </form>
+        </div>
+      </details>
+    </div>
   {% endif %}
-  {% if user and user.role == 'CUSTOMER' and ride.customer_id == user.ref_id and ride.status == 'COMPLETED' and not ride.rated_at %}
-    <form method="post" action="/rides/{{ ride.ride_id }}/rate" class="border rounded p-3 mb-3">
-      <h2 class="h6">Đánh giá tài xế</h2>
-      <div class="mb-2">
-        <label class="form-label small mb-0" for="rate-stars">Số sao</label>
-        <select class="form-select form-select-sm w-auto" id="rate-stars" name="stars" required>
-          {% for n in [5, 4, 3, 2, 1] %}<option value="{{ n }}">{{ n }} sao</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-2">
-        {% for t in rating_tags %}
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" name="tags" id="tag-{{ loop.index }}" value="{{ t }}">
-            <label class="form-check-label small" for="tag-{{ loop.index }}">{{ t }}</label>
-          </div>
+
+  {# Dữ liệu đầy đủ: gập lại, mở sẵn ở chế độ kỹ thuật #}
+  <details class="disclosure ride-more"{% if tech %} open{% endif %}>
+    <summary>{{ icon('chevron-right', 'disclosure-icon') }}Thông tin đầy đủ</summary>
+    <div class="table-responsive mt-2">
+      <table class="table table-sm table-bordered w-auto">
+        <tbody>
+        {% set labels = {'ride_id': 'Mã chuyến', 'customer_id': 'Mã khách', 'customer_name': 'Khách hàng', 'customer_phone': 'Điện thoại khách',
+                         'driver_id': 'Mã tài xế', 'driver_name': 'Tài xế', 'vehicle_plate': 'Biển số xe',
+                         'city': 'Thành phố', 'district': 'Quận', 'pickup_address': 'Điểm đón', 'destination_address': 'Điểm đến',
+                         'distance_km': 'Quãng đường (km)', 'fare': 'Cước', 'discount': 'Giảm giá',
+                         'promo_code': 'Mã khuyến mãi', 'payment_method': 'Thanh toán', 'status': 'Trạng thái', 'ride_date': 'Ngày đặt',
+                         'requested_at': 'Giờ đặt', 'accepted_at': 'Giờ nhận chuyến', 'started_at': 'Giờ bắt đầu',
+                         'completed_at': 'Giờ hoàn thành', 'cancel_reason': 'Lý do hủy', 'rated_at': 'Giờ đánh giá'} %}
+        {% for col, label in labels.items() %}
+          <tr><th>{{ label }}{% if tech %} <small class="text-muted font-monospace tech-note">{{ col }}</small>{% endif %}</th>
+              <td>{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% elif col == 'status' %}{{ ride[col]|ride_status }}{% elif col == 'payment_method' %}{{ ride[col]|pay_method }}{% elif col in ('fare', 'discount') %}{{ ride[col]|vnd }}{% elif col == 'ride_date' %}{{ ride[col]|dmy }}{% elif col == 'city' %}{{ ride[col]|city_label }}{% elif col == 'district' %}{{ ride[col]|district_label }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
         {% endfor %}
-      </div>
-      <div class="mb-2">
-        <label class="form-label small mb-0" for="rate-comment">Nhận xét (tối đa 500 ký tự)</label>
-        <textarea class="form-control form-control-sm" id="rate-comment" name="comment" rows="2" maxlength="500"></textarea>
-      </div>
-      <button class="btn btn-primary btn-sm" type="submit">Gửi đánh giá</button>
-    </form>
-  {% endif %}
-  <h2 class="h6">Lịch sử trạng thái</h2>
-  {% if tech %}<p class="text-muted small tech-note">Cột <code>status_history map&lt;timestamp, text&gt;</code> của <code>rides</code>, sắp theo thời gian, giờ +07.</p>{% endif %}
-  <table class="table table-sm table-bordered w-auto small">
-    <thead><tr><th>Thời điểm</th><th>Trạng thái</th></tr></thead>
-    <tbody>
-    {% for t, s in history %}<tr><td>{{ fmt(t) }}</td><td>{{ s|ride_status }}</td></tr>{% else %}<tr><td colspan="2">-</td></tr>{% endfor %}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+    <h2 class="h6">Lịch sử trạng thái</h2>
+    {% if tech %}<p class="text-muted small tech-note">Cột <code>status_history map&lt;timestamp, text&gt;</code> của <code>rides</code>, sắp theo thời gian, giờ +07.</p>{% endif %}
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered w-auto small">
+        <thead><tr><th>Thời điểm</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+        {% for t, s in history %}<tr><td>{{ fmt(t) }}</td><td>{{ s|ride_status }}</td></tr>{% else %}<tr><td colspan="2">-</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
 {% endblock %}

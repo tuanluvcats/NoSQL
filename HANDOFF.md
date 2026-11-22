@@ -55,7 +55,7 @@ Nút "Bật chế độ kỹ thuật" ở chân trang (hoặc biến môi trư�
 .venv\Scripts\python -m coverage report --omit="tests/*,.venv/*"     # độ bao phủ không tính thư mục test
 ```
 
-Kết quả gần nhất (2026-11-22, Cassandra 3.11.4): 657 test pass, độ bao phủ 90 % trên 3.163 lệnh.
+Kết quả gần nhất (2026-11-22, Cassandra 3.11.4): 723 test pass, độ bao phủ 90,6 % trên 3.273 lệnh (không tính thư mục `tests`).
 Marker theo barem: `pytest -m auth|crud|business|backup|nosql`.
 Đo hiệu năng: `.venv\Scripts\python -m tools.bench --keyspace ride_booking_bench_test`, kết quả ở `DoAn/app/docs/ket_qua_do_hieu_nang.md`. Đồng hồ Windows làm tròn khoảng 15,6 ms nên công cụ đo bằng query trace phía máy chủ.
 
@@ -94,6 +94,15 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 - Ứng dụng theo barem: đăng nhập, đăng ký, phân quyền, khóa tài khoản (9.1); quản lý khách, tài xế, xe, khuyến mãi, sao lưu và khôi phục JSON (9.2); đặt xe, nhận chuyến bằng LWT hai tầng, bắt đầu, hoàn thành, thanh toán, hủy, đánh giá một lần (9.3); lịch sử, thu nhập tháng, doanh thu ngày và 7 ngày, thống kê khu vực, GPS, xuất CSV (9.4); trang Kết nối và trang NoSQL cho quản trị.
 - Đồng thời: điểm trung bình tài xế ghi kèm `USING TIMESTAMP` nên hai lượt đánh giá cùng lúc không ghi đè nhau.
 - Giao diện đã rà theo nhận xét giảng viên: không nút trùng chức năng, hỏi lại khi xóa hoặc khóa, giao diện mặc định không có ghi chú kỹ thuật.
+- Trải nghiệm đã sửa sau một lượt đánh giá thiết kế (21/40 theo thang Nielsen):
+  - đặt xe hiện giá ngay trên nút đặt, máy chủ từ chối đặt nếu giá đã đổi;
+  - chi tiết chuyến kiểu biên nhận, có biển số chữ to và chấm sao;
+  - chuyến chờ dạng thẻ, tự làm mới;
+  - trang trạng thái tài xế theo 3 trạng thái;
+  - lịch sử và thu nhập dạng thẻ;
+  - nút cao 44px trên màn cảm ứng.
+
+  Ảnh màn hình ở `DoAn/app/docs/giao_dien/`.
 - Tài liệu: `DoAn/app/docs/kich_ban_demo.md` (kịch bản demo), `DoAn/app/docs/hoi_dap_bao_ve.md` (câu hỏi khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa).
 - Báo cáo Word có mục 3.7 về ứng dụng, 49 trang, mục lục đã cập nhật.
 
@@ -103,6 +112,9 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 2. Gộp cột `rated_at` thẳng vào `01_schema.cql`: đang để riêng ở `06_app_migration.cql` để hình DbSchema trong báo cáo không lệch.
 3. Keyspace `ride_booking` chưa được kiểm sức khỏe. Kiểm bằng trang `/admin/consistency` và bảng số dòng ở `/admin/backup` khi chạy ứng dụng trên keyspace đó (chỉ đọc).
 4. Test tạo snapshot khi `TRUNCATE`; dọn bằng `nodetool clearsnapshot -- ride_booking_test`.
+5. Báo cáo Word chưa theo giao diện mới:
+   - các hình chụp ứng dụng ở mục 3.7 được chụp trước lần sửa trải nghiệm;
+   - số test và độ bao phủ trong báo cáo vẫn là 657 và 90 %.
 
 ## 9. Giới hạn đã biết
 

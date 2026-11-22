@@ -229,7 +229,7 @@ query trace phía server. Kết quả một lần đo trên máy phát triển (
 - LWT khoảng 9,8 ms so với 0,8 ms của ghi thường (Paxos), nên ứng dụng chỉ dùng LWT ở chỗ có tranh chấp.
 - Tranh nhận chuyến, 8 luồng, 30 vòng: cách "đọc rồi UPDATE" cho từ 2 người thắng trở lên ở cả 30 vòng; LWT đúng 1 người thắng ở cả 30 vòng.
 
-Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 90 % (3.163 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
+Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 90,6 % (3.273 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
 
 ## Đối chiếu barem chấm điểm
 

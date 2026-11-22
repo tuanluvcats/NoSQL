@@ -55,7 +55,7 @@ Nút "Bật chế độ kỹ thuật" ở chân trang (hoặc biến môi trư�
 .venv\Scripts\python -m coverage report --omit="tests/*,.venv/*"     # độ bao phủ không tính thư mục test
 ```
 
-Kết quả gần nhất (2026-11-22, Cassandra 3.11.4): 723 test pass, độ bao phủ 90,6 % trên 3.273 lệnh (không tính thư mục `tests`).
+Kết quả gần nhất (2026-11-22, Cassandra 3.11.4): 745 test pass trong 362 giây. Độ bao phủ đo lần gần nhất, khi còn 723 test (trước khi thêm trang chuyến tự cập nhật): 90,6 % trên 3.273 lệnh (không tính thư mục `tests`).
 Marker theo barem: `pytest -m auth|crud|business|backup|nosql`.
 Đo hiệu năng: `.venv\Scripts\python -m tools.bench --keyspace ride_booking_bench_test`, kết quả ở `DoAn/app/docs/ket_qua_do_hieu_nang.md`. Đồng hồ Windows làm tròn khoảng 15,6 ms nên công cụ đo bằng query trace phía máy chủ.
 

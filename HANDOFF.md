@@ -2,7 +2,6 @@
 
 Cập nhật: 2026-11-21. Nhánh `feat/ride-booking-app`. Người đọc: bất kỳ ai tiếp quản (thành viên nhóm, hoặc phiên làm việc sau).
 
-Thiết kế: `docs/superpowers/specs/2026-11-21-ride-booking-app-design.md`. Kế hoạch (Task 0 đến 13): `docs/superpowers/plans/2026-11-21-ride-booking-app.md`.
 Mã nguồn: `DoAn/app/`. Cách chạy, tài khoản thử, đối chiếu barem, giới hạn đã biết: `DoAn/app/README.md`. Kịch bản demo: `DoAn/app/docs/kich_ban_demo.md`.
 
 ## 1. Đã xong

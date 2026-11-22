@@ -1,0 +1,17 @@
+# Repo chỉ chứa đồ án NoSQL (DbSchema + Cassandra). Bài tập, ôn tập, slide và tài liệu môn học giữ ở máy, không đưa lên.
+.claude/
+BaiTap/
+OnKiemTra/
+Slide/
+TaiLieuThamKhao/
+docs/
+OnTap_TracNghiem_NoSQL.md
+HUONG_DAN_CHAY.md
+*.jpg
+!DoAn/**/*.jpg
+
+# Tệp tạm, sao lưu và ghi chú riêng
+__pycache__/
+DoAn/SaoLuu/
+DoAn/prompt_tieptuc_nosql.txt
+~$*

@@ -10,7 +10,7 @@ danh sách bảng bị ghi so với ma trận ghi §3.7). Các bảng phi chuẩ
 `[applied] = True` mới ghi các bảng phụ", và có công cụ Kiểm tra nhất quán để đối chiếu hoặc ghi lại (reconcile).
 
 Tài liệu đi kèm: [`docs/kich_ban_demo.md`](docs/kich_ban_demo.md) (kịch bản demo 5 đến 7 phút), [`docs/hoi_dap_bao_ve.md`](docs/hoi_dap_bao_ve.md) (hỏi đáp khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa), `HANDOFF.md` ở gốc repo (trạng thái công việc,
-việc còn mở), thiết kế và kế hoạch ở `docs/superpowers/specs/` và `docs/superpowers/plans/` (gốc repo).
+việc còn mở).
 
 ## Tính năng theo vai trò
 

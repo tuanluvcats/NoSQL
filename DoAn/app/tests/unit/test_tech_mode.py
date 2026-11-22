@@ -174,7 +174,7 @@ def test_navbar_shows_system_group_for_admin_and_operator():
 
 def test_navbar_shows_name_and_vietnamese_role_and_guest_has_no_status_span():
     html = _client("ADMIN", extra=EXTRA).get("/").text
-    assert "Người Dùng &middot; Quản trị viên" in html
+    assert "<strong>Người Dùng</strong> &middot; Quản trị viên" in html
     guest = _client(extra=EXTRA).get("/").text
     assert "Chưa đăng nhập" not in guest
     assert 'href="/login"' in guest and 'href="/register"' in guest
@@ -209,3 +209,17 @@ def test_booking_form_shows_area_names_not_codes():
     html = _client("CUSTOMER", "CUST001").get("/customer/book").text
     assert ">Tân Phú</option>" in html and ">TAN_PHU</option>" not in html
     assert ">TP. Hồ Chí Minh</option>" in html
+
+
+
+@pytest.mark.parametrize("ride, now, cls", [
+    ({"status": "REQUESTED"}, "Đặt xe", "now"),
+    ({"status": "ONGOING"}, "Đang chở", "now"),
+    ({"status": "COMPLETED"}, "Hoàn thành", "done"),
+    ({"status": "CANCELLED", "accepted_at": "x"}, "Đã hủy", "stop-cancel"),
+])
+def test_ride_route_marks_current_stop(ride, now, cls):
+    from routes.deps import templates
+    html = templates.env.from_string('{% from "_ride_route.html" import ride_route %}{{ ride_route(ride) }}').render(ride=ride)
+    current = re.search(r'<li class="([^"]*)" aria-current="step">([^<]+)</li>', html)
+    assert current and current.group(2) == now and cls in current.group(1), html

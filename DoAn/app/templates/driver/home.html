@@ -3,7 +3,7 @@
 {% block title %}Tài xế{% endblock %}
 {% block content %}
   <h1 class="h4 mb-3">Tài xế {{ driver.full_name }} ({{ driver.driver_id }})
-    <span class="badge {{ 'text-bg-success' if driver.status == 'AVAILABLE' else ('text-bg-warning' if driver.status == 'BUSY' else 'text-bg-secondary') }}">{{ driver.status|driver_status }}</span></h1>
+    <span class="status-pill status-{{ (driver.status or '')|lower }}">{{ driver.status|driver_status }}</span></h1>
   {{ errors_box(errors) }}
   <p class="text-muted">Điểm đánh giá: {{ driver.rating }}</p>
   {% if tech %}<p class="text-muted small tech-note">Tài xế chỉ có mặt ở một khu vực trong <code>drivers_by_area</code>.</p>{% endif %}

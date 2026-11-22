@@ -26,7 +26,7 @@
           <td>{{ r.destination_address }}</td>
           <td class="font-monospace">{{ r.driver_id or '-' }}</td>
           <td class="text-end">{{ r.fare|vnd }}</td>
-          <td><span class="badge text-bg-secondary">{{ r.status|ride_status }}</span></td>
+          <td><span class="status-pill status-{{ (r.status)|lower }}">{{ r.status|ride_status }}</span></td>
         </tr>
       {% else %}
         <tr><td colspan="7" class="text-muted">Không có chuyến nào trong khoảng này.</td></tr>

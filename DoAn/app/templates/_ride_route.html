@@ -1,0 +1,15 @@
+{# Hành trình chuyến: các trạm nối nhau như một tuyến đường, trạm hiện tại tô màu hổ phách #}
+{% macro ride_route(ride) -%}
+  {% set steps = [('REQUESTED', 'Đặt xe'), ('ACCEPTED', 'Tài xế nhận'), ('ONGOING', 'Đang chở'), ('COMPLETED', 'Hoàn thành')] %}
+  {% set order = ['REQUESTED', 'ACCEPTED', 'ONGOING', 'COMPLETED'] %}
+  {% set cancelled = ride.status == 'CANCELLED' %}
+  {% set reached = (order.index(ride.status) if ride.status in order else (1 if ride.accepted_at else 0)) %}
+  <ol class="ride-route" aria-label="Hành trình chuyến">
+    {% for code, label in steps %}
+      {% if cancelled and loop.index0 > reached %}{% if loop.index0 == reached + 1 %}<li class="stop-cancel" aria-current="step">Đã hủy</li>{% endif %}
+      {% else %}
+        <li class="{{ 'now' if (loop.index0 == reached and not cancelled and ride.status != 'COMPLETED') else ('done' if loop.index0 <= reached else '') }}"{% if loop.index0 == reached and not cancelled %} aria-current="step"{% endif %}>{{ label }}</li>
+      {% endif %}
+    {% endfor %}
+  </ol>
+{%- endmacro %}

@@ -11,31 +11,34 @@
 <body>
 {% macro nav(href, label) -%}
   {%- set here = request.url.path == href or (href != '/' and request.url.path.startswith(href + '/')) -%}
-  <a class="btn btn-sm {{ 'btn-light' if here else 'btn-outline-light' }}" href="{{ href }}"{% if here %} aria-current="page"{% endif %}>{{ label }}</a>
+  <a class="nav-link-app{{ ' is-active' if here }}" href="{{ href }}"{% if here %} aria-current="page"{% endif %}>{{ label }}</a>
 {%- endmacro %}
-<nav class="navbar navbar-dark bg-dark mb-3">
+<nav class="navbar app-shell">
+  {% set staff = user and user.role in ('ADMIN', 'OPERATOR') %}
   <div class="container flex-wrap gap-2">
     <a class="navbar-brand" href="/">Đặt xe công nghệ</a>
-    <div class="d-flex flex-wrap align-items-center gap-1 small">
+    <div class="d-flex flex-wrap align-items-center gap-1 small{{ ' nav-row-staff' if staff else ' ms-auto' }}">
       {% if user %}
-        {% if user.role in ('ADMIN', 'OPERATOR') %}
-          <span class="text-white-50 ms-1">Người dùng</span>{{ nav("/admin/accounts", "Tài khoản") }}
-          <span class="text-white-50 ms-2">Dữ liệu</span>{{ nav("/admin/customers", "Khách") }}{{ nav("/admin/drivers", "Tài xế") }}{{ nav("/admin/vehicles", "Xe") }}{{ nav("/admin/promotions", "Khuyến mãi") }}{{ nav("/admin/backup", "Backup") }}
-          <span class="text-white-50 ms-2">Nghiệp vụ</span>{{ nav("/admin/areas", "Khu vực") }}{{ nav("/admin/reports", "Báo cáo") }}{{ nav("/admin/consistency", "Nhất quán") }}
+        {% if staff %}
+          <span class="nav-group">Người dùng</span>{{ nav("/admin/accounts", "Tài khoản") }}
+          <span class="nav-group">Dữ liệu</span>{{ nav("/admin/customers", "Khách") }}{{ nav("/admin/drivers", "Tài xế") }}{{ nav("/admin/vehicles", "Xe") }}{{ nav("/admin/promotions", "Khuyến mãi") }}{{ nav("/admin/backup", "Backup") }}
+          <span class="nav-group">Nghiệp vụ</span>{{ nav("/admin/areas", "Khu vực") }}{{ nav("/admin/reports", "Báo cáo") }}{{ nav("/admin/consistency", "Nhất quán") }}
+          <span class="nav-group">Hệ thống</span>{{ nav("/nosql", "NoSQL") }}{{ nav("/connection", "Kết nối") }}
         {% elif user.role == 'CUSTOMER' %}
           {{ nav("/customer/book", "Đặt xe") }}{{ nav("/customer/rides", "Lịch sử chuyến") }}
         {% elif user.role == 'DRIVER' %}
           {{ nav("/driver", "Trạng thái") }}{{ nav("/driver/waiting", "Chuyến chờ") }}{{ nav("/driver/income", "Thu nhập") }}{{ nav("/driver/ratings", "Đánh giá") }}
         {% endif %}
-        {% if user.role in ('ADMIN', 'OPERATOR') %}
-          <span class="text-white-50 ms-2">Hệ thống</span>{{ nav("/nosql", "NoSQL") }}{{ nav("/connection", "Kết nối") }}
-        {% endif %}
-        <span class="navbar-text ms-2">{{ user.full_name or user.username }} &middot; {{ user.role|role_label }}</span>
-        <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-warning" type="submit">Đăng xuất</button></form>
       {% else %}
         {{ nav("/login", "Đăng nhập") }}{{ nav("/register", "Đăng ký") }}
       {% endif %}
     </div>
+    {% if user %}
+      <div class="d-flex align-items-center gap-2 small{{ ' ms-auto' if staff }}">
+        <span class="user-chip"><strong>{{ user.full_name or user.username }}</strong> &middot; {{ user.role|role_label }}</span>
+        <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-logout" type="submit">Đăng xuất</button></form>
+      </div>
+    {% endif %}
   </div>
 </nav>
 <main class="container">
@@ -60,11 +63,11 @@
     {{ panel("CQL đã chạy", trace, written, matrix) }}
   {% endif %}
 </main>
-<footer class="container border-top mt-4 py-3 small text-muted">
+<footer class="container app-footer mt-2 py-3 small">
   <form method="post" action="/tech-mode" class="d-flex flex-wrap align-items-center gap-2">
     <input type="hidden" name="on" value="{{ '0' if tech else '1' }}">
     <input type="hidden" name="next" value="{{ (request.url.path ~ ('?' ~ request.url.query if request.url.query else '')) if request.method == 'GET' else '/' }}">
-    <button class="btn btn-link btn-sm p-0 text-muted" type="submit">{{ 'Tắt chế độ kỹ thuật' if tech else 'Bật chế độ kỹ thuật' }}</button>
+    <button class="btn btn-link btn-sm p-0" type="submit">{{ 'Tắt chế độ kỹ thuật' if tech else 'Bật chế độ kỹ thuật' }}</button>
     {% if tech %}<span>Đang hiện lệnh CQL và ghi chú kỹ thuật</span>{% endif %}
   </form>
 </footer>

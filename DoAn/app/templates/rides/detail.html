@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% from "_ride_route.html" import ride_route %}
 {% block title %}Chuyến {{ ride.ride_id }}{% endblock %}
 {% block content %}
   <h1 class="h4 mb-3">Chi tiết chuyến {{ ride.ride_id }}
-    <span class="badge text-bg-secondary">{{ ride.status|ride_status }}</span></h1>
+    <span class="status-pill status-{{ (ride.status or '')|lower }}">{{ ride.status|ride_status }}</span></h1>
+  {{ ride_route(ride) }}
   <table class="table table-sm table-bordered w-auto">
     <tbody>
     {% set labels = {'customer_id': 'Mã khách', 'customer_name': 'Khách hàng', 'customer_phone': 'Điện thoại khách',
@@ -14,7 +16,7 @@
                      'completed_at': 'Giờ hoàn thành', 'cancel_reason': 'Lý do hủy', 'rated_at': 'Giờ đánh giá'} %}
     {% for col, label in labels.items() %}
       <tr><th>{{ label }}{% if tech %} <small class="text-muted font-monospace tech-note">{{ col }}</small>{% endif %}</th>
-          <td>{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% elif col == 'status' %}{{ ride[col]|ride_status }}{% elif col == 'payment_method' %}{{ ride[col]|pay_method }}{% elif col == 'city' %}{{ ride[col]|city_label }}{% elif col == 'district' %}{{ ride[col]|district_label }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
+          <td>{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% elif col == 'status' %}{{ ride[col]|ride_status }}{% elif col == 'payment_method' %}{{ ride[col]|pay_method }}{% elif col in ('fare', 'discount') %}{{ ride[col]|vnd }}{% elif col == 'ride_date' %}{{ ride[col]|dmy }}{% elif col == 'city' %}{{ ride[col]|city_label }}{% elif col == 'district' %}{{ ride[col]|district_label }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

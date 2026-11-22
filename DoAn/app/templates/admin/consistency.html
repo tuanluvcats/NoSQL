@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set page_width = "narrow" %}
 {% block title %}Kiểm tra nhất quán{% endblock %}
 {% block content %}
   <h1 class="h4 mb-2">Kiểm tra nhất quán</h1>
@@ -16,6 +17,7 @@
   {% if diffs is not none %}
     {% if diffs %}
       <div class="alert alert-warning py-2">Chuyến {{ ride_id }} lệch {{ diffs|length }} chỗ:</div>
+      <div class="table-responsive">
       <table class="table table-sm table-bordered w-auto">
         <thead><tr><th>Bảng</th><th>Cột</th><th>Đúng (theo chuyến gốc)</th><th>Đang có</th></tr></thead>
         <tbody>
@@ -25,6 +27,7 @@
         {% endfor %}
         </tbody>
       </table>
+      </div>
       <form method="post" action="/admin/consistency/reconcile" class="mb-3">
         <input type="hidden" name="ride_id" value="{{ ride_id }}">
         <button class="btn btn-sm btn-warning" type="submit">Đồng bộ lại từ chuyến gốc</button>
@@ -39,6 +42,7 @@
   {% if tech %}<p class="text-muted small tech-note">Tài xế BUSY nhưng không có chuyến ACCEPTED/ONGOING nào (vd lệnh nhận chuyến gặp WriteTimeout kiểu CAS nên kết quả LWT không rõ).
     Giải phóng bằng LWT <code>IF status = 'BUSY'</code>.</p>{% endif %}
   {% if stuck %}
+    <div class="table-responsive">
     <table class="table table-sm table-bordered w-auto align-middle">
       <thead><tr><th>Tài xế</th><th>Họ tên</th><th>Lý do</th><th></th></tr></thead>
       <tbody>
@@ -50,6 +54,7 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
   {% else %}
     <div class="alert alert-success py-2">Không có tài xế nào bị kẹt.</div>
   {% endif %}

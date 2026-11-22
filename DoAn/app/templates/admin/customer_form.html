@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% set page_width = "narrow" %}
 {% from "admin/_form_macros.html" import errors_box, field %}
 {% block title %}{{ 'Thêm' if is_new else 'Sửa' }} khách{% endblock %}
 {% block content %}
   <h1 class="h4 mb-3">{{ 'Thêm khách hàng' if is_new else 'Sửa khách hàng ' ~ form.customer_id }}</h1>
   {{ errors_box(errors) }}
-  <form method="post" action="{{ '/admin/customers' if is_new else '/admin/customers/' ~ form.customer_id }}" style="max-width: 560px">
+  <form method="post" action="{{ '/admin/customers' if is_new else '/admin/customers/' ~ form.customer_id }}">
     {% if is_new %}{{ field('customer_id', 'Mã khách', form.customer_id, hint='Dạng CUST...: chữ in hoa, số, gạch dưới') }}{% endif %}
     {{ field('full_name', 'Họ tên', form.full_name) }}
     {{ field('phone', 'Điện thoại', form.phone, hint='10 chữ số, bắt đầu bằng 0') }}

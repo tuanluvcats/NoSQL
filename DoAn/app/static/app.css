@@ -94,6 +94,10 @@ p, li, dd, .form-text { text-wrap: pretty; }
 }
 
 main.container { padding-top: 1.75rem; padding-bottom: 2rem; }
+/* Cột giữa: trang thao tác một cột (đặt xe, chuyến, tài xế, biểu mẫu) nằm giữa màn hình rộng, lề hai bên bằng nhau.
+   Trang bảng quản trị không dùng cột nên trải hết khung; panel CQL nằm ngoài cột. */
+.page-col { max-width: 40rem; margin-inline: auto; }
+.page-col-compact { max-width: 28rem; }
 
 /* Nút và ô nhập */
 .btn { font-weight: 500; transition: background-color .15s ease-out, border-color .15s ease-out, box-shadow .15s ease-out; }

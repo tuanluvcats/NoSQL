@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% set page_width = "narrow" %}
 {% from "admin/_form_macros.html" import errors_box, field %}
 {% block title %}{{ 'Thêm' if is_new else 'Sửa' }} khuyến mãi{% endblock %}
 {% block content %}
   <h1 class="h4 mb-3">{{ 'Thêm mã khuyến mãi' if is_new else 'Sửa mã khuyến mãi ' ~ form.promo_code }}</h1>
   {{ errors_box(errors) }}
-  <form method="post" action="{{ '/admin/promotions' if is_new else '/admin/promotions/' ~ form.promo_code }}" style="max-width: 560px">
+  <form method="post" action="{{ '/admin/promotions' if is_new else '/admin/promotions/' ~ form.promo_code }}">
     {% if is_new %}{{ field('promo_code', 'Mã', form.promo_code, hint='3-20 ký tự chữ in hoa hoặc số') }}{% endif %}
     {{ field('description', 'Mô tả', form.description, required=False) }}
     {{ field('discount_percent', 'Giảm (%)', form.discount_percent, type='number', hint='1 đến 100') }}

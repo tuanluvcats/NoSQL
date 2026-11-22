@@ -1,5 +1,10 @@
 {% from "_trace.html" import panel %}
 {% from "_icons.html" import sprite %}
+{# Bề ngang nội dung: trang con đặt {% set page_width = "narrow" %} (cột giữa, cho trang thao tác và biểu mẫu) hoặc "compact" (đăng nhập, đăng ký).
+   Không đặt thì dùng hết bề ngang khung (trang bảng của quản trị). Panel CQL của chế độ kỹ thuật luôn nằm ngoài cột. #}
+{% if page_width == 'compact' %}{% set page_col = 'page-col page-col-compact' %}
+{% elif page_width == 'narrow' %}{% set page_col = 'page-col' %}
+{% else %}{% set page_col = '' %}{% endif %}
 <!doctype html>
 <html lang="vi">
 <head>
@@ -57,6 +62,7 @@
   </div>
 </nav>
 <main class="container">
+  <div{% if page_col %} class="{{ page_col }}"{% endif %}>
   {% if db_error %}
     <div class="alert alert-danger" role="alert">
       <strong>Hệ thống đang tạm gián đoạn, vui lòng thử lại sau.</strong>
@@ -70,6 +76,7 @@
     <div class="alert alert-{{ 'success' if flash.ok else 'danger' }}" role="alert">{{ flash.message }}</div>
   {% endif %}
   {% block content %}{% endblock %}
+  </div>
   {% if tech %}
     <hr>
     {% if last_trace %}
@@ -78,13 +85,15 @@
     {{ panel("CQL đã chạy", trace, written, matrix) }}
   {% endif %}
 </main>
-<footer class="container app-footer mt-2 py-3 small">
-  <form method="post" action="/tech-mode" class="d-flex flex-wrap align-items-center gap-2">
-    <input type="hidden" name="on" value="{{ '0' if tech else '1' }}">
-    <input type="hidden" name="next" value="{{ (request.url.path ~ ('?' ~ request.url.query if request.url.query else '')) if request.method == 'GET' else '/' }}">
-    <button class="btn btn-link btn-sm p-0" type="submit">{{ 'Tắt chế độ kỹ thuật' if tech else 'Bật chế độ kỹ thuật' }}</button>
-    {% if tech %}<span>Đang hiện lệnh CQL và ghi chú kỹ thuật</span>{% endif %}
-  </form>
+<footer class="container mt-2 small">
+  <div class="app-footer py-3{% if page_col %} {{ page_col }}{% endif %}">
+    <form method="post" action="/tech-mode" class="d-flex flex-wrap align-items-center gap-2">
+      <input type="hidden" name="on" value="{{ '0' if tech else '1' }}">
+      <input type="hidden" name="next" value="{{ (request.url.path ~ ('?' ~ request.url.query if request.url.query else '')) if request.method == 'GET' else '/' }}">
+      <button class="btn btn-link btn-sm p-0" type="submit">{{ 'Tắt chế độ kỹ thuật' if tech else 'Bật chế độ kỹ thuật' }}</button>
+      {% if tech %}<span>Đang hiện lệnh CQL và ghi chú kỹ thuật</span>{% endif %}
+    </form>
+  </div>
 </footer>
 </body>
 </html>

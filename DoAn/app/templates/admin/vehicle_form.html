@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% set page_width = "narrow" %}
 {% from "admin/_form_macros.html" import errors_box, field %}
 {% block title %}{{ 'Thêm' if is_new else 'Sửa' }} xe{% endblock %}
 {% block content %}
   <h1 class="h4 mb-3">{{ 'Thêm xe' if is_new else 'Sửa xe ' ~ form.vehicle_id }}</h1>
   {{ errors_box(errors) }}
-  <form method="post" action="{{ '/admin/vehicles' if is_new else '/admin/vehicles/' ~ form.vehicle_id }}" style="max-width: 560px">
+  <form method="post" action="{{ '/admin/vehicles' if is_new else '/admin/vehicles/' ~ form.vehicle_id }}">
     {% if is_new %}{{ field('vehicle_id', 'Mã xe', form.vehicle_id, hint='Dạng VEH_...: chữ in hoa, số, gạch dưới') }}{% endif %}
     {{ field('driver_id', 'Mã tài xế', form.driver_id, hint='Phải là tài xế đã tồn tại') }}
     {{ field('license_plate', 'Biển số', form.license_plate, hint='1-15 ký tự, không trùng xe khác') }}

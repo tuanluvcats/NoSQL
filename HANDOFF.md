@@ -104,7 +104,7 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 
   Ảnh màn hình ở `DoAn/app/docs/giao_dien/`.
 - Tài liệu: `DoAn/app/docs/kich_ban_demo.md` (kịch bản demo), `DoAn/app/docs/hoi_dap_bao_ve.md` (câu hỏi khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa).
-- Báo cáo Word có mục 3.7 về ứng dụng, 49 trang, mục lục đã cập nhật.
+- Báo cáo Word có mục 3.7 về ứng dụng, 49 trang, mục lục đã cập nhật. Năm hình của mục 3.7 (Hình 3.9–3.13) đã chụp lại theo giao diện mới; số liệu kiểm thử trong báo cáo là 723 test, độ bao phủ 90,6%. Số trang và vị trí các đề mục không đổi nên mục lục và danh mục hình vẫn đúng.
 
 ## 8. Việc còn mở
 
@@ -112,9 +112,6 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 2. Gộp cột `rated_at` thẳng vào `01_schema.cql`: đang để riêng ở `06_app_migration.cql` để hình DbSchema trong báo cáo không lệch.
 3. Keyspace `ride_booking` chưa được kiểm sức khỏe. Kiểm bằng trang `/admin/consistency` và bảng số dòng ở `/admin/backup` khi chạy ứng dụng trên keyspace đó (chỉ đọc).
 4. Test tạo snapshot khi `TRUNCATE`; dọn bằng `nodetool clearsnapshot -- ride_booking_test`.
-5. Báo cáo Word chưa theo giao diện mới:
-   - các hình chụp ứng dụng ở mục 3.7 được chụp trước lần sửa trải nghiệm;
-   - số test và độ bao phủ trong báo cáo vẫn là 657 và 90 %.
 
 ## 9. Giới hạn đã biết
 

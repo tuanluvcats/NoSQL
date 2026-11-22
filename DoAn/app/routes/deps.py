@@ -7,6 +7,7 @@ from starlette.templating import Jinja2Templates
 
 from config import APP_DIR
 from db import trace
+from domain import labels
 from db.trace import fmt_param
 from domain.auth import effective_role
 from domain.write_matrix import EVENT_LABELS, WRITE_MATRIX
@@ -15,12 +16,28 @@ from services.accounts import load_active_user
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
 templates.env.globals["event_labels"] = EVENT_LABELS
 templates.env.filters["cql"] = fmt_param  # tham số CQL hiển thị theo cú pháp CQL, không theo repr của Python
+templates.env.filters["ride_status"] = labels.ride_status
+templates.env.filters["driver_status"] = labels.driver_status
+templates.env.filters["pay_method"] = labels.pay_method
+templates.env.filters["role_label"] = labels.role_label
+templates.env.filters["city_label"] = labels.city_label
+templates.env.filters["district_label"] = labels.district_label
+
+TECH_COOKIE = "tech_mode"
+
+
+def tech_mode(request: Request) -> bool:
+    """Chế độ kỹ thuật (hiện CQL và ghi chú kỹ thuật): cookie 1/0 nếu có, không thì theo APP_TECH_MODE. Chỉ ảnh hưởng hiển thị."""
+    cookie = request.cookies.get(TECH_COOKIE)
+    if cookie in ("1", "0"):
+        return cookie == "1"
+    return bool(getattr(getattr(request.app.state, "settings", None), "tech_mode", False))
 
 
 def get_db(request: Request):
     db = getattr(request.app.state, "db", None)
     if db is None:
-        raise HTTPException(status_code=503, detail="Chưa kết nối được Cassandra")
+        raise HTTPException(status_code=503, detail="Hệ thống đang tạm gián đoạn")
     return db
 
 
@@ -123,6 +140,7 @@ def render(request: Request, template: str, ctx: dict | None = None, status_code
     store = getattr(request.app.state, "trace_store", None)
     token = session.pop("trace_token", None) if session else None
     last_trace = store.pop(token) if store is not None else None
+    ctx.setdefault("tech", tech_mode(request))
     ctx.setdefault("trace", entries)
     ctx.setdefault("last_trace", last_trace)
     ctx.setdefault("user", getattr(request.state, "user", None))

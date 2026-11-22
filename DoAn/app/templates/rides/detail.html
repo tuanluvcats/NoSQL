@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Chuyến {{ ride.ride_id }}{% endblock %}
 {% block content %}
-  <h1 class="h4 mb-3">Chi tiết chuyến <code>{{ ride.ride_id }}</code>
-    <span class="badge text-bg-secondary">{{ ride.status }}</span></h1>
+  <h1 class="h4 mb-3">Chi tiết chuyến {{ ride.ride_id }}
+    <span class="badge text-bg-secondary">{{ ride.status|ride_status }}</span></h1>
   <table class="table table-sm table-bordered w-auto">
     <tbody>
-    {% for col in ['customer_id', 'customer_name', 'customer_phone', 'driver_id', 'driver_name', 'vehicle_plate',
-                   'city', 'district', 'pickup_address', 'destination_address', 'distance_km', 'fare', 'discount',
-                   'promo_code', 'payment_method', 'status', 'ride_date', 'requested_at', 'accepted_at',
-                   'started_at', 'completed_at', 'cancel_reason', 'rated_at'] %}
-      <tr><th class="font-monospace">{{ col }}</th>
-          <td class="font-monospace">{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
+    {% set labels = {'customer_id': 'Mã khách', 'customer_name': 'Khách hàng', 'customer_phone': 'Điện thoại khách',
+                     'driver_id': 'Mã tài xế', 'driver_name': 'Tài xế', 'vehicle_plate': 'Biển số xe',
+                     'city': 'Thành phố', 'district': 'Quận', 'pickup_address': 'Điểm đón', 'destination_address': 'Điểm đến',
+                     'distance_km': 'Quãng đường (km)', 'fare': 'Cước (đồng)', 'discount': 'Giảm giá (đồng)',
+                     'promo_code': 'Mã khuyến mãi', 'payment_method': 'Thanh toán', 'status': 'Trạng thái', 'ride_date': 'Ngày đặt',
+                     'requested_at': 'Giờ đặt', 'accepted_at': 'Giờ nhận chuyến', 'started_at': 'Giờ bắt đầu',
+                     'completed_at': 'Giờ hoàn thành', 'cancel_reason': 'Lý do hủy', 'rated_at': 'Giờ đánh giá'} %}
+    {% for col, label in labels.items() %}
+      <tr><th>{{ label }}{% if tech %} <small class="text-muted font-monospace tech-note">{{ col }}</small>{% endif %}</th>
+          <td>{% if ride[col] is none %}-{% elif col.endswith('_at') %}{{ fmt(ride[col]) }}{% elif col == 'status' %}{{ ride[col]|ride_status }}{% elif col == 'payment_method' %}{{ ride[col]|pay_method }}{% elif col == 'city' %}{{ ride[col]|city_label }}{% elif col == 'district' %}{{ ride[col]|district_label }}{% else %}{{ ride[col] }}{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -32,7 +36,7 @@
     <form method="post" action="/rides/{{ ride.ride_id }}/complete" class="row g-2 align-items-end mb-3">
       <div class="col-auto"><label class="form-label small mb-0" for="drop-district">Quận trả khách</label>
         <select class="form-select form-select-sm" id="drop-district" name="drop_district" required>
-          {% for d in areas.get(ride.city, []) %}<option value="{{ d }}"{% if d == ride.district %} selected{% endif %}>{{ d }}</option>{% endfor %}
+          {% for d in areas.get(ride.city, []) %}<option value="{{ d }}"{% if d == ride.district %} selected{% endif %}>{{ d|district_label }}</option>{% endfor %}
         </select></div>
       <div class="col-auto"><label class="form-label small mb-0" for="done-lat">Vĩ độ (tùy chọn)</label>
         <input class="form-control form-control-sm" id="done-lat" name="lat" inputmode="decimal"></div>
@@ -72,12 +76,12 @@
       <button class="btn btn-primary btn-sm" type="submit">Gửi đánh giá</button>
     </form>
   {% endif %}
-  <h2 class="h6">status_history</h2>
-  <p class="text-muted small">Cột <code>status_history map&lt;timestamp, text&gt;</code> của <code>rides</code>, sắp theo thời gian, giờ +07.</p>
-  <table class="table table-sm table-bordered w-auto font-monospace small">
-    <thead><tr><th>Thời điểm (+07)</th><th>Trạng thái</th></tr></thead>
+  <h2 class="h6">Lịch sử trạng thái</h2>
+  {% if tech %}<p class="text-muted small tech-note">Cột <code>status_history map&lt;timestamp, text&gt;</code> của <code>rides</code>, sắp theo thời gian, giờ +07.</p>{% endif %}
+  <table class="table table-sm table-bordered w-auto small">
+    <thead><tr><th>Thời điểm</th><th>Trạng thái</th></tr></thead>
     <tbody>
-    {% for t, s in history %}<tr><td>{{ fmt(t) }}</td><td>{{ s }}</td></tr>{% else %}<tr><td colspan="2">-</td></tr>{% endfor %}
+    {% for t, s in history %}<tr><td>{{ fmt(t) }}</td><td>{{ s|ride_status }}</td></tr>{% else %}<tr><td colspan="2">-</td></tr>{% endfor %}
     </tbody>
   </table>
 {% endblock %}

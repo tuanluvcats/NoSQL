@@ -67,7 +67,7 @@ def test_post_book_redirects_to_detail_and_shows_trace(client_factory, db):
     assert r.status_code == 303 and r.headers["location"] == f"/rides/{rid}"
     page = c.get(f"/rides/{rid}")
     assert page.status_code == 200
-    assert rid in page.text and "REQUESTED" in page.text and "GIAM20" in page.text
+    assert rid in page.text and "Đang tìm tài xế" in page.text and "GIAM20" in page.text
     assert "CQL của thao tác vừa rồi" in page.text and "T04" in page.text
     assert "ma trận ghi của sự kiện “Đặt xe”" in page.text and "thiếu" not in page.text  # ma trận áp cho thao tác POST
     # F5 gửi lại đúng form: không thêm chuyến, không trừ thêm lượt

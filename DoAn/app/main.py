@@ -21,6 +21,7 @@ from services.maintenance import MaintenanceState
 from services.system_info import cassandra_version
 
 RESTORE_PATH = "/admin/backup/restore"
+TECH_MODE_PATH = "/tech-mode"  # chỉ đặt cookie hiển thị, không ghi dữ liệu nên vẫn cho phép khi bảo trì
 logger = logging.getLogger("ride_booking")
 
 
@@ -58,7 +59,7 @@ def create_app(settings: Settings | None = None, db=None, clock=None) -> FastAPI
         trace.start_request()
         # chế độ bảo trì (đang restore): chặn mọi ghi, trừ chính lệnh restore (tự kiểm cờ bằng state.begin())
         if (app.state.maintenance.active and request.method not in ("GET", "HEAD", "OPTIONS")
-                and request.url.path != RESTORE_PATH):
+                and request.url.path not in (RESTORE_PATH, TECH_MODE_PATH)):
             safe_user(request)  # menu của trang 503 hiện đúng người dùng (SessionMiddleware được thêm sau nên chạy trước)
             return render(request, "error.html", {"status": 503, "detail": "Đang khôi phục dữ liệu, vui lòng thử lại sau ít phút."},
                           status_code=503)

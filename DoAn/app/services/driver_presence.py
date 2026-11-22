@@ -6,12 +6,16 @@ bật nhận chuyến thì xóa ở mọi khu vực cấu hình rồi mới ghi 
 """
 from __future__ import annotations
 
+import logging
+
 from datetime import date, datetime
 from typing import Iterable
 
 from config import AREAS
 from domain.tz import truncate_ms, vn_date
 from services.result import ActionResult
+
+log = logging.getLogger(__name__)
 
 
 def find_area_rows(db, driver_id: str, cities: Iterable[str] | None = None) -> list[dict]:
@@ -58,12 +62,12 @@ def go_online(db, driver_id: str, city: str, district: str, plate: str, lat: flo
         return ActionResult(False, "invalid_input", "Biển số không thuộc tài xế này.")
     status = d.get("status")
     if status == "BUSY":
-        return ActionResult(False, "driver_busy", "Tài xế đang có chuyến (BUSY), chưa thể bật nhận chuyến.")
+        return ActionResult(False, "driver_busy", "Tài xế đang có chuyến, chưa thể bật nhận chuyến.")
     was_offline = status == "OFFLINE"
     if was_offline:
         r = db.lwt("APP20_driver_online", [driver_id])
         if not r.applied and (r.current or {}).get("status") == "BUSY":
-            return ActionResult(False, "driver_busy", "Tài xế đang có chuyến (BUSY), chưa thể bật nhận chuyến.",
+            return ActionResult(False, "driver_busy", "Tài xế đang có chuyến, chưa thể bật nhận chuyến.",
                                 current=r.current)
     try:
         remove_from_all_areas(db, driver_id)
@@ -71,9 +75,10 @@ def go_online(db, driver_id: str, city: str, district: str, plate: str, lat: flo
                                     plate, lat, lng, now])
         if lat is not None and lng is not None:
             db.exec("T03_location_insert", [driver_id, vn_date(now), now, lat, lng, 0.0])
-    except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
-        return ActionResult(True, "partial", f"Đã bật nhận chuyến nhưng ghi khu vực/vị trí lỗi ({type(e).__name__}). "
-                            "Hãy bật lại hoặc dùng Kiểm tra nhất quán.")
+    except Exception:  # noqa: BLE001 - D10: không rollback, báo partial
+        log.exception("Tài xế %s bật nhận chuyến: ghi khu vực/vị trí lỗi", driver_id)
+        return ActionResult(True, "partial", "Đã bật nhận chuyến nhưng khu vực hoặc vị trí chưa được lưu đầy đủ. "
+                            "Hãy thử bật lại, hoặc nhờ quản trị viên đối soát.")
     return ActionResult(True, "ok", f"Đã bật nhận chuyến tại {district}, {city}.",
                         data={"was_offline": was_offline, "location": lat is not None})
 
@@ -82,7 +87,7 @@ def go_offline(db, driver_id: str, now: datetime) -> ActionResult:
     d = db.one("B03_driver_get", [driver_id])
     if d is None:
         return ActionResult(False, "not_found", "Không tìm thấy tài xế.")
-    busy = ActionResult(False, "driver_busy", "Tài xế đang có chuyến (BUSY), không thể tắt nhận chuyến.")
+    busy = ActionResult(False, "driver_busy", "Tài xế đang có chuyến, không thể tắt nhận chuyến.")
     if d.get("status") == "BUSY":
         return busy
     r = db.lwt("APP09_driver_offline", [driver_id])
@@ -91,9 +96,10 @@ def go_offline(db, driver_id: str, now: datetime) -> ActionResult:
         return busy
     try:
         remove_from_all_areas(db, driver_id)
-    except Exception as e:  # noqa: BLE001
-        return ActionResult(True, "partial", f"Đã tắt nhận chuyến nhưng xóa khu vực lỗi ({type(e).__name__}). "
-                            "Hãy tắt lại hoặc dùng Kiểm tra nhất quán.")
+    except Exception:  # noqa: BLE001
+        log.exception("Tài xế %s tắt nhận chuyến: xóa khu vực lỗi", driver_id)
+        return ActionResult(True, "partial", "Đã tắt nhận chuyến nhưng khu vực chưa được xóa hết. "
+                            "Hãy thử tắt lại, hoặc nhờ quản trị viên đối soát.")
     return ActionResult(True, "ok", "Đã tắt nhận chuyến.")
 
 

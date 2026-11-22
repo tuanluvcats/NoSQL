@@ -220,7 +220,7 @@ def create_driver(db, f: DriverForm) -> ActionResult:
     res = db.lwt("APP04_driver_insert", [f.driver_id, f.full_name.strip(), f.license_number, f.phone])
     if not res.applied:
         return ActionResult(False, "duplicate", f"Mã tài xế {f.driver_id} đã tồn tại.", current=res.current)
-    return ActionResult(True, "ok", f"Đã tạo tài xế {f.driver_id} (OFFLINE, điểm 5.0).")
+    return ActionResult(True, "ok", f"Đã tạo tài xế {f.driver_id}.")
 
 
 def update_driver(db, f: DriverForm) -> ActionResult:
@@ -252,7 +252,7 @@ def delete_driver(db, driver_id: str, now: datetime, first_month: int = FIRST_MO
     if not res.applied:
         if (res.current or {}).get("status") is None:
             return ActionResult(False, "not_found", f"Không tìm thấy tài xế {driver_id}.")
-        return ActionResult(False, "driver_busy", "Tài xế không ở trạng thái OFFLINE nên chưa thể xóa.",
+        return ActionResult(False, "driver_busy", "Tài xế chưa tắt nhận chuyến nên chưa thể xóa.",
                             current=res.current)
     return ActionResult(True, "ok", f"Đã xóa tài xế {driver_id}.")
 
@@ -308,7 +308,7 @@ def update_vehicle(db, f: VehicleForm) -> ActionResult:
         if get_vehicle(db, f.vehicle_id) is None:
             return ActionResult(False, "not_found", f"Không tìm thấy xe {f.vehicle_id}.")
         db.exec("APP12_vehicle_update", params)
-    return ActionResult(True, "ok", f"Đã cập nhật xe {f.vehicle_id} (view vehicles_by_plate tự cập nhật).")
+    return ActionResult(True, "ok", f"Đã cập nhật xe {f.vehicle_id}.")
 
 
 def delete_vehicle(db, vehicle_id: str) -> ActionResult:

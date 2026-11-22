@@ -67,6 +67,7 @@ class Settings:
     backup_dir: Path
     first_month: int = 202609
     debug: bool = False  # APP_DEBUG=1: trang lỗi 500 mới hiện loại lỗi và thông điệp (mặc định ẩn)
+    tech_mode: bool = False  # APP_TECH_MODE=1: mặc định hiện CQL và ghi chú kỹ thuật (người dùng vẫn đổi được bằng cookie ở chân trang)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -86,4 +87,5 @@ class Settings:
             secret_key=e.get("APP_SECRET_KEY", "dev-secret-change-me"),
             backup_dir=Path(e.get("APP_BACKUP_DIR", str(APP_DIR / "backups"))),
             debug=e.get("APP_DEBUG", "").strip().lower() in _TRUTHY,
+            tech_mode=e.get("APP_TECH_MODE", "").strip().lower() in _TRUTHY,
         )

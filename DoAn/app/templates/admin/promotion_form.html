@@ -11,9 +11,9 @@
     {{ field('max_discount', 'Giảm tối đa (đồng)', form.max_discount, type='number') }}
     {{ field('min_fare', 'Cước tối thiểu (đồng)', form.min_fare, type='number') }}
     {% if is_new %}
-      {{ field('cities', 'Thành phố áp dụng', form.cities, required=False, hint='Mã cách nhau bằng dấu phẩy, ví dụ HCM, HN. Sau đó thêm/bớt từng thành phố ở trang danh sách.') }}
+      {{ field('cities', 'Thành phố áp dụng', form.cities, required=False, hint='Mã cách nhau bằng dấu phẩy, ví dụ HCM, HN. Sau đó có thể thêm hoặc bớt từng thành phố ở trang danh sách.') }}
     {% else %}
-      <p class="text-muted small">Thành phố áp dụng: {{ form.cities or '(trống)' }}. Thêm/bớt ở trang danh sách (thao tác set riêng).</p>
+      <p class="text-muted small">Thành phố áp dụng: {{ form.cities or '(trống)' }}. Thêm hoặc bớt ở trang danh sách.</p>
     {% endif %}
     {{ field('usage_limit', 'Giới hạn lượt dùng', form.usage_limit, type='number', hint='Không nhỏ hơn số lượt đã dùng') }}
     {{ field('valid_from', 'Hiệu lực từ (giờ VN)', form.valid_from, type='datetime-local') }}

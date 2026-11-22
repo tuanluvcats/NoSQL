@@ -5,8 +5,8 @@
 {% block content %}
   <h1 class="h4 mb-3">Đặt xe</h1>
   {{ errors_box(errors) }}
-  {% if lwt_current %}
-    <div class="mb-3">
+  {% if lwt_current and tech %}
+    <div class="mb-3 tech-note">
       <span class="small text-muted">Bản ghi hiện có (LWT bị từ chối):</span>
       {{ lwt_badge(false, lwt_current) }}
     </div>
@@ -17,24 +17,25 @@
       &middot; Giảm: <strong>{{ '{:,.0f}'.format(quote.discount) | replace(',', '.') }}đ</strong>
       &middot; Phải trả: <strong>{{ '{:,.0f}'.format(quote.payable) | replace(',', '.') }}đ</strong>
       {% if quote.promo_error %}<br><span class="text-danger">Mã khuyến mãi không áp dụng được: {{ quote.promo_error }}</span>{% endif %}
-      <div class="small text-muted">Báo giá chỉ đọc (B16), chưa giữ lượt khuyến mãi.</div>
+      <div class="small text-muted">Giá tạm tính. Mã khuyến mãi chỉ bị trừ lượt khi bạn xác nhận đặt xe.</div>
+      {% if tech %}<div class="small text-muted tech-note">Báo giá chỉ đọc (B16), chưa giữ lượt khuyến mãi.</div>{% endif %}
     </div>
   {% endif %}
   <form method="post" action="/customer/book" style="max-width: 640px">
     <input type="hidden" name="ride_id" value="{{ form.ride_id }}">
-    <p class="small text-muted">Mã chuyến: <code>{{ form.ride_id }}</code> (gửi lại form không tạo chuyến thứ hai)</p>
+    {% if tech %}<p class="small text-muted tech-note">Mã chuyến: <code>{{ form.ride_id }}</code> (gửi lại form không tạo chuyến thứ hai)</p>{% endif %}
     <div class="row">
       <div class="col-sm-6 mb-3">
         <label class="form-label" for="f_city">Thành phố</label>
         <select class="form-select" id="f_city" name="city">
-          {% for c in areas %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c }}</option>{% endfor %}
+          {% for c in areas %}<option value="{{ c }}" {{ 'selected' if form.city == c }}>{{ c|city_label }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-sm-6 mb-3">
         <label class="form-label" for="f_district">Quận</label>
         <select class="form-select" id="f_district" name="district">
           {% for c, ds in areas.items() %}{% for d in ds %}
-            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d }}</option>
+            <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if form.district == d }}>{{ d|district_label }}</option>
           {% endfor %}{% endfor %}
         </select>
       </div>
@@ -55,7 +56,7 @@
       <div class="col-sm-4 mb-3">
         <label class="form-label" for="f_payment_method">Thanh toán</label>
         <select class="form-select" id="f_payment_method" name="payment_method">
-          {% for m in methods %}<option value="{{ m }}" {{ 'selected' if form.payment_method == m }}>{{ m }}</option>{% endfor %}
+          {% for m in methods %}<option value="{{ m }}" {{ 'selected' if form.payment_method == m }}>{{ m|pay_method }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-sm-4 mb-3">

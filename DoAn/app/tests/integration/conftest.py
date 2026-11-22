@@ -17,7 +17,8 @@ def settings_test():
         assert_test_keyspace(ks)
     except UnsafeKeyspaceError:
         pytest.exit(f"Từ chối chạy: keyspace '{ks}' không kết thúc bằng _test", returncode=4)
-    return dataclasses.replace(Settings.from_env(), keyspace=ks)
+    # tech_mode=True: các test integration kiểm panel CQL, ma trận ghi, [applied] nên cần chế độ kỹ thuật
+    return dataclasses.replace(Settings.from_env(), keyspace=ks, tech_mode=True)
 
 
 @pytest.fixture(scope="session")

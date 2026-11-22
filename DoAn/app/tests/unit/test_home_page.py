@@ -15,14 +15,17 @@ def _row(username, role):
             "password_hash": "x"}
 
 
-def _client(role=None, keyspace="ride_booking_test", version=None):
+def _client(role=None, keyspace="ride_booking_test", version=None, tech=False):
     responses = {}
     if role:
         responses["B01_account_get"] = [_row("u1", role)] * 5
     if version:
         responses["SYS_local"] = [{"release_version": version}] * 5
     db = FakeDb(responses)
-    app = create_app(Settings.from_env({"CASSANDRA_KEYSPACE": keyspace}), db=db)
+    env = {"CASSANDRA_KEYSPACE": keyspace}
+    if tech:
+        env["APP_TECH_MODE"] = "1"  # keyspace, phiên bản Cassandra và /health chỉ hiện ở chế độ kỹ thuật
+    app = create_app(Settings.from_env(env), db=db)
 
     @app.post("/_login")
     def fake_login(request: Request):
@@ -42,17 +45,18 @@ def _home(**kw):
 
 
 def test_home_shows_real_keyspace_not_hardcoded():
-    text = _home(keyspace="ride_booking_test")
+    text = _home(keyspace="ride_booking_test", tech=True)
     assert "<code>ride_booking_test</code>" in text
     assert "<code>ride_booking</code>" not in text
 
 
 def test_home_shows_cassandra_version_when_known():
-    assert "3.11.4" in _home(version="3.11.4")
+    assert "3.11.4" in _home(version="3.11.4", tech=True)
+    assert "3.11.4" not in _home(version="3.11.4")  # giao diện thường không lộ phiên bản
 
 
 def test_home_without_version_does_not_invent_one():
-    assert "3.11" not in _home()
+    assert "3.11" not in _home(tech=True)
 
 
 def test_home_survives_version_lookup_failure():
@@ -61,11 +65,16 @@ def test_home_survives_version_lookup_failure():
     assert r.status_code == 200 and "HOST-BI-MAT" not in r.text
 
 
-def test_guest_gets_login_register_connection_only():
+def test_guest_gets_login_and_register_only():
     text = _home()
-    for link in ("/login", "/register", "/connection"):
+    for link in ("/login", "/register"):
         assert f'href="{link}"' in text
+    assert "/connection" not in text and "/nosql" not in text
     assert "/admin/" not in text and "/customer/" not in text and "/driver" not in text
+
+
+def test_guest_sees_connection_link_only_in_tech_mode():
+    assert 'href="/connection"' in _home(tech=True)
 
 
 @pytest.mark.parametrize("role", ["ADMIN", "OPERATOR"])

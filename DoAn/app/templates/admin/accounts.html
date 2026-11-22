@@ -11,7 +11,7 @@
       {% for a in accounts %}
         <tr>
           <td class="font-monospace">{{ a.username }}</td>
-          <td>{{ a.role }}</td>
+          <td>{{ a.role|role_label }}</td>
           <td class="font-monospace">{{ a.ref_id or '-' }}</td>
           <td>{{ a.full_name }}</td>
           <td>{% if a.is_active %}<span class="badge text-bg-success">Hoạt động</span>{% else %}<span class="badge text-bg-danger">Đã khóa</span>{% endif %}</td>

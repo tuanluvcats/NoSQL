@@ -7,7 +7,7 @@
   </div>
   <form method="get" action="/admin/vehicles/by-plate" class="row g-2 align-items-end mb-3">
     <div class="col-auto">
-      <label class="form-label mb-0 small" for="plate">Tra theo biển số (materialized view <code>vehicles_by_plate</code>, B05)</label>
+      <label class="form-label mb-0 small" for="plate">Tra theo biển số</label>
       <input class="form-control form-control-sm" id="plate" name="plate" value="{{ plate or '' }}" placeholder="51K-567.89" required>
     </div>
     <div class="col-auto"><button class="btn btn-sm btn-outline-primary" type="submit">Tra</button></div>
@@ -15,14 +15,15 @@
   {% if hits is not none %}
     {% if hits %}
       <div class="alert alert-success">
-        Tìm thấy qua view vehicles_by_plate:
+        Tìm thấy:
         {% for h in hits %}<strong class="font-monospace">{{ h.vehicle_id }}</strong> (tài xế {{ h.driver_id }}, {{ h.model or '-' }}, {{ h.color or '-' }}){% endfor %}
       </div>
     {% else %}
       <div class="alert alert-warning">Không tìm thấy xe nào có biển số "{{ plate }}".</div>
     {% endif %}
   {% endif %}
-  <p class="text-muted small">Danh sách quét toàn bảng nhỏ (APP10), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Biển số là duy nhất, kiểm bằng view trước khi ghi.</p>
+  <p class="text-muted small">Biển số là duy nhất, không thể gán trùng cho hai xe.</p>
+  {% if tech %}<p class="text-muted small tech-note">Danh sách quét toàn bảng nhỏ (APP10), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Biển số tra qua materialized view <code>vehicles_by_plate</code> (B05), kiểm trước khi ghi.</p>{% endif %}
   <div class="table-responsive">
     <table class="table table-sm table-striped align-middle">
       <thead><tr><th>Mã xe</th><th>Tài xế</th><th>Biển số</th><th>Mẫu xe</th><th>Màu</th><th></th></tr></thead>

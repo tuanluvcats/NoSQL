@@ -27,12 +27,13 @@
         {% elif user.role == 'DRIVER' %}
           {{ nav("/driver", "Trạng thái") }}{{ nav("/driver/waiting", "Chuyến chờ") }}{{ nav("/driver/income", "Thu nhập") }}{{ nav("/driver/ratings", "Đánh giá") }}
         {% endif %}
-        <span class="text-white-50 ms-2">Hệ thống</span>{{ nav("/nosql", "NoSQL") }}{{ nav("/connection", "Kết nối") }}
-        <span class="navbar-text ms-2">{{ user.full_name or user.username }} ({{ user.role }})</span>
+        {% if user.role in ('ADMIN', 'OPERATOR') %}
+          <span class="text-white-50 ms-2">Hệ thống</span>{{ nav("/nosql", "NoSQL") }}{{ nav("/connection", "Kết nối") }}
+        {% endif %}
+        <span class="navbar-text ms-2">{{ user.full_name or user.username }} &middot; {{ user.role|role_label }}</span>
         <form method="post" action="/logout" class="d-inline"><button class="btn btn-sm btn-outline-warning" type="submit">Đăng xuất</button></form>
       {% else %}
-        <span class="navbar-text me-1">Chưa đăng nhập</span>
-        {{ nav("/connection", "Kết nối") }}{{ nav("/login", "Đăng nhập") }}{{ nav("/register", "Đăng ký") }}
+        {{ nav("/login", "Đăng nhập") }}{{ nav("/register", "Đăng ký") }}
       {% endif %}
     </div>
   </div>
@@ -40,21 +41,32 @@
 <main class="container">
   {% if db_error %}
     <div class="alert alert-danger" role="alert">
-      <strong>Không kết nối được Cassandra.</strong> {{ db_error }}
+      <strong>Hệ thống đang tạm gián đoạn, vui lòng thử lại sau.</strong>
+      {% if tech %}<div class="small tech-note">{{ db_error }}</div>{% endif %}
     </div>
   {% endif %}
   {% if maintenance %}
-    <div class="alert alert-warning" role="alert">Đang ở chế độ bảo trì (đang khôi phục dữ liệu): các thao tác ghi bị chặn.</div>
+    <div class="alert alert-warning" role="alert">Hệ thống đang bảo trì dữ liệu, tạm thời chưa thể đặt xe hay cập nhật thông tin.</div>
   {% endif %}
   {% if flash %}
     <div class="alert alert-{{ 'success' if flash.ok else 'danger' }}" role="alert">{{ flash.message }}</div>
   {% endif %}
   {% block content %}{% endblock %}
-  <hr>
-  {% if last_trace %}
-    {{ panel("CQL của thao tác vừa rồi", last_trace, last_written, last_matrix) }}
+  {% if tech %}
+    <hr>
+    {% if last_trace %}
+      {{ panel("CQL của thao tác vừa rồi", last_trace, last_written, last_matrix) }}
+    {% endif %}
+    {{ panel("CQL đã chạy", trace, written, matrix) }}
   {% endif %}
-  {{ panel("CQL đã chạy", trace, written, matrix) }}
 </main>
+<footer class="container border-top mt-4 py-3 small text-muted">
+  <form method="post" action="/tech-mode" class="d-flex flex-wrap align-items-center gap-2">
+    <input type="hidden" name="on" value="{{ '0' if tech else '1' }}">
+    <input type="hidden" name="next" value="{{ (request.url.path ~ ('?' ~ request.url.query if request.url.query else '')) if request.method == 'GET' else '/' }}">
+    <button class="btn btn-link btn-sm p-0 text-muted" type="submit">{{ 'Tắt chế độ kỹ thuật' if tech else 'Bật chế độ kỹ thuật' }}</button>
+    {% if tech %}<span>Đang hiện lệnh CQL và ghi chú kỹ thuật</span>{% endif %}
+  </form>
+</footer>
 </body>
 </html>

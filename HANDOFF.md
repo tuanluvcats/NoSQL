@@ -35,10 +35,11 @@ Toàn bộ Task 0 đến 14 của kế hoạch đã làm xong và commit (Task 1
 | 17 | `app/docs/hoi_dap_bao_ve.md`: hỏi đáp khi bảo vệ (Jinja2, FastAPI, LWT, phi chuẩn hóa, last-write-wins) kèm nguồn tham khảo | `4173edb` |
 | 18 | `tools/bench.py`: đo bằng query trace (đọc theo partition key so với ALLOW FILTERING, LWT so với ghi thường, tranh nhận chuyến), kết quả ở `app/docs/ket_qua_do_hieu_nang.md`; độ bao phủ test 89% (pytest-cov) | `a1f8fa2` |
 | 19 | Văn phong theo nhận xét giảng viên: panel CQL in tham số theo cú pháp CQL, tên sự kiện tiếng Việt, trang Backup không lộ đường dẫn máy chủ; ảnh `app/docs/hinh_bao_cao/` cho mục 3.7 báo cáo | `045bcb8` |
+| 20 | Giao diện như ứng dụng thật: mặc định ẩn panel CQL và mọi ghi chú kỹ thuật (tên bảng, mã câu, LWT, keyspace, tài khoản mẫu), bật lại bằng nút "Bật chế độ kỹ thuật" ở chân trang (cookie `tech_mode`) hoặc `APP_TECH_MODE=1`; nhãn tiếng Việt cho trạng thái, vai trò, phương thức thanh toán, thành phố, quận; menu Hệ thống chỉ cho quản trị; `tests/unit/test_tech_mode.py` | commit kế tiếp |
 
 Kết quả test ở HEAD `9989227` (trước Task 13): 545 test xanh trên Cassandra 3.11.4 (cài trực tiếp, Windows 11, Python 3.12.7), cả chế độ reset thường và đầy đủ.
 Task 13 thêm `tests/unit/test_docs.py` (13 test), tổng 558 test (325 unit, 233 integration). Task 14 thêm test cho trang chủ, trang 500/503, `APP_DEBUG` và `check_env`
-(số test cuối xem dòng tóm tắt pytest khi chạy lại). Sau Task 16: 611 test xanh (chạy đủ unit và integration, 2026-11-22). Sau Task 19: 624 test xanh, độ bao phủ 89%.
+(số test cuối xem dòng tóm tắt pytest khi chạy lại). Sau Task 16: 611 test xanh (chạy đủ unit và integration, 2026-11-22). Sau Task 19: 624 test xanh, độ bao phủ 89%. Sau Task 20: 657 test xanh, độ bao phủ 90%.
 
 ## 2. Đang dở
 

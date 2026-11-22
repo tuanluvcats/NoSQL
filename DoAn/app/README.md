@@ -5,7 +5,7 @@
 `ride_booking` đã thiết kế trong `DoAn/cassandra/` (13 bảng và 1 materialized view `vehicles_by_plate`) và dùng thẳng các câu truy vấn B/A/T/Q
 của `DoAn/CASSANDRA.MD`.
 
-Điểm cần thấy khi trình bày: ở cuối mỗi trang có panel **CQL đã chạy** (câu CQL, bảng, partition key, consistency, kết quả LWT `[applied]`,
+Điểm cần thấy khi trình bày: giao diện mặc định sạch như một ứng dụng thật. Bấm **Bật chế độ kỹ thuật** ở chân trang (hoặc đặt `APP_TECH_MODE=1`) thì ở cuối mỗi trang có panel **CQL đã chạy** (câu CQL, bảng, partition key, consistency, kết quả LWT `[applied]`,
 danh sách bảng bị ghi so với ma trận ghi §3.7). Các bảng phi chuẩn hóa luôn khớp với `rides` nhờ quy tắc "ghi `rides` bằng LWT trước, chỉ khi
 `[applied] = True` mới ghi các bảng phụ", và có công cụ Kiểm tra nhất quán để đối chiếu hoặc ghi lại (reconcile).
 
@@ -16,7 +16,7 @@ việc còn mở), thiết kế và kế hoạch ở `docs/superpowers/specs/` v
 
 | Vai trò | Màn hình chính |
 |---|---|
-| Chưa đăng nhập | `/login`, `/register` (đăng ký khách bằng LWT), `/connection` (thông tin kết nối, mục 8), `/health` |
+| Chưa đăng nhập | `/login`, `/register` (đăng ký khách bằng LWT), `/health`; `/connection` (thông tin kết nối, mục 8) vẫn mở được bằng địa chỉ trực tiếp, menu chỉ hiện mục này cho quản trị |
 | Khách (`CUSTOMER`) | `/customer/book` (đặt xe, báo giá, mã khuyến mãi), `/customer/rides` (lịch sử, lọc ngày), `/rides/{ride_id}` (chi tiết, `status_history`, hủy, đánh giá) |
 | Tài xế (`DRIVER`) | `/driver` (bật/tắt nhận chuyến theo khu vực, ghi GPS), `/driver/waiting` (chuyến chờ theo khu vực và ngày, nhận chuyến), `/driver/income` (thu nhập tháng), `/driver/ratings` |
 | Quản trị (`ADMIN`, và `OPERATOR` được gộp vào ADMIN) | `/admin/accounts` (khóa/mở khóa), `/admin/customers`, `/admin/drivers`, `/admin/vehicles` (tra biển số qua MV), `/admin/promotions` (thêm/bớt phần tử set `cities`), `/admin/reports` (doanh thu ngày, 7 ngày, thống kê khu vực-ngày), `/admin/areas`, `/admin/consistency`, `/admin/backup` |
@@ -38,7 +38,7 @@ Khi log có dòng `Node localhost/127.0.0.1 state jump to NORMAL` là sẵn sàn
 
 - Python 2.7 trong tài liệu thực hành chỉ để chạy `cqlsh`. **Ứng dụng này không cần `cqlsh` và không cần Python 2.7**: mọi công cụ (dựng CSDL, nạp
   seed, migrate, backup, test) dùng driver Python. Python 3.12 là bản riêng cho ứng dụng.
-- Cassandra phải chạy trước khi mở ứng dụng. Nếu chưa chạy, ứng dụng vẫn lên và hiện banner đỏ "Không kết nối được Cassandra".
+- Cassandra phải chạy trước khi mở ứng dụng. Nếu chưa chạy, ứng dụng vẫn lên và hiện banner đỏ "Hệ thống đang tạm gián đoạn, vui lòng thử lại sau" (chi tiết lỗi chỉ hiện ở chế độ kỹ thuật).
 
 ### 2. Môi trường Python (PowerShell, tại thư mục `DoAn\app`)
 
@@ -61,6 +61,7 @@ nên không cần `Activate.ps1`. Mọi lệnh `python -m tools.…` và `uvicor
 | `CASSANDRA_LOCAL_DC` | `datacenter1` | Datacenter cục bộ cho chính sách cân bằng tải |
 | `APP_SECRET_KEY` | `dev-secret-change-me` | Khóa ký cookie phiên; nên đặt khi chạy ngoài máy cá nhân |
 | `APP_DEBUG` | (tắt) | Đặt `1` (hoặc `true`, `yes`, `on`) để trang lỗi 500 hiện loại lỗi và thông điệp; mặc định ẩn, lỗi chỉ ghi vào log máy chủ |
+| `APP_TECH_MODE` | (tắt) | Đặt `1` (hoặc `true`, `yes`, `on`) để mặc định hiện panel CQL và các ghi chú kỹ thuật. Người dùng vẫn đổi được bằng nút **Bật/Tắt chế độ kỹ thuật** ở chân trang (lưu bằng cookie `tech_mode` 30 ngày, chỉ ảnh hưởng hiển thị, không đổi quyền hay dữ liệu; cookie thắng biến môi trường) |
 | `APP_BACKUP_DIR` | `DoAn\app\backups` | Thư mục lưu file backup JSON (đã nằm trong `.gitignore`) |
 | `CASSANDRA_TEST_KEYSPACE` | `ride_booking_test` | Keyspace của integration test (phải kết thúc bằng `_test`) |
 
@@ -228,7 +229,7 @@ query trace phía server. Kết quả một lần đo trên máy phát triển (
 - LWT khoảng 9,8 ms so với 0,8 ms của ghi thường (Paxos), nên ứng dụng chỉ dùng LWT ở chỗ có tranh chấp.
 - Tranh nhận chuyến, 8 luồng, 30 vòng: cách "đọc rồi UPDATE" cho từ 2 người thắng trở lên ở cả 30 vòng; LWT đúng 1 người thắng ở cả 30 vòng.
 
-Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 89 % (3.050 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
+Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 90 % (3.163 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
 
 ## Đối chiếu barem chấm điểm
 

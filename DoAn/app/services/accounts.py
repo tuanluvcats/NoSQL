@@ -1,6 +1,8 @@
 """Tài khoản: đăng nhập, đăng ký (LWT), khóa/mở khóa. Không bao giờ trả password_hash ra ngoài."""
 from __future__ import annotations
 
+import logging
+
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,6 +12,8 @@ from domain import auth
 from domain.ids import new_customer_id
 from domain.passwords import hash_password, verify_password
 from services.result import ActionResult
+
+log = logging.getLogger(__name__)
 
 USERNAME_RE = re.compile(r"^[a-z0-9_]{3,32}$")
 PHONE_RE = re.compile(r"^0\d{9}$")
@@ -62,9 +66,10 @@ def register_customer(db, form: RegisterForm, now: datetime) -> ActionResult:
         c = db.lwt("B18_customer_insert", [customer_id, form.full_name.strip(), form.phone, form.email.strip(),
                                            (form.address or "").strip() or None, now])
         applied = c.applied
-    except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
-        return ActionResult(True, "partial", f"Đã tạo tài khoản nhưng ghi hồ sơ khách lỗi ({type(e).__name__}). "
-                            "Hãy dùng Kiểm tra nhất quán.", data={"customer_id": customer_id})
+    except Exception:  # noqa: BLE001 - D10: không rollback, báo partial
+        log.exception("Tạo tài khoản %s: ghi hồ sơ khách %s lỗi", form.username, customer_id)
+        return ActionResult(True, "partial", "Đã tạo tài khoản nhưng hồ sơ khách chưa được lưu đầy đủ, "
+                            "quản trị viên sẽ đối soát lại.", data={"customer_id": customer_id})
     if not applied:
         return ActionResult(True, "partial", "Đã tạo tài khoản nhưng mã khách bị trùng, hồ sơ chưa được ghi.",
                             data={"customer_id": customer_id})
@@ -126,7 +131,7 @@ def set_account_active(db, target: str, active: bool, actor: str, now: datetime)
     if is_driver and driver_id:
         off = db.lwt("APP09_driver_offline", [driver_id])
         if not off.applied and (off.current or {}).get("status") == "BUSY":
-            return ActionResult(False, "driver_busy", "Tài xế đang có chuyến (BUSY), chưa thể khóa.",
+            return ActionResult(False, "driver_busy", "Tài xế đang có chuyến, chưa thể khóa.",
                                 current=off.current)
     res = db.lwt("T02_account_lock", [target])
     if is_driver and driver_id:

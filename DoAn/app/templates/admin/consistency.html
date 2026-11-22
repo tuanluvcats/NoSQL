@@ -2,8 +2,9 @@
 {% block title %}Kiểm tra nhất quán{% endblock %}
 {% block content %}
   <h1 class="h4 mb-2">Kiểm tra nhất quán</h1>
-  <p class="text-muted small">Cassandra không có giao dịch nhiều bảng, nên khi một lệnh ghi bảng phụ lỗi giữa chừng thì dữ liệu có thể lệch.
-    <code>rides</code> là nguồn đúng: công cụ này so sánh các bảng phụ với <code>rides</code> và ghi lại từ <code>rides</code> (reconcile). Chỉ ADMIN/OPERATOR dùng được.</p>
+  <p class="text-muted small">Công cụ đối soát dữ liệu chuyến đi, khu vực tài xế và đánh giá khi các bảng thống kê bị lệch nhau. Chỉ dành cho quản trị viên và điều phối viên.</p>
+  {% if tech %}<p class="text-muted small tech-note">Cassandra không có giao dịch nhiều bảng, nên khi một lệnh ghi bảng phụ lỗi giữa chừng thì dữ liệu có thể lệch.
+    <code>rides</code> là nguồn đúng: công cụ này so sánh các bảng phụ với <code>rides</code> và ghi lại từ <code>rides</code> (reconcile).</p>{% endif %}
   {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
 
   <h2 class="h6 mt-3">1. Chuyến đi so với bảng phụ</h2>
@@ -14,9 +15,9 @@
   </form>
   {% if diffs is not none %}
     {% if diffs %}
-      <div class="alert alert-warning py-2">Chuyến <code>{{ ride_id }}</code> lệch {{ diffs|length }} chỗ:</div>
+      <div class="alert alert-warning py-2">Chuyến {{ ride_id }} lệch {{ diffs|length }} chỗ:</div>
       <table class="table table-sm table-bordered w-auto">
-        <thead><tr><th>Bảng</th><th>Cột</th><th>Đúng (rides)</th><th>Đang có</th></tr></thead>
+        <thead><tr><th>Bảng</th><th>Cột</th><th>Đúng (theo chuyến gốc)</th><th>Đang có</th></tr></thead>
         <tbody>
         {% for d in diffs %}
           <tr><td class="font-monospace">{{ d.table }}</td><td class="font-monospace">{{ d.column }}</td>
@@ -26,16 +27,17 @@
       </table>
       <form method="post" action="/admin/consistency/reconcile" class="mb-3">
         <input type="hidden" name="ride_id" value="{{ ride_id }}">
-        <button class="btn btn-sm btn-warning" type="submit">Reconcile từ rides</button>
+        <button class="btn btn-sm btn-warning" type="submit">Đồng bộ lại từ chuyến gốc</button>
       </form>
     {% else %}
-      <div class="alert alert-success py-2">Chuyến <code>{{ ride_id }}</code> khớp ở mọi bảng phụ.</div>
+      <div class="alert alert-success py-2">Chuyến {{ ride_id }} khớp ở mọi nơi lưu trữ.</div>
     {% endif %}
   {% endif %}
 
-  <h2 class="h6 mt-4">2. Tài xế kẹt BUSY</h2>
-  <p class="text-muted small">Tài xế BUSY nhưng không có chuyến ACCEPTED/ONGOING nào (vd lệnh nhận chuyến gặp WriteTimeout kiểu CAS nên kết quả LWT không rõ).
-    Giải phóng bằng LWT <code>IF status = 'BUSY'</code>, chỉ khi xác minh lại không còn chuyến đang chạy.</p>
+  <h2 class="h6 mt-4">2. Tài xế bị kẹt trạng thái</h2>
+  <p class="text-muted small">Tài xế đang ở trạng thái chở khách nhưng không có chuyến nào đang chạy. Chỉ giải phóng sau khi đã kiểm tra lại không còn chuyến đang chạy.</p>
+  {% if tech %}<p class="text-muted small tech-note">Tài xế BUSY nhưng không có chuyến ACCEPTED/ONGOING nào (vd lệnh nhận chuyến gặp WriteTimeout kiểu CAS nên kết quả LWT không rõ).
+    Giải phóng bằng LWT <code>IF status = 'BUSY'</code>.</p>{% endif %}
   {% if stuck %}
     <table class="table table-sm table-bordered w-auto align-middle">
       <thead><tr><th>Tài xế</th><th>Họ tên</th><th>Lý do</th><th></th></tr></thead>
@@ -44,15 +46,15 @@
         <tr><td class="font-monospace">{{ s.driver_id }}</td><td>{{ s.full_name }}</td><td class="small">{{ s.reason }}</td>
           <td><form method="post" action="/admin/consistency/driver" class="d-inline">
             <input type="hidden" name="driver_id" value="{{ s.driver_id }}"><input type="hidden" name="action" value="release">
-            <button class="btn btn-sm btn-warning" type="submit">Giải phóng về AVAILABLE</button></form></td></tr>
+            <button class="btn btn-sm btn-warning" type="submit">Giải phóng tài xế</button></form></td></tr>
       {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <div class="alert alert-success py-2">Không có tài xế nào kẹt BUSY.</div>
+    <div class="alert alert-success py-2">Không có tài xế nào bị kẹt.</div>
   {% endif %}
 
-  <h2 class="h6 mt-4">3. Khu vực của tài xế (drivers_by_area)</h2>
+  <h2 class="h6 mt-4">3. Khu vực nhận chuyến của tài xế</h2>
   <form method="post" action="/admin/consistency/driver" class="row g-2 align-items-end mb-2">
     <input type="hidden" name="action" value="check_areas">
     <div class="col-auto"><label class="form-label small mb-0" for="chk-drv">Mã tài xế</label>
@@ -64,14 +66,15 @@
       <ul class="text-danger small">{% for p in area_problems %}<li>{{ p }}</li>{% endfor %}</ul>
       <p class="small text-muted">Sửa: để tài xế tắt nhận chuyến (xóa mọi khu vực) rồi bật lại ở một khu vực.</p>
     {% else %}
-      <div class="alert alert-success py-2">Khu vực của <code>{{ driver_id }}</code> hợp lệ.</div>
+      <div class="alert alert-success py-2">Khu vực của {{ driver_id }} hợp lệ.</div>
     {% endif %}
   {% endif %}
 
-  <h2 class="h6 mt-4">4. Backfill rated_at (dữ liệu seed)</h2>
-  <p class="text-muted small">Chuyến đã có dòng trong <code>ratings_by_driver</code> nhưng <code>rated_at</code> còn null sẽ cho đánh giá lại. Nút này đặt <code>rated_at</code> bằng LWT
-    <code>IF rated_at = null AND status = 'COMPLETED'</code>; chạy lại nhiều lần được.</p>
+  <h2 class="h6 mt-4">4. Cập nhật dấu đã đánh giá</h2>
+  <p class="text-muted small">Chuyến đã được đánh giá nhưng chưa có dấu đã đánh giá sẽ cho đánh giá lại. Nút này bổ sung dấu còn thiếu, chạy lại nhiều lần vẫn an toàn.</p>
+  {% if tech %}<p class="text-muted small tech-note">Chuyến đã có dòng trong <code>ratings_by_driver</code> nhưng <code>rated_at</code> còn null. Nút này đặt <code>rated_at</code> bằng LWT
+    <code>IF rated_at = null AND status = 'COMPLETED'</code>.</p>{% endif %}
   <form method="post" action="/admin/consistency/backfill">
-    <button class="btn btn-sm btn-outline-primary" type="submit">Chạy backfill</button>
+    <button class="btn btn-sm btn-outline-primary" type="submit">Cập nhật dấu đánh giá</button>
   </form>
 {% endblock %}

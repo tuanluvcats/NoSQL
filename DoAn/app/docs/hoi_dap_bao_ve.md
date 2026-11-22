@@ -100,6 +100,7 @@ và `COPY TO/FROM` CSV cho phần làm trên công cụ.
   `drivers_by_area`.
 - **Xóa khách đã có chuyến?** Bị chặn (lịch sử chuyến sẽ mồ côi); dùng khóa tài khoản. Mọi nút xóa/khóa hỏi xác nhận trước.
 - **Sao mỗi trang có panel CQL?** Để người xem thấy câu CQL thật, bảng, partition key, consistency level, `[applied]`. Đây là phần "thể hiện NoSQL".
+- **Vì sao giao diện mặc định không hiện CQL?** Vì đây là ứng dụng cho người dùng cuối, họ không cần và không nên thấy chi tiết lưu trữ (tên bảng, partition key, câu CQL). Phần "thể hiện NoSQL" vẫn còn nguyên trong **chế độ kỹ thuật**, bật bằng nút ở chân trang hoặc `APP_TECH_MODE=1`. Cách làm giống developer mode của Odoo hay Django debug toolbar: lưu bằng cookie, chỉ ảnh hưởng hiển thị, không đổi quyền hạn hay dữ liệu.
 - **Giao diện có kiểm tra trùng chức năng không?** Có test tự động (`tests/unit/test_ux_rules.py`): trang chủ không có link lặp, một nhãn không dẫn tới hai
   nơi, các nút trên một trang có tên khác nhau, nút xóa/khóa phải hỏi lại. Menu gom theo nhóm (Người dùng, Dữ liệu, Nghiệp vụ, Hệ thống) đúng các mục 9.1-9.4.
 
@@ -114,7 +115,7 @@ Khoảng 600 test pytest: unit test dùng `FakeDb` (không cần Cassandra) ki�
 Có (`docs/ket_qua_do_hieu_nang.md`, đo bằng query trace phía server). Baseline là cách làm thông thường "đọc trạng thái rồi UPDATE": 8 tài xế cùng nhận
 một chuyến, 30 vòng, cả 30 vòng đều có từ 2 người "nhận được"; dùng LWT thì cả 30 vòng đúng 1 người. Cái giá: LWT khoảng 9,8 ms so với 0,8 ms của ghi
 thường. Đọc theo partition key giữ khoảng 1 ms khi bảng tăng lên 20.036 chuyến, còn `ALLOW FILTERING` tăng từ 3,6 ms lên khoảng 100 ms: đó là lý do thiết
-kế theo truy vấn. Độ bao phủ mã của bộ test là 89 %.
+kế theo truy vấn. Độ bao phủ mã của bộ test là 90 %.
 
 ## 5. Tài liệu tham khảo đã đối chiếu
 

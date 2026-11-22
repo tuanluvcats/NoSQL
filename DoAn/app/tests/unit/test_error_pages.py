@@ -33,8 +33,8 @@ def _client(db):
 def test_404_shows_user_loaded_from_session():
     db = FakeDb({"B01_account_get": [ADMIN_ROW]})
     r = _client(db).get("/khong-co")
-    assert r.status_code == 404 and "Quản Trị" in r.text and "(ADMIN)" in r.text
-    assert "Chưa đăng nhập" not in r.text
+    assert r.status_code == 404 and "Quản Trị" in r.text and "Quản trị viên" in r.text
+    assert 'href="/login"' not in r.text
     assert "password_hash" not in r.text
 
 
@@ -42,7 +42,7 @@ def test_user_lookup_db_error_does_not_leak_and_error_page_still_renders():
     db = FakeDb({"B01_account_get": [RuntimeError("HOST-BI-MAT-10.9.8.7 NoHostAvailable")]})
     r = _client(db).get("/khong-co")
     assert r.status_code == 404
-    assert "Chưa đăng nhập" in r.text
+    assert 'href="/login"' in r.text  # coi như khách
     assert "HOST-BI-MAT" not in r.text and "10.9.8.7" not in r.text
 
 
@@ -76,7 +76,7 @@ def test_500_hides_error_type_and_message_by_default():
     assert r.status_code == 500
     assert "SECRET_DB_ERR" not in r.text and "RuntimeError" not in r.text and "NoHostAvailable" not in r.text
     assert "Lỗi 500" in r.text
-    assert "Quản Trị" in r.text and "(ADMIN)" in r.text  # menu vẫn đúng người dùng
+    assert "Quản Trị" in r.text and "Quản trị viên" in r.text  # menu vẫn đúng người dùng
 
 
 def test_500_is_logged_in_full_on_the_server(caplog):
@@ -94,7 +94,7 @@ def test_500_shows_detail_only_when_app_debug_is_on():
     r = _secret_client({"APP_DEBUG": "1"}).get("/_secret")
     assert r.status_code == 500
     assert "SECRET_DB_ERR" in r.text and "RuntimeError" in r.text
-    assert "(ADMIN)" in r.text
+    assert "Quản trị viên" in r.text
 
 
 @pytest.mark.parametrize("value", ["0", "", "false", "no"])
@@ -117,18 +117,18 @@ def test_503_maintenance_page_shows_logged_in_user_in_menu():
     assert app.state.maintenance.begin() is True
     r = c.post("/_login")
     assert r.status_code == 503 and "Đang khôi phục dữ liệu" in r.text
-    assert "Quản Trị" in r.text and "(ADMIN)" in r.text
-    assert "Chưa đăng nhập" not in r.text
+    assert "Quản Trị" in r.text and "Quản trị viên" in r.text
+    assert 'href="/login"' not in r.text
 
 
 def test_503_maintenance_page_for_guest_still_says_not_logged_in():
     app = create_app(Settings.from_env({}), db=FakeDb())
     app.state.maintenance.begin()
     r = TestClient(app).post("/login", data={"username": "x", "password": "y"})
-    assert r.status_code == 503 and "Chưa đăng nhập" in r.text
+    assert r.status_code == 503 and 'href="/login"' in r.text
 
 
 def test_error_page_without_db_is_guest():
     app = create_app(Settings.from_env({}), db=None)
     r = TestClient(app).get("/khong-co")
-    assert r.status_code == 404 and "Chưa đăng nhập" in r.text
+    assert r.status_code == 404 and 'href="/login"' in r.text

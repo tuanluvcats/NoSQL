@@ -99,6 +99,8 @@ def test_busy_driver_sees_link_to_current_ride():
 def test_backup_page_does_not_show_absolute_server_path():
     from pathlib import Path as _P
     app_root = str(_P(__file__).resolve().parents[2])
-    html = _client("ADMIN").get("/admin/backup").text
+    c = _client("ADMIN")
+    c.cookies.set("tech_mode", "1")  # thư mục sao lưu chỉ được nhắc tới ở ghi chú kỹ thuật
+    html = c.get("/admin/backup").text
     assert app_root not in html
     assert "backups" in html

@@ -12,6 +12,7 @@ DbSchema (mở dữ liệu bảng, làm mới) có thể khác chút giữa các
 
 | Bước | Việc | Lệnh / màn hình |
 |---|---|---|
+| 0.0 | Bật chế độ kỹ thuật | Giao diện mặc định không hiện CQL. Bấm **Bật chế độ kỹ thuật** ở chân trang (hoặc đặt `$env:APP_TECH_MODE = "1"` trước khi chạy `uvicorn`) để thấy panel **CQL đã chạy**, mã B/A/T/Q và các ghi chú kỹ thuật. Cookie ghi nhớ 30 ngày, nên bật một lần cho mỗi trình duyệt (A và B) |
 | 0.1 | Bật Cassandra 3.11.4 và kiểm tra máy | `cd DoAn\app` rồi `.venv\Scripts\python -m tools.check_env` (phải thấy `connected: True`, `release_version: 3.11.4`) |
 | 0.2 | Dựng CSDL demo sạch ngay trước buổi quay | `.venv\Scripts\python -m tools.setup_db --keyspace ride_booking_demo --seed --yes`. Lệnh này `TRUNCATE` 13 bảng của keyspace đó, nên dùng keyspace riêng, không phải `ride_booking` của báo cáo. Nạp lại seed để dữ liệu và trạng thái tài xế đúng như kịch bản |
 | 0.3 | Chạy ứng dụng trên keyspace demo | `$env:CASSANDRA_KEYSPACE = "ride_booking_demo"` rồi `.venv\Scripts\python -m uvicorn main:app --port 8000` |

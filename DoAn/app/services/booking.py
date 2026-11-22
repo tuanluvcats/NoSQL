@@ -6,6 +6,8 @@ Crash giữa hai bước chỉ làm thất thoát một lượt (thận trọng)
 """
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -17,6 +19,8 @@ from domain.money import discount_of, fare_of, normalize_distance
 from domain.promo import promo_error
 from domain.tz import truncate_ms, vn_date
 from services.result import ActionResult
+
+log = logging.getLogger(__name__)
 
 ADDRESS_MAX = 200
 _PROMO_REASONS = {
@@ -132,7 +136,7 @@ def release_promo(db, code: str, max_attempts: int = 20) -> bool:
 
 def _duplicate(customer_id: str, ride_id: str, existing: dict | None) -> ActionResult:
     if (existing or {}).get("customer_id") == customer_id:
-        return ActionResult(True, "duplicate_ok", "Chuyến này đã được đặt trước đó (gửi lại form), không tạo thêm.",
+        return ActionResult(True, "duplicate_ok", "Chuyến này đã được đặt trước đó, không tạo thêm.",
                             ride_id=ride_id, current=existing)
     return ActionResult(False, "duplicate", "Mã chuyến đã được dùng bởi yêu cầu khác.", ride_id=ride_id,
                         current=existing)
@@ -183,8 +187,9 @@ def book_ride(db, customer_id: str, f: BookingForm, now: datetime) -> ActionResu
         db.exec("T04_rbc_insert", [customer_id, ride_date, f.ride_id, pickup, dest, None, fare, "REQUESTED"])
         db.exec("T04_rad_insert", [f.city, f.district, ride_date, now, f.ride_id, customer_id, None, pickup, dest,
                                    fare, "REQUESTED", f.payment_method])
-    except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
-        return ActionResult(True, "partial", f"Đã tạo chuyến nhưng ghi bảng phụ lỗi ({type(e).__name__}). "
-                            "Hãy dùng Kiểm tra nhất quán -> Reconcile.", ride_id=f.ride_id)
+    except Exception:  # noqa: BLE001 - D10: không rollback, báo partial
+        log.exception("Đặt chuyến %s: ghi bảng phụ lỗi", f.ride_id)
+        return ActionResult(True, "partial", "Đã tạo chuyến nhưng một phần dữ liệu chưa đồng bộ, "
+                            "quản trị viên sẽ đối soát lại.", ride_id=f.ride_id)
     return ActionResult(True, "ok", "Đã đặt xe thành công.", ride_id=f.ride_id,
                         data={"fare": fare, "discount": discount, "payable": fare - discount})

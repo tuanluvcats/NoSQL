@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from domain.labels import driver_status
 from domain.tz import vn_date, yyyymm
 from services.driver_presence import find_area_rows
 from services.result import ActionResult
@@ -186,7 +187,7 @@ def release_stuck_driver(db, driver_id: str, now: datetime) -> ActionResult:
     if d is None:
         return ActionResult(False, "not_found", "Không tìm thấy tài xế.")
     if d.get("status") != "BUSY":
-        return ActionResult(False, "invalid_transition", f"Tài xế đang {d.get('status')}, không phải BUSY.",
+        return ActionResult(False, "invalid_transition", f"Tài xế đang ở trạng thái {driver_status(d.get('status'))}, không cần giải phóng.",
                             current={"status": d.get("status")})
     ride_id = active_ride_of(db, driver_id, now)
     if ride_id is not None:
@@ -198,6 +199,6 @@ def release_stuck_driver(db, driver_id: str, now: datetime) -> ActionResult:
     late = active_ride_of(db, driver_id, now)
     if late is not None:
         db.lwt("APP07_driver_claim", [driver_id])
-        return ActionResult(False, "lwt_lost", f"Chuyến {late} vừa được nhận trong lúc giải phóng, đã giữ lại BUSY.",
+        return ActionResult(False, "lwt_lost", f"Chuyến {late} vừa được nhận trong lúc giải phóng, tài xế vẫn được giữ ở trạng thái đang chở khách.",
                             ride_id=late)
-    return ActionResult(True, "ok", "Đã đưa tài xế kẹt BUSY về AVAILABLE.")
+    return ActionResult(True, "ok", "Đã giải phóng tài xế, tài xế có thể nhận chuyến trở lại.")

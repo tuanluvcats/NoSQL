@@ -275,8 +275,8 @@ def test_ride_detail_page_lists_status_history_in_order(client_factory):
     c = _client(client_factory, "cust001")
     page = c.get("/rides/RIDE_1007")
     assert page.status_code == 200
-    body = page.text[page.text.index("status_history"):]
-    order = [body.index(s) for s in ("REQUESTED", "ACCEPTED", "ONGOING", "COMPLETED")]
+    body = page.text[page.text.index("Lịch sử trạng thái"):]
+    order = [body.index(s) for s in ("Đang tìm tài xế", "Tài xế đang đến", "Đang trong chuyến", "Hoàn thành")]
     assert order == sorted(order) and "29/09/2026 17:45" in body
 
 

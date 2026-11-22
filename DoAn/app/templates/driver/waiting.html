@@ -5,13 +5,13 @@
   <form method="get" action="/driver/waiting" class="row g-2 mb-3" style="max-width: 640px">
     <div class="col-sm-4">
       <select class="form-select" id="w_city" name="city" aria-label="Thành phố">
-        {% for c in areas %}<option value="{{ c }}" {{ 'selected' if city == c }}>{{ c }}</option>{% endfor %}
+        {% for c in areas %}<option value="{{ c }}" {{ 'selected' if city == c }}>{{ c|city_label }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-sm-4">
       <select class="form-select" id="w_district" name="district" aria-label="Quận">
         {% for c, ds in areas.items() %}{% for d in ds %}
-          <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if district == d and city == c }}>{{ d }}</option>
+          <option value="{{ d }}" data-city="{{ c }}" {{ 'selected' if district == d and city == c }}>{{ d|district_label }}</option>
         {% endfor %}{% endfor %}
       </select>
     </div>
@@ -20,8 +20,8 @@
     </div>
     <div class="col-sm-1"><button class="btn btn-outline-primary" type="submit">Xem</button></div>
   </form>
-  <p class="text-muted small">Lấy từ <code>rides_by_area_date</code> (city, district, ride_date) lọc <code>status = 'REQUESTED'</code>, ngày tính theo +07:00.
-    Quận đã chọn: <code>{{ city }} / {{ district }}</code> ngày <code>{{ day }}</code>.</p>
+  <p class="text-muted small">Chuyến đang chờ ở {{ district|district_label }}, {{ city|city_label }} ngày {{ day|dmy }}</p>
+  {% if tech %}<p class="text-muted small tech-note">Lấy từ <code>rides_by_area_date</code> (city, district, ride_date) lọc <code>status = 'REQUESTED'</code>, ngày tính theo +07:00.</p>{% endif %}
   {% if rides %}
     <table class="table table-sm table-bordered align-middle">
       <thead><tr><th>Giờ yêu cầu</th><th>Mã chuyến</th><th>Điểm đón</th><th>Điểm đến</th><th>Cước</th><th>Thanh toán</th><th></th></tr></thead>
@@ -29,11 +29,11 @@
       {% for r in rides %}
         <tr>
           <td>{{ fmt(r.requested_at) }}</td>
-          <td><code>{{ r.ride_id }}</code></td>
+          <td>{{ r.ride_id }}</td>
           <td>{{ r.pickup_address }}</td>
           <td>{{ r.destination_address }}</td>
           <td>{{ '{:,.0f}'.format(r.fare) | replace(',', '.') }}đ</td>
-          <td>{{ r.payment_method }}</td>
+          <td>{{ r.payment_method|pay_method }}</td>
           <td>
             <form method="post" action="/rides/{{ r.ride_id }}/accept" class="d-inline">
               <button class="btn btn-sm btn-success" type="submit">Nhận chuyến</button>

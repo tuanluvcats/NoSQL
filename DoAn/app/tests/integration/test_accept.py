@@ -250,12 +250,12 @@ def test_http_other_customer_cannot_view_requested_ride_but_owner_can(client_fac
 def test_http_driver_flow_online_waiting_accept_offline(client_factory, db):
     c = client_factory(clock=_clock)
     http_login(c, "drv555")
-    assert "OFFLINE" in c.get("/driver").text
+    assert "Ngoại tuyến" in c.get("/driver").text
     r = c.post("/driver/online", data={"city": "HCM", "district": "TAN_PHU", "plate": "51K-567.89",
                                        "lat": "10.80", "lng": "106.63"})
     assert r.status_code == 303 and r.headers["location"] == "/driver"
     home = c.get("/driver")
-    assert home.status_code == 200 and "AVAILABLE" in home.text and "TAN_PHU" in home.text
+    assert home.status_code == 200 and "Sẵn sàng" in home.text and "TAN_PHU" in home.text
     assert "ma trận ghi của sự kiện “Tài xế bật nhận chuyến”" in home.text and "thiếu" not in home.text
     wrong = c.post("/driver/online", data={"city": "HCM", "district": "Q1", "plate": "51G-234.56"})
     assert wrong.status_code == 400
@@ -275,4 +275,4 @@ def test_http_busy_driver_offline_is_refused(client_factory, db):
     r = c.post("/driver/offline")
     assert r.status_code == 303
     assert _status(db, "DRV_552") == "BUSY"
-    assert "BUSY" in c.get("/driver").text
+    assert "Đang chở khách" in c.get("/driver").text

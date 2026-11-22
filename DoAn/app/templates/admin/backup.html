@@ -2,12 +2,12 @@
 {% block title %}Backup / Restore{% endblock %}
 {% block content %}
   <h1 class="h4 mb-2">Backup và khôi phục dữ liệu (JSON)</h1>
-  <p class="text-muted small">Backup đọc từng bảng thật bằng <code>SELECT JSON</code> và lưu thành một file JSON (kèm kiểu cột) trong
+  <p class="text-muted small">Bản sao lưu chứa mật khẩu đã băm, hãy giữ kín. Khi khôi phục, hệ thống tạm chặn mọi thao tác ghi.
+    Sau khi khôi phục, chỉ đăng nhập được bằng các tài khoản có trong file sao lưu.</p>
+  {% if tech %}<p class="text-muted small tech-note">Backup đọc từng bảng thật bằng <code>SELECT JSON</code> và lưu thành một file JSON (kèm kiểu cột) trong
     thư mục <code>{{ backup_dir }}</code> của ứng dụng. Khôi phục: kiểm toàn bộ file trước, sau đó bật chế độ bảo trì (chặn mọi thao tác ghi khác),
     tạo bản an toàn <code>*_prerestore.json</code>, <code>TRUNCATE</code> 13 bảng rồi <code>INSERT ... JSON</code> lại.
-    View <code>vehicles_by_plate</code> không bị ghi trực tiếp, Cassandra tự dựng lại từ <code>vehicles</code>.
-    Không dùng <code>nodetool</code>. File backup chứa mật khẩu đã băm nên hãy giữ kín.
-    Sau khi khôi phục, tài khoản đăng nhập được là các tài khoản có trong file backup.</p>
+    View <code>vehicles_by_plate</code> không bị ghi trực tiếp, Cassandra tự dựng lại từ <code>vehicles</code>. Không dùng <code>nodetool</code>.</p>{% endif %}
 
   <h2 class="h6 mt-3">1. Tạo backup</h2>
   <form method="post" action="/admin/backup/create" class="row g-2 align-items-end mb-3">
@@ -30,12 +30,18 @@
     <div class="alert alert-secondary py-2">Chưa có file backup nào.</div>
   {% endif %}
 
-  <h2 class="h6 mt-3">3. Số dòng hiện tại</h2>
+  <h2 class="h6 mt-3">3. Dữ liệu hiện có</h2>
+  {% set friendly = {'customers': 'Khách hàng', 'drivers': 'Tài xế', 'vehicles': 'Xe', 'user_accounts': 'Tài khoản',
+                     'rides': 'Chuyến đi', 'promotions': 'Khuyến mãi', 'ratings_by_driver': 'Đánh giá'} %}
   <table class="table table-sm table-bordered w-auto">
-    <thead><tr><th>Bảng</th><th class="text-end">Số dòng</th></tr></thead>
+    <thead><tr><th>{{ 'Bảng' if tech else 'Loại dữ liệu' }}</th><th class="text-end">Số dòng</th></tr></thead>
     <tbody>
     {% for t, n in counts.items() %}
+      {% if tech %}
       <tr><td class="font-monospace">{{ t }}{% if t not in base_tables %} <span class="text-muted">(view)</span>{% endif %}</td><td class="text-end">{{ n }}</td></tr>
+      {% elif t in friendly %}
+      <tr><td>{{ friendly[t] }}</td><td class="text-end">{{ n }}</td></tr>
+      {% endif %}
     {% endfor %}
     </tbody>
   </table>

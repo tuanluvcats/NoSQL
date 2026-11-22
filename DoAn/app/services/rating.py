@@ -7,6 +7,8 @@ upsert nên cập nhật mù sẽ sinh dòng ma khiến tài xế offline "hiệ
 """
 from __future__ import annotations
 
+import logging
+
 import time
 
 from datetime import datetime
@@ -16,6 +18,8 @@ from config import RATING_TAGS
 from domain.tz import truncate_ms
 from services.driver_presence import find_area_rows
 from services.result import ActionResult
+
+log = logging.getLogger(__name__)
 
 MAX_COMMENT = 500
 
@@ -69,9 +73,10 @@ def rate_ride(db, ride_id: str, customer_id: str, stars: int, comment: str, tags
         db.exec("T09_driver_rating", [ts, avg, driver_id])
         for row in find_area_rows(db, driver_id):  # không có dòng (tài xế offline) thì không ghi: chống dòng ma
             db.exec("T09_area_rating", [ts, avg, row["city"], row["district"], driver_id])
-    except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
-        return ActionResult(True, "partial", f"Đã ghi nhận đánh giá nhưng cập nhật điểm lỗi ({type(e).__name__}). "
-                            "Hãy dùng Kiểm tra nhất quán.", ride_id=ride_id)
+    except Exception:  # noqa: BLE001 - D10: không rollback, báo partial
+        log.exception("Đánh giá chuyến %s: cập nhật điểm tài xế lỗi", ride_id)
+        return ActionResult(True, "partial", "Đã ghi nhận đánh giá nhưng điểm trung bình của tài xế chưa được cập nhật, "
+                            "quản trị viên sẽ đối soát lại.", ride_id=ride_id)
     return ActionResult(True, "ok", "Cảm ơn bạn đã đánh giá.", ride_id=ride_id,
                         data={"rating": avg, "count": agg.get("so_danh_gia")})
 

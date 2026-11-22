@@ -5,7 +5,8 @@
     <h1 class="h4 mb-0">Tài xế</h1>
     <a class="btn btn-sm btn-primary" href="/admin/drivers/new">Thêm tài xế</a>
   </div>
-  <p class="text-muted small">Quét toàn bảng nhỏ (APP03), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Chỉ xóa được tài xế OFFLINE, chưa có chuyến, xe hay tài khoản. Trạng thái do luồng nhận chuyến quản lý, không sửa ở đây.</p>
+  <p class="text-muted small">Chỉ xóa được tài xế đang ngoại tuyến, chưa có chuyến, xe hay tài khoản. Trạng thái do luồng nhận chuyến quản lý, không sửa ở đây.</p>
+  {% if tech %}<p class="text-muted small tech-note">Quét toàn bảng nhỏ (APP03), chấp nhận ở quy mô dữ liệu mẫu (spec §7).</p>{% endif %}
   <div class="table-responsive">
     <table class="table table-sm table-striped align-middle">
       <thead><tr><th>Mã</th><th>Họ tên</th><th>Số bằng lái</th><th>Điện thoại</th><th>Điểm</th><th>Trạng thái</th><th></th></tr></thead>
@@ -17,7 +18,7 @@
           <td class="font-monospace">{{ r.license_number }}</td>
           <td>{{ r.phone }}</td>
           <td>{{ r.rating }}</td>
-          <td>{{ r.status }}</td>
+          <td>{{ r.status|driver_status }}</td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary" href="/admin/drivers/{{ r.driver_id }}/edit">Sửa</a>
             <form method="post" action="/admin/drivers/{{ r.driver_id }}/delete" class="d-inline" onsubmit="return confirm('Xóa tài xế này? Không xóa được nếu tài xế đã có chuyến (hãy khóa tài khoản).');">

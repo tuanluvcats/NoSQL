@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Kết nối Cassandra{% endblock %}
 {% block content %}
-  <h1 class="h4 mb-2">Kết nối cơ sở dữ liệu (mục 8)</h1>
-  <p class="text-muted small">Ứng dụng nói chuyện với Cassandra bằng driver Python (<code>cassandra-driver</code>) qua giao thức CQL native.
+  <h1 class="h4 mb-2">Kết nối cơ sở dữ liệu</h1>
+  {% if tech %}
+  <p class="text-muted small tech-note">Ứng dụng nói chuyện với Cassandra bằng driver Python (<code>cassandra-driver</code>) qua giao thức CQL native.
     Thông tin dưới đây đọc từ cấu hình và từ <code>system.local</code> / <code>system_schema</code> của chính máy chủ đang kết nối.
     Trang này không hiển thị khóa phiên hay mật khẩu.</p>
+  {% endif %}
   {% if info.error %}
     <div class="alert alert-danger" role="alert"><strong>Không đọc được thông tin từ Cassandra.</strong> {{ info.error }}</div>
   {% endif %}
@@ -43,7 +45,7 @@
           <td class="small font-monospace">{{ info.views | join(', ') or '-' }}</td></tr>
       <tr><th>Cột <code>rides.rated_at</code> (thêm bằng <code>ALTER TABLE</code>)</th>
           <td>{% if info.migration_ok %}<span class="badge text-bg-success">đã có</span>{% else %}<span class="badge text-bg-danger">chưa có</span>{% endif %}</td>
-          <td class="small text-muted">{% if info.migration_ok %}Ứng dụng đánh giá một lần bằng LWT <code>IF rated_at = null</code>.{% else %}Chạy <code>python -m tools.migrate --keyspace {{ info.keyspace }}</code>.{% endif %}</td></tr>
+          <td class="small text-muted">{% if tech %}<span class="tech-note">{% if info.migration_ok %}Ứng dụng đánh giá một lần bằng LWT <code>IF rated_at = null</code>.{% else %}Chạy <code>python -m tools.migrate --keyspace {{ info.keyspace }}</code>.{% endif %}</span>{% endif %}</td></tr>
     </tbody>
   </table>
 {% endblock %}

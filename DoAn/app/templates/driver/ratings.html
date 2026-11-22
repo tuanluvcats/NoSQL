@@ -2,7 +2,7 @@
 {% block title %}Đánh giá của tôi{% endblock %}
 {% block content %}
   <h1 class="h4 mb-2">Đánh giá của tôi</h1>
-  <p class="text-muted small">Đọc từ <code>ratings_by_driver</code> (partition key <code>driver_id</code>, mới nhất trước). Điểm trung bình A05 tính bằng <code>AVG(stars)</code>.</p>
+  {% if tech %}<p class="text-muted small tech-note">Đọc từ <code>ratings_by_driver</code> (partition key <code>driver_id</code>, mới nhất trước). Điểm trung bình A05 tính bằng <code>AVG(stars)</code>.</p>{% endif %}
   <p><strong>{{ count }}</strong> đánh giá, điểm trung bình <strong>{{ avg if avg is not none else '-' }}</strong></p>
   <div class="table-responsive">
     <table class="table table-sm table-striped align-middle">

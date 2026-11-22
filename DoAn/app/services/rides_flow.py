@@ -9,16 +9,21 @@ luôn lấy từ dòng `rides` vừa đọc (D1), không lấy từ form. Hủy 
 """
 from __future__ import annotations
 
+import logging
+
 from datetime import datetime
 from typing import Callable, Mapping
 
 from config import AREAS
 from domain.auth import can_cancel_ride, can_view_ride
+from domain.labels import ride_status
 from domain.rides import CANCELLABLE
 from domain.tz import truncate_ms, vn_date, yyyymm
 from services.booking import release_promo
 from services.driver_presence import _valid_coords, find_area_rows, remove_from_all_areas
 from services.result import ActionResult
+
+log = logging.getLogger(__name__)
 
 
 def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult:
@@ -57,9 +62,10 @@ def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult
                                    ride["customer_id"], ride.get("pickup_address"), ride.get("destination_address"),
                                    ride.get("distance_km"), ride.get("fare"), "ACCEPTED"])
         remove_from_all_areas(db, driver_id)
-    except Exception as e:  # noqa: BLE001 - D10: không rollback, báo partial
-        return ActionResult(True, "partial", f"Đã nhận chuyến nhưng ghi bảng phụ lỗi ({type(e).__name__}). "
-                            "Hãy dùng Kiểm tra nhất quán -> Reconcile.", ride_id=ride_id)
+    except Exception:  # noqa: BLE001 - D10: không rollback, báo partial
+        log.exception("Nhận chuyến %s: ghi bảng phụ lỗi", ride_id)
+        return ActionResult(True, "partial", "Đã nhận chuyến nhưng một phần dữ liệu chưa đồng bộ, "
+                            "quản trị viên sẽ đối soát lại.", ride_id=ride_id)
     return ActionResult(True, "ok", "Đã nhận chuyến.", ride_id=ride_id)
 
 
@@ -77,13 +83,14 @@ def _run_steps(steps: list[Step]) -> list[str]:
         try:
             step()
         except Exception as e:  # noqa: BLE001
+            log.exception("Bước ghi bảng phụ lỗi")
             errors.append(type(e).__name__)
     return errors
 
 
 def _partial(ride_id: str, what: str, errors: list[str]) -> ActionResult:
-    return ActionResult(True, "partial", f"{what} nhưng ghi bảng phụ lỗi ({', '.join(errors)}). "
-                        "Hãy dùng Kiểm tra nhất quán -> Reconcile.", ride_id=ride_id)
+    return ActionResult(True, "partial", f"{what} nhưng một phần dữ liệu chưa đồng bộ, "
+                        "quản trị viên sẽ đối soát lại.", ride_id=ride_id)
 
 
 def _status_steps(db, ride: Mapping, status: str, driver_id: str | None) -> list[Step]:
@@ -106,7 +113,7 @@ def _transition_guard(ride: Mapping | None, ride_id: str, driver_id: str, expect
         return ActionResult(False, "forbidden", "Chuyến này không thuộc tài xế đang đăng nhập.", ride_id=ride_id)
     if ride.get("status") != expected:
         return ActionResult(False, "invalid_transition",
-                            f"Chuyến đang ở trạng thái {ride.get('status')}, cần {expected}.", ride_id=ride_id,
+                            f"Chuyến đang ở trạng thái {ride_status(ride.get('status'))}, không thể thực hiện thao tác này.", ride_id=ride_id,
                             current={"status": ride.get("status"), "driver_id": ride.get("driver_id")})
     return None
 
@@ -193,7 +200,7 @@ def cancel_ride(db, ride_id: str, actor: Mapping, reason: str, now: datetime) ->
             return ActionResult(False, "forbidden", "Bạn không có quyền với chuyến này.", ride_id=ride_id)
         if ride.get("status") not in CANCELLABLE:
             return ActionResult(False, "invalid_transition",
-                                f"Chuyến đang ở trạng thái {ride.get('status')}, không thể hủy.", ride_id=ride_id,
+                                f"Chuyến đang ở trạng thái {ride_status(ride.get('status'))}, không thể hủy.", ride_id=ride_id,
                                 current={"status": ride.get("status")})
         if not can_cancel_ride(actor.get("role"), actor.get("ref_id"), ride):
             return ActionResult(False, "forbidden", "Bạn không có quyền hủy chuyến này.", ride_id=ride_id)

@@ -1,34 +1,56 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1 class="h3">Ứng dụng minh họa đặt xe công nghệ</h1>
-  <p class="text-muted">Cassandra{% if cassandra_version %} {{ cassandra_version }}{% endif %}, keyspace <code>{{ keyspace }}</code>. Mỗi thao tác hiển thị các lệnh CQL đã chạy ở cuối trang.</p>
-  <p>Trạng thái: <a href="/health">/health</a></p>
+  {% if not user %}
+    <h1 class="h3">Đặt xe nhanh, giá rõ ràng</h1>
+    <p class="lead">Đặt xe trong vài bước, biết trước cước phí và theo dõi chuyến đi của bạn.</p>
+  {% else %}
+    <h1 class="h3">Xin chào, {{ user.full_name or user.username }}</h1>
+  {% endif %}
 
-  <h2 class="h5 mt-4">Bạn làm được gì ở đây</h2>
-  <p class="text-muted small">Các chức năng nằm trên thanh menu phía trên (mỗi chức năng chỉ có một nút, trang đang mở được tô sáng).</p>
   {% if not user %}
     <ul>
-      <li><strong>Đăng ký</strong> tài khoản khách: ghi <code>user_accounts</code> bằng LWT <code>IF NOT EXISTS</code> nên không trùng tên đăng nhập.</li>
-      <li><strong>Đăng nhập</strong> bằng tài khoản mẫu (mật khẩu <code>123456</code>): <code>admin</code> (quản trị), <code>dieuphoi</code> (điều phối), <code>cust001</code> (khách), <code>drv551</code> (tài xế).</li>
-      <li><strong>Kết nối</strong>: xem ứng dụng đang nối tới Cassandra nào (host, datacenter, protocol, phiên bản).</li>
+      <li><strong>Đăng ký</strong> tài khoản khách hàng chỉ mất một phút.</li>
+      <li>Xem giá tạm tính trước khi xác nhận đặt xe, có thể áp mã khuyến mãi.</li>
+      <li>Theo dõi trạng thái chuyến và xem lại lịch sử các chuyến đã đi.</li>
+      <li>Tài xế và nhân viên điều phối <strong>đăng nhập</strong> để làm việc trên cùng một hệ thống.</li>
     </ul>
   {% elif user.role in ('ADMIN', 'OPERATOR') %}
     <ul>
-      <li><strong>Người dùng</strong>: khóa/mở tài khoản (LWT), không cho khóa admin cuối cùng.</li>
-      <li><strong>Dữ liệu</strong>: thêm, sửa, xóa khách, tài xế, xe (tra biển số qua materialized view), khuyến mãi (set <code>cities</code>); backup/restore JSON.</li>
-      <li><strong>Nghiệp vụ</strong>: tài xế và chuyến chờ theo khu vực, doanh thu ngày/7 ngày, xuất CSV, kiểm tra nhất quán giữa các bảng phi chuẩn hóa.</li>
+      <li>Quản lý <strong>tài khoản</strong>: khóa hoặc mở khóa người dùng.</li>
+      <li>Quản lý hồ sơ <strong>khách hàng, tài xế, xe</strong> và các mã khuyến mãi.</li>
+      <li>Theo dõi tài xế đang nhận chuyến theo khu vực và xem <strong>báo cáo</strong> doanh thu theo ngày.</li>
+      <li>Sao lưu, khôi phục dữ liệu và đối soát khi dữ liệu bị lệch.</li>
     </ul>
   {% elif user.role == 'CUSTOMER' %}
-    <ol>
-      <li><strong>Đặt xe</strong>: chọn điểm đón/trả, xem báo giá (có mã khuyến mãi), xác nhận.</li>
-      <li>Theo dõi chuyến trong <strong>Lịch sử chuyến</strong>; hủy được khi chuyến còn REQUESTED/ACCEPTED.</li>
-      <li>Chuyến COMPLETED thì đánh giá tài xế (mỗi chuyến một lần).</li>
-    </ol>
+    <ul>
+      <li><strong>Đặt xe</strong>: chọn điểm đón, điểm đến và xem giá tạm tính trước khi xác nhận.</li>
+      <li>Theo dõi chuyến trong <strong>Lịch sử chuyến</strong>; bạn hủy được khi chuyến đang tìm tài xế hoặc tài xế đang đến.</li>
+      <li>Sau khi chuyến hoàn thành, bạn có thể đánh giá tài xế một lần cho mỗi chuyến.</li>
+    </ul>
   {% elif user.role == 'DRIVER' %}
-    <ol>
-      <li><strong>Trạng thái</strong>: bật nhận chuyến ở một khu vực (vào <code>drivers_by_area</code>), hoặc tắt.</li>
-      <li><strong>Chuyến chờ</strong>: xem chuyến REQUESTED trong khu vực và nhận (LWT, hai tài xế không nhận trùng).</li>
-      <li>Trên trang chuyến: bắt đầu, rồi hoàn thành và thanh toán. Xem <strong>Thu nhập</strong> theo tháng và <strong>Đánh giá</strong>.</li>
-    </ol>
+    <ul>
+      <li><strong>Trạng thái</strong>: bật nhận chuyến ở một khu vực hoặc tắt khi nghỉ.</li>
+      <li><strong>Chuyến chờ</strong>: xem các chuyến đang chờ trong khu vực của bạn và nhận chuyến.</li>
+      <li>Trong trang chuyến, bắt đầu chuyến rồi hoàn thành và thanh toán khi đến nơi.</li>
+      <li>Xem <strong>thu nhập</strong> theo tháng và các <strong>đánh giá</strong> của khách.</li>
+    </ul>
+  {% endif %}
+
+  {% if tech %}
+    <div class="text-muted small tech-note mt-4">
+      <p class="mb-1">Cassandra{% if cassandra_version %} {{ cassandra_version }}{% endif %}, keyspace <code>{{ keyspace }}</code>. Mỗi thao tác hiển thị các lệnh CQL đã chạy ở cuối trang.
+        Trạng thái ứng dụng: <a href="/health">/health</a>. Các chức năng nằm trên thanh menu (mỗi chức năng chỉ có một nút, trang đang mở được tô sáng).</p>
+      {% if not user %}
+        <p class="mb-0">Đăng ký ghi <code>user_accounts</code> bằng LWT <code>IF NOT EXISTS</code> nên không trùng tên đăng nhập.
+          Tài khoản mẫu (mật khẩu <code>123456</code>): <code>admin</code> (quản trị), <code>dieuphoi</code> (điều phối), <code>cust001</code> (khách), <code>drv551</code> (tài xế).
+          Trang <a href="/connection">Kết nối</a> cho biết ứng dụng đang nối tới Cassandra nào.</p>
+      {% elif user.role in ('ADMIN', 'OPERATOR') %}
+        <p class="mb-0">Khóa/mở tài khoản dùng LWT, không cho khóa admin cuối cùng. Khuyến mãi dùng set <code>cities</code>; tra biển số qua materialized view; backup/restore JSON; kiểm tra nhất quán giữa các bảng phi chuẩn hóa.</p>
+      {% elif user.role == 'CUSTOMER' %}
+        <p class="mb-0">Hủy được khi chuyến còn REQUESTED/ACCEPTED; đánh giá khi chuyến COMPLETED, mỗi chuyến một lần (LWT trên <code>rated_at</code>).</p>
+      {% elif user.role == 'DRIVER' %}
+        <p class="mb-0">Bật nhận chuyến ghi vào <code>drivers_by_area</code>; nhận chuyến dùng LWT nên hai tài xế không nhận trùng một chuyến.</p>
+      {% endif %}
+    </div>
   {% endif %}
 {% endblock %}

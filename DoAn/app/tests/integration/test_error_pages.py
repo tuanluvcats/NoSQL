@@ -13,8 +13,8 @@ def test_404_page_shows_logged_in_user_in_menu(client_factory):
     assert http_login(c, "admin").status_code == 303
     r = c.get("/khong-co-trang-nay")
     assert r.status_code == 404
-    assert "Chưa đăng nhập" not in r.text
-    assert "(ADMIN)" in r.text and "Đăng xuất" in r.text and "/admin/accounts" in r.text
+    assert 'href="/login"' not in r.text
+    assert "Quản trị viên" in r.text and "Đăng xuất" in r.text and "/admin/accounts" in r.text
 
 
 def test_403_page_shows_logged_in_user_in_menu(client_factory):
@@ -22,12 +22,12 @@ def test_403_page_shows_logged_in_user_in_menu(client_factory):
     http_login(c, "cust001")
     r = c.get("/admin/accounts")
     assert r.status_code == 403
-    assert "Chưa đăng nhập" not in r.text and "(CUSTOMER)" in r.text and "/customer/book" in r.text
+    assert 'href="/login"' not in r.text and "Khách hàng" in r.text and "/customer/book" in r.text
 
 
-def test_404_page_for_guest_still_says_not_logged_in(client_factory):
+def test_404_page_for_guest_still_shows_login_menu(client_factory):
     r = client_factory().get("/khong-co-trang-nay")
-    assert r.status_code == 404 and "Chưa đăng nhập" in r.text and "/login" in r.text
+    assert r.status_code == 404 and "Đăng xuất" not in r.text and "/login" in r.text
 
 
 def test_500_page_shows_logged_in_user_in_menu(settings_test, db):
@@ -41,7 +41,7 @@ def test_500_page_shows_logged_in_user_in_menu(settings_test, db):
     http_login(c, "drv551")
     r = c.get("/_boom")
     assert r.status_code == 500
-    assert "Chưa đăng nhập" not in r.text and "(DRIVER)" in r.text and "/driver/income" in r.text
+    assert 'href="/login"' not in r.text and "&middot; Tài xế" in r.text and "/driver/income" in r.text
 
 
 def test_error_page_of_locked_user_is_treated_as_guest(client_factory, db):
@@ -52,4 +52,4 @@ def test_error_page_of_locked_user_is_treated_as_guest(client_factory, db):
     http_login(c, "cust002")
     assert accounts.set_account_active(db, "cust002", False, "admin", parse_vn("2026-10-04 10:00")).ok
     r = c.get("/khong-co-trang-nay")
-    assert r.status_code == 404 and "Chưa đăng nhập" in r.text and "(CUSTOMER)" not in r.text
+    assert r.status_code == 404 and "Đăng xuất" not in r.text and 'href="/login"' in r.text and "Khách hàng" not in r.text

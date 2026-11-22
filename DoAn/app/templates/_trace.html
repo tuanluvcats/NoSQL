@@ -20,7 +20,7 @@
             {% for k, v in e.partition_key.items() %}{{ k }} = {{ v }}{% if not loop.last %}<br>{% endif %}{% else %}-{% endfor %}
           </td>
           <td class="small">{{ e.consistency }}{% if e.kind == 'lwt' %}<br>serial: LOCAL_SERIAL{% endif %}</td>
-          <td>
+          <td class="cql-cell">
             <code class="d-block text-break">{{ e.cql }}</code>
             {% if e.params %}<small class="text-muted font-monospace text-break">? = {{ e.params | map('cql') | join(', ') }}</small>{% endif %}
           </td>

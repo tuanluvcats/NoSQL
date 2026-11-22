@@ -15,7 +15,7 @@
   <h2 class="h5 mt-4" id="missing-pk">Truy vấn thiếu partition key (Q17 / A10)</h2>
   <p class="small">Bảng <code>rides</code> có partition key là <code>ride_id</code>. Câu dưới lọc theo <code>customer_id</code>, không phải partition key
     và không có index, nên Cassandra từ chối chạy.</p>
-  <pre class="border rounded p-2 bg-light small mb-2"><code>{{ missing_pk_cql }}</code></pre>
+  <pre class="border rounded p-2 bg-light small mb-2 text-wrap"><code>{{ missing_pk_cql }}</code></pre>
   <form method="post" action="/nosql/missing-pk" class="mb-2">
     <button class="btn btn-sm btn-danger" type="submit">Chạy câu truy vấn thiếu partition key</button>
   </form>
@@ -73,26 +73,30 @@
   <h2 class="h5 mt-4" id="desc">Clustering DESC</h2>
   <p class="small"><code>rides_by_driver_month</code> khai báo <code>CLUSTERING ORDER BY (requested_at DESC, ride_id ASC)</code>, nên chuyến mới nhất nằm trước
     ngay trong lúc lưu, không cần <code>ORDER BY</code> khi đọc (B10, DRV_551, tháng 202610).</p>
-  <table class="table table-sm table-bordered w-auto font-monospace small">
-    <thead><tr><th>requested_at (+07)</th><th>ride_id</th><th>Giá</th><th>Trạng thái</th></tr></thead>
-    <tbody>
-    {% for r in demo.B10 %}<tr><td>{{ r.requested_at | dmy_hms }}</td><td>{{ r.ride_id }}</td><td>{{ r.fare | vnd }}</td><td>{{ r.status }}</td></tr>
-    {% else %}<tr><td colspan="4">-</td></tr>{% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered w-auto font-monospace small">
+      <thead><tr><th>requested_at (+07)</th><th>ride_id</th><th>Giá</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+      {% for r in demo.B10 %}<tr><td>{{ r.requested_at | dmy_hms }}</td><td>{{ r.ride_id }}</td><td>{{ r.fare | vnd }}</td><td>{{ r.status }}</td></tr>
+      {% else %}<tr><td colspan="4">-</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   <h2 class="h5 mt-4" id="matrix">Ma trận ghi (CASSANDRA.MD §3.7)</h2>
   <p class="small">Mỗi sự kiện nghiệp vụ ghi vào nhiều bảng (phi chuẩn hóa). Ô bắt buộc phải đủ; ô tùy chọn chỉ ghi khi có liên quan.</p>
-  <table class="table table-sm table-bordered small">
-    <thead><tr><th>Sự kiện</th><th>Bảng bắt buộc</th><th>Bảng tùy chọn</th></tr></thead>
-    <tbody>
-    {% for event, spec in matrix_rows.items() %}
-      <tr><td class="font-monospace">{{ event }}</td>
-          <td class="font-monospace">{{ spec.required | join(', ') }}</td>
-          <td class="font-monospace">{{ spec.optional | join(', ') or '-' }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered small">
+      <thead><tr><th>Sự kiện</th><th>Bảng bắt buộc</th><th>Bảng tùy chọn</th></tr></thead>
+      <tbody>
+      {% for event, spec in matrix_rows.items() %}
+        <tr><td class="font-monospace">{{ event }}</td>
+            <td class="font-monospace">{{ spec.required | join(', ') }}</td>
+            <td class="font-monospace">{{ spec.optional | join(', ') or '-' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   <h2 class="h5 mt-4" id="catalog">Catalog câu CQL của ứng dụng ({{ catalog | length }} câu)</h2>
   <p class="small">Sinh tự động từ <code>STATEMENTS</code>. Mã B/A/T/Q theo CASSANDRA.MD; cột partition key suy ra từ chính câu CQL.</p>
@@ -103,7 +107,7 @@
       {% for s in catalog %}
         <tr><td><span class="badge text-bg-secondary">{{ s.code }}</span> <span class="text-muted">{{ s.name }}</span></td><td>{{ s.q }}</td>
             <td class="font-monospace">{{ s.table }}</td><td class="font-monospace">{{ s.pk }}</td><td>{{ s.kind }}</td>
-            <td><code class="text-break">{{ s.cql }}</code></td></tr>
+            <td class="cql-cell"><code class="text-break">{{ s.cql }}</code></td></tr>
       {% endfor %}
       </tbody>
     </table>

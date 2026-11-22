@@ -171,6 +171,8 @@ main.container { padding-top: 1.75rem; padding-bottom: 2rem; }
 .cql-panel { border-color: #c9d3de; }
 .cql-panel code { font-size: .8rem; }
 .trace-table td, .trace-table th { vertical-align: top; }
+/* Cột câu CQL (panel CQL, catalog trang NoSQL): giữ tối thiểu 18rem. Màn hẹp thì bảng cuộn ngang trong khung của nó, thay vì bẻ câu lệnh vài ký tự một dòng */
+.cql-cell { min-width: 18rem; }
 .lwt-current { max-width: 20rem; font-size: .75rem; }
 
 /* ---------- Biểu tượng SVG tự vẽ (lưới 24, nét 1,75, đầu nét tròn) ---------- */

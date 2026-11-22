@@ -1,5 +1,6 @@
 ; cqlshrc cho đồ án: hiển thị đủ chữ số của kiểu double (mặc định cqlsh in 110000 thành 1.1e+05)
-; Cài một lần: docker exec nosql-cassandra sh -c "mkdir -p /root/.cassandra && cp /tmp/cassandra/cqlshrc /root/.cassandra/cqlshrc"
+; Đã được docker-compose.yml gắn sẵn vào /root/.cassandra/cqlshrc của container nosql-cassandra-doan (không cần cài tay).
+; Nếu chạy cqlsh ở nơi khác:  cqlsh --cqlshrc=/đường/dẫn/cqlshrc
 [ui]
 double_precision = 12
 float_precision = 7

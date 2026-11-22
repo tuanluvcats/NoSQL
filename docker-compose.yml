@@ -34,6 +34,29 @@ services:
       - cassandra-data:/var/lib/cassandra
       - ./BaiTap:/baitap
 
+  # Do an cuoi ky - Cassandra 3.11, cung dong 3.x voi may chup anh trong bao cao Word.
+  # Volume rieng: du lieu cua 4.1 o tren khong doc duoc bang 3.11.
+  # Dung chung cong 9042 voi service cassandra, moi luc chi bat mot service:
+  #   docker compose stop cassandra
+  #   docker compose up -d cassandra-doan
+  cassandra-doan:
+    image: cassandra:3.11
+    container_name: nosql-cassandra-doan
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: NoSQLLab
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+      # cqlsh 5.x (Python 2) loi 'ascii codec' khi DESCRIBE/COPY ra file co tieng Viet neu thieu bien nay
+      PYTHONIOENCODING: utf-8
+    volumes:
+      - cassandra-doan-data:/var/lib/cassandra
+      - ./BaiTap:/baitap
+      - ./DoAn/cassandra:/doan
+      - ./DoAn/cassandra/cqlshrc:/root/.cassandra/cqlshrc:ro
+
   # Chuong 4 - Neo4j (graph database)
   # Giao dien Neo4j Browser: http://localhost:7474  (user: neo4j / pass: password123)
   neo4j:
@@ -67,6 +90,7 @@ services:
 volumes:
   mongo-data:
   cassandra-data:
+  cassandra-doan-data:
   neo4j-data:
   neo4j-logs:
   redis-data:

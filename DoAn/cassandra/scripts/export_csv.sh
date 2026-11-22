@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Xuất (export) toàn bộ bảng của một keyspace ra CSV bằng cqlsh COPY TO (chạy BÊN TRONG container).
-#   docker exec nosql-cassandra bash /tmp/cassandra/scripts/export_csv.sh [keyspace] [thư_mục]
-# Lấy về Windows:  docker cp nosql-cassandra:/backup/csv_ride_booking .
-# Lưu ý: COPY không giữ TTL và WRITETIME của dữ liệu.
+#   docker exec nosql-cassandra-doan bash /doan/scripts/export_csv.sh [keyspace] [thư_mục]
+# Lấy về Windows:  docker cp nosql-cassandra-doan:/backup/csv_ride_booking .
 set -euo pipefail
 KS="${1:-ride_booking}"
 OUT="${2:-/backup/csv_$KS}"

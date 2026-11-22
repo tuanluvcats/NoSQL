@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 03_queries_basic.cql — Truy vấn CƠ BẢN (thang điểm mục 5 & 7)
 -- Mỗi truy vấn chỉ đọc MỘT partition, chỉ định đủ partition key.
--- Chạy:  docker exec nosql-cassandra cqlsh -f /tmp/cassandra/03_queries_basic.cql
+-- Chạy:  docker exec nosql-cassandra-doan cqlsh -f /doan/03_queries_basic.cql
 -- Hoặc chạy từng câu trong DbSchema (SQL Editor / Query Builder).
 -- Lưu ý: cqlsh hiển thị thời gian theo UTC (+0000) — 08:15 giờ VN hiện là 01:15.
 -- =====================================================================
@@ -23,9 +23,8 @@ FROM drivers WHERE driver_id = 'DRV_555';
 SELECT vehicle_id, driver_id, license_plate, model, color
 FROM vehicles WHERE vehicle_id = 'VEH_555';
 
--- [B05] (Q4) Tra xe theo biển số / theo tài xế — dùng secondary index trên bảng nhỏ vehicles
-SELECT vehicle_id, driver_id, license_plate, model FROM vehicles WHERE license_plate = '51K-567.89';
-SELECT vehicle_id, driver_id, license_plate, model FROM vehicles WHERE driver_id = 'DRV_555';
+-- [B05] (Q4) Tra xe theo biển số (materialized view vehicles_by_plate)
+SELECT vehicle_id, driver_id, license_plate, model FROM vehicles_by_plate WHERE license_plate = '51K-567.89';
 
 -- [B06] (Q8) Chi tiết một chuyến theo ride_id
 SELECT ride_id, customer_name, driver_name, pickup_address, destination_address,
@@ -67,7 +66,7 @@ FROM drivers_by_area
 WHERE city = 'HCM' AND district = 'TAN_PHU';
 
 -- [B13] (Q14) Vị trí GPS mới nhất của tài xế trong ngày (LIMIT 1 vì ts sắp xếp giảm dần)
-SELECT ts, location, speed_kmh
+SELECT ts, lat, lng, speed_kmh
 FROM driver_locations
 WHERE driver_id = 'DRV_552' AND day = '2026-10-04'
 LIMIT 1;
@@ -86,10 +85,10 @@ WHERE city = 'HCM' AND pay_date = '2026-10-03';
 SELECT promo_code, description, discount_percent, max_discount, min_fare, cities, usage_limit, used_count, valid_to
 FROM promotions WHERE promo_code = 'GIAM20';
 
--- [B17] (Q13) Thống kê số chuyến theo ngày trong tháng (bảng counter)
-SELECT ride_date, rides_requested, rides_completed, rides_cancelled
-FROM ride_stats_by_city
-WHERE city = 'HCM' AND yyyymm = 202610;
+-- [B17] (Q13) Số chuyến trong ngày tại một khu vực (COUNT trên một partition)
+SELECT COUNT(*) AS so_chuyen
+FROM rides_by_area_date
+WHERE city = 'HCM' AND district = 'Q1' AND ride_date = '2026-10-04';
 
 -- ---------------------------------------------------------------------
 -- CRUD cơ bản (thêm – sửa – xóa) trên một khách hàng thử nghiệm, chạy xong dữ liệu trở về như cũ

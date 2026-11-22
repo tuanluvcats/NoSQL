@@ -3,9 +3,9 @@
 -- Dùng khi: (1) muốn bỏ 100 dòng dữ liệu ngẫu nhiên do DbSchema Data Generator sinh ra
 --           trong báo cáo giữa kỳ, hoặc (2) muốn chạy lại 02_data.cql / 05_transactions.cql từ đầu.
 -- An toàn: auto_snapshot = true nên mỗi TRUNCATE tự tạo snapshot "truncated-..." trước khi xóa
---          (xem bằng: docker exec nosql-cassandra nodetool listsnapshots).
--- Nên chụp snapshot chủ động trước:  docker exec nosql-cassandra nodetool snapshot -t truoc_reset ride_booking
--- Chạy:  docker exec nosql-cassandra cqlsh -f /tmp/cassandra/99_reset_data.cql
+--          (xem bằng: docker exec nosql-cassandra-doan nodetool listsnapshots).
+-- Nên chụp snapshot chủ động trước:  docker exec nosql-cassandra-doan nodetool snapshot -t truoc_reset ride_booking
+-- Chạy:  docker exec nosql-cassandra-doan cqlsh -f /doan/99_reset_data.cql
 -- =====================================================================
 USE ride_booking;
 TRUNCATE customers;
@@ -21,4 +21,3 @@ TRUNCATE driver_locations;
 TRUNCATE ratings_by_driver;
 TRUNCATE payments_by_city_date;
 TRUNCATE promotions;
-TRUNCATE ride_stats_by_city;

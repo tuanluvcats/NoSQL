@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="Cassandra" database="Cassandra" id="586a9955-f5fb-45fe-95c9-153fa2496cd5" >
+	<schema name="ride_booking" >
+		<table name="customers" >
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="created_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="email" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="full_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="phone" type="TEXT" length="800" decimal="0" mandatory="y" />
+		</table>
+		<table name="driver_locations" >
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="day" type="DATE" length="800" decimal="0" mandatory="y" />
+			<column name="ts" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="lat" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="lng" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="speed_kmh" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="ts" options="DESC" />
+			</index>
+		</table>
+		<table name="drivers" >
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="full_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="license_number" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="phone" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="rating" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="status" type="TEXT" length="800" decimal="0" mandatory="y" />
+		</table>
+		<table name="drivers_by_area" >
+			<column name="city" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="district" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="full_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="last_seen" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="lat" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="lng" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="phone" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="rating" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="vehicle_plate" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="driver_id" />
+			</index>
+		</table>
+		<table name="payments_by_city_date" >
+			<column name="city" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="pay_date" type="DATE" length="800" decimal="0" mandatory="y" />
+			<column name="payment_method" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="paid_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="amount" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="discount" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="district" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="payment_method" />
+				<column name="paid_at" options="DESC" />
+				<column name="ride_id" />
+			</index>
+			<fk name="fk_payments_by_city_date_rides" virtual="y" to_schema="ride_booking" to_table="rides" >
+				<fk_column name="ride_id" pk="ride_id" />
+			</fk>
+		</table>
+		<table name="promotions" >
+			<column name="promo_code" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="cities" type="Set(TEXT, not frozen)" length="800" decimal="0" mandatory="y" />
+			<column name="description" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="discount_percent" type="INT" length="800" decimal="0" mandatory="y" />
+			<column name="max_discount" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="min_fare" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="usage_limit" type="INT" length="800" decimal="0" mandatory="y" />
+			<column name="used_count" type="INT" length="800" decimal="0" mandatory="y" />
+			<column name="valid_from" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="valid_to" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+		</table>
+		<table name="ratings_by_driver" >
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="rated_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="comment" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="stars" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="tags" type="List(TEXT, not frozen)" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="rated_at" options="DESC" />
+				<column name="ride_id" />
+			</index>
+			<fk name="fk_ratings_by_driver_drivers" virtual="y" to_schema="ride_booking" to_table="drivers" >
+				<fk_column name="driver_id" pk="driver_id" />
+			</fk>
+		</table>
+		<table name="rides" >
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="accepted_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="cancel_reason" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="city" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="completed_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="customer_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="customer_phone" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="destination_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="discount" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="distance_km" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="district" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="fare" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="payment_method" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="pickup_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="promo_code" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="requested_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="ride_date" type="DATE" length="800" decimal="0" mandatory="y" />
+			<column name="started_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="status" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="status_history" type="Map(TIMESTAMP =&gt; TEXT, not frozen)" length="800" decimal="0" mandatory="y" />
+			<column name="vehicle_plate" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<fk name="fk_rides_customers" virtual="y" to_schema="ride_booking" to_table="customers" >
+				<fk_column name="customer_id" pk="customer_id" />
+			</fk>
+			<fk name="fk_rides_drivers" virtual="y" to_schema="ride_booking" to_table="drivers" >
+				<fk_column name="driver_id" pk="driver_id" />
+			</fk>
+		</table>
+		<table name="rides_by_area_date" >
+			<column name="city" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="district" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="ride_date" type="DATE" length="800" decimal="0" mandatory="y" />
+			<column name="requested_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="destination_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="fare" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="payment_method" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="pickup_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="status" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="requested_at" options="DESC" />
+				<column name="ride_id" />
+			</index>
+		</table>
+		<table name="rides_by_customer" >
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="ride_date" type="DATE" length="800" decimal="0" mandatory="y" />
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="destination_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="fare" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="pickup_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="status" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="ride_date" />
+				<column name="ride_id" />
+			</index>
+		</table>
+		<table name="rides_by_driver_month" >
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="yyyymm" type="INT" length="800" decimal="0" mandatory="y" />
+			<column name="requested_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="ride_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="customer_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="destination_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="distance_km" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="fare" type="DOUBLE" length="800" decimal="0" mandatory="y" />
+			<column name="pickup_address" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="status" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<index name="CLUSTER KEY" unique="UNIQUE_KEY" >
+				<column name="requested_at" options="DESC" />
+				<column name="ride_id" />
+			</index>
+		</table>
+		<table name="user_accounts" >
+			<column name="username" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="created_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="full_name" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="is_active" type="BOOLEAN" length="800" decimal="0" mandatory="y" />
+			<column name="last_login_at" type="TIMESTAMP" length="800" decimal="0" mandatory="y" />
+			<column name="password_hash" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="ref_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="role" type="TEXT" length="800" decimal="0" mandatory="y" />
+		</table>
+		<table name="vehicles" >
+			<column name="vehicle_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="color" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="driver_id" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="license_plate" type="TEXT" length="800" decimal="0" mandatory="y" />
+			<column name="model" type="TEXT" length="800" decimal="0" mandatory="y" />
+		</table>
+	</schema>
+	<schema name="system" />
+	<diagram_group name="Default" id="f8a7f1d2-456c-450a-b9eb-b639566af193" >
+		<diagram name="Parsed Script Layout" id="cb212493-5772-47ad-963f-eef9caf621bf" confirmed="y" show_relation="columns" >
+			<entity schema="ride_booking" name="customers" color="3986C1" x="342" y="494" />
+			<entity schema="ride_booking" name="driver_locations" color="3986C1" x="1007" y="418" />
+			<entity schema="ride_booking" name="drivers" color="3986C1" x="342" y="152" />
+			<entity schema="ride_booking" name="drivers_by_area" color="3986C1" x="1539" y="171" />
+			<entity schema="ride_booking" name="payments_by_city_date" color="3986C1" x="532" y="380" />
+			<entity schema="ride_booking" name="promotions" color="3986C1" x="779" y="399" />
+			<entity schema="ride_booking" name="ratings_by_driver" color="3986C1" x="703" y="152" />
+			<entity schema="ride_booking" name="rides" color="3986C1" x="57" y="152" />
+			<entity schema="ride_booking" name="rides_by_area_date" color="3986C1" x="1292" y="171" />
+			<entity schema="ride_booking" name="rides_by_customer" color="3986C1" x="1083" y="171" />
+			<entity schema="ride_booking" name="rides_by_driver_month" color="3986C1" x="1197" y="456" />
+			<entity schema="ride_booking" name="user_accounts" color="3986C1" x="893" y="171" />
+			<entity schema="ride_booking" name="vehicles" color="3986C1" x="532" y="190" />
+			<callout x="57" y="57" pointer="Round" >
+				<comment><![CDATA[Current diagram is generated by parsing the migration scripts.
+DbSchema is in Offline Mode from the database.]]></comment>
+			</callout>
+			<callout x="57" y="57" pointer="Round" >
+				<comment><![CDATA[Current diagram is generated by parsing the migration scripts.
+DbSchema is in Offline Mode from the database.]]></comment>
+			</callout>
+			<callout x="57" y="57" pointer="Round" >
+				<comment><![CDATA[Current diagram is generated by parsing the migration scripts.
+DbSchema is in Offline Mode from the database.]]></comment>
+			</callout>
+			<callout x="57" y="57" pointer="Round" >
+				<comment><![CDATA[Current diagram is generated by parsing the SQL script.
+DbSchema is in Offline Mode from the database.]]></comment>
+			</callout>
+			<script name="SQL_Editor" id="8f7dbb98-e52c-4cda-b0bb-8fc0e410e478" language="SQL" >
+				<string><![CDATA[DROP KEYSPACE ride_booking;]]></string>
+			</script>
+			<script name="SQL_Editor_001" id="22bdc4d1-d87c-42f5-9b02-6ec5562400ad" language="SQL" >
+				<string><![CDATA[USE ride_booking;
+
+SELECT COUNT(*) FROM rides;
+SELECT COUNT(*) FROM rides_by_customer;
+SELECT COUNT(*) FROM payments_by_city_date;
+]]></string>
+			</script>
+			<browser id="04ecfd79-a044-45e4-a104-8b7b32837f65" name="rides_001" confirm_updates="y" >
+				<browse_table schema="ride_booking" entity="rides" fk_out="n" x="20" y="20" width="298" height="288" record_view="y" />
+			</browser>
+			<query id="b16d4922-4db0-4737-bbd4-347b64c1b1fb" name="rides" >
+				<query_table schema="ride_booking" name="rides" alias="" x="57" y="57" >
+					<column name="ride_id" />
+					<column name="accepted_at" />
+					<column name="cancel_reason" />
+					<column name="city" />
+					<column name="completed_at" />
+					<column name="customer_id" />
+					<column name="customer_name" />
+					<column name="customer_phone" />
+					<column name="destination_address" />
+					<column name="discount" />
+					<column name="distance_km" />
+					<column name="district" />
+					<column name="driver_id" />
+					<column name="driver_name" />
+					<column name="fare" />
+					<column name="payment_method" />
+					<column name="pickup_address" />
+					<column name="promo_code" />
+					<column name="requested_at" />
+					<column name="ride_date" />
+					<column name="started_at" />
+					<column name="status" />
+					<column name="status_history" />
+					<column name="vehicle_plate" />
+				</query_table>
+			</query>
+		</diagram>
+		<diagram name="~Diagram with Sample Tools" id="af52362f-a257-4e54-b705-813d8356897b" confirmed="y" show_column_type="y" show_relation="columns" >
+			<script name="SQL Editor" id="1bc6eb9a-9c7c-465e-b0a5-4377aeae29f0" language="SQL" >
+				<string><![CDATA[SELECT
+	customer_id, address, created_at, email, full_name, phone
+FROM
+	ride_booking.customers;]]></string>
+			</script>
+		</diagram>
+	</diagram_group>
+</project>

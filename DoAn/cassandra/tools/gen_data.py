@@ -2,7 +2,7 @@
 
 Dữ liệu cố định (không ngẫu nhiên) để mọi bảng phi chuẩn hóa khớp nhau:
 cùng một chuyến đi được ghi vào rides, rides_by_customer, rides_by_area_date,
-rides_by_driver_month, payments_by_city_date, ratings_by_driver trong MỘT logged BATCH.
+rides_by_driver_month, payments_by_city_date, ratings_by_driver bằng các lệnh INSERT riêng.
 
 Chạy lại sau khi sửa danh sách bên dưới:
     python DoAn/cassandra/tools/gen_data.py
@@ -131,11 +131,6 @@ def money(x):
     return f'{x:.1f}'
 
 
-def point(p):
-    _, lat, lng, _ = PLACES[p]
-    return f'{{lat: {lat}, lng: {lng}}}'
-
-
 def km(a, b):
     _, la1, lo1, _ = PLACES[a]
     _, la2, lo2, _ = PLACES[b]
@@ -147,11 +142,6 @@ def km(a, b):
 
 def fare_of(distance):
     return float(max(15000, round((12000 + 8500 * distance) / 1000) * 1000))
-
-
-def vehicle_udt(v):
-    vid, plate, model, color = v
-    return f'{{vehicle_id: {q(vid)}, license_plate: {q(plate)}, model: {q(model)}, color: {q(color)}}}'
 
 
 cust = {c[0]: c for c in CUSTOMERS}
@@ -218,21 +208,8 @@ for r in rides:
 # ----------------------------------------------------------------------------
 L = []
 w = L.append
-w('-- =====================================================================')
-w('-- 02_data.cql — Dữ liệu mẫu cho keyspace ride_booking')
-w('-- SINH TỰ ĐỘNG bởi tools/gen_data.py — sửa dữ liệu trong gen_data.py rồi chạy lại.')
-w(f'-- {len(CUSTOMERS)} khách hàng, {len(DRIVERS)} tài xế, {len(DRIVERS)} xe, {len(CUSTOMERS) + len(DRIVERS) + 2} tài khoản, '
-  f'{len(rides)} chuyến đi (28/09–04/10/2026), {len(PROMOTIONS)} mã khuyến mãi.')
-w('-- Chạy sau 01_schema.cql:  docker exec nosql-cassandra cqlsh -f /tmp/cassandra/02_data.cql')
-w('-- INSERT trong Cassandra là upsert: chạy lại nhiều lần không tạo bản ghi trùng,')
-w('-- riêng bảng counter ride_stats_by_city sẽ cộng dồn — chỉ chạy phần counter một lần')
-w('-- (hoặc TRUNCATE ride_stats_by_city trước khi chạy lại).')
-w('-- =====================================================================')
 w('USE ride_booking;')
 w('')
-w('-- ---------------------------------------------------------------------')
-w('-- A. Danh mục: khách hàng, tài xế, xe, tài khoản, khuyến mãi')
-w('-- ---------------------------------------------------------------------')
 for cid, name, phone, email, addr, created in CUSTOMERS:
     w(f'INSERT INTO customers (customer_id, full_name, phone, email, address, created_at) VALUES '
       f'({q(cid)}, {q(name)}, {q(phone)}, {q(email)}, {q(addr)}, {q(created + TZ)});')
@@ -253,18 +230,17 @@ accounts += [(d[0].lower().replace('_', ''), 'DRIVER', d[0], d[1]) for d in DRIV
 for user, role, ref, name in accounts:
     ref_sql = q(ref) if ref else 'null'
     w(f'INSERT INTO user_accounts (username, password_hash, role, ref_id, full_name, is_active, created_at) VALUES '
-      f'({q(user)}, {q(pw)}, {q(role)}, {ref_sql}, {q(name)}, true, {q("2026-09-01 08:00:00" + TZ)}) IF NOT EXISTS;')
+      f'({q(user)}, {q(pw)}, {q(role)}, {ref_sql}, {q(name)}, true, {q("2026-09-01 08:00:00" + TZ)});')
 w('')
-w('-- Mã khuyến mãi tự hết hạn sau 90 ngày (USING TTL 7776000 giây); ứng dụng thật tính TTL = valid_to - now')
 for code, desc, pct, cap, min_fare, cities, limit in PROMOTIONS:
     cs = '{' + ', '.join(q(c) for c in cities) + '}'
     w(f'INSERT INTO promotions (promo_code, description, discount_percent, max_discount, min_fare, cities, usage_limit, used_count, valid_from, valid_to) VALUES '
       f'({q(code)}, {q(desc)}, {pct}, {money(cap)}, {money(min_fare)}, {cs}, {limit}, {promo_used[code]}, '
-      f'{q("2026-09-01 00:00:00" + TZ)}, {q("2026-12-31 23:59:59" + TZ)}) USING TTL 7776000;')
+      f'{q("2026-09-01 00:00:00" + TZ)}, {q("2026-12-31 23:59:59" + TZ)});')
 w('')
 w('-- ---------------------------------------------------------------------')
-w('-- B. Chuyến đi: mỗi chuyến ghi vào mọi bảng liên quan trong MỘT logged BATCH')
-w('--    (đảm bảo hoặc tất cả bảng có chuyến đó, hoặc không bảng nào có)')
+w('-- B. Chuyến đi: mỗi chuyến được ghi vào mọi bảng liên quan bằng các lệnh INSERT riêng')
+w('--    (mỗi bảng phục vụ một truy vấn nên cùng một chuyến xuất hiện ở nhiều bảng)')
 w('-- ---------------------------------------------------------------------')
 for r in rides:
     c = cust[r['cid']]
@@ -274,16 +250,15 @@ for r in rides:
     yyyymm = int(r['req'].strftime('%Y%m'))
     hist = '{' + ', '.join(f'{ts(t)}: {q(s)}' for t, s in r['hist']) + '}'
     w(f"-- {r['id']}: {c[1]} | {src[0]} -> {dst[0]} | {r['status']}")
-    w('BEGIN BATCH')
     cols = ['ride_id', 'customer_id', 'customer_name', 'customer_phone', 'city', 'district', 'pickup_address',
-            'destination_address', 'pickup_point', 'dropoff_point', 'distance_km', 'fare', 'discount',
+            'destination_address', 'distance_km', 'fare', 'discount',
             'payment_method', 'status', 'ride_date', 'requested_at', 'status_history']
     vals = [q(r['id']), q(c[0]), q(c[1]), q(c[2]), q(r['city']), q(r['district']), q(src[0]), q(dst[0]),
-            point(r['src']), point(r['dst']), str(r['dist']), money(r['fare']), money(r['discount']),
+            str(r['dist']), money(r['fare']), money(r['discount']),
             q(r['method']), q(r['status']), q(day), ts(r['req']), hist]
     if d:
-        cols += ['driver_id', 'driver_name', 'vehicle']
-        vals += [q(d[0]), q(d[1]), vehicle_udt(d[6])]
+        cols += ['driver_id', 'driver_name', 'vehicle_plate']
+        vals += [q(d[0]), q(d[1]), q(d[6][1])]
     if r['code']:
         cols.append('promo_code'); vals.append(q(r['code']))
     for col, key in (('accepted_at', 'acc'), ('started_at', 'start'), ('completed_at', 'done')):
@@ -291,56 +266,37 @@ for r in rides:
             cols.append(col); vals.append(ts(r[key]))
     if r['reason']:
         cols.append('cancel_reason'); vals.append(q(r['reason']))
-    w(f"  INSERT INTO rides ({', '.join(cols)}) VALUES ({', '.join(vals)});")
+    w(f"INSERT INTO rides ({', '.join(cols)}) VALUES ({', '.join(vals)});")
     drv_sql = q(d[0]) if d else 'null'
-    w(f"  INSERT INTO rides_by_customer (customer_id, ride_date, ride_id, pickup_address, destination_address, driver_id, fare, status) VALUES "
+    w(f"INSERT INTO rides_by_customer (customer_id, ride_date, ride_id, pickup_address, destination_address, driver_id, fare, status) VALUES "
       f"({q(c[0])}, {q(day)}, {q(r['id'])}, {q(src[0])}, {q(dst[0])}, {drv_sql}, {money(r['fare'])}, {q(r['status'])});")
-    w(f"  INSERT INTO rides_by_area_date (city, district, ride_date, requested_at, ride_id, customer_id, driver_id, pickup_address, destination_address, fare, status, payment_method) VALUES "
+    w(f"INSERT INTO rides_by_area_date (city, district, ride_date, requested_at, ride_id, customer_id, driver_id, pickup_address, destination_address, fare, status, payment_method) VALUES "
       f"({q(r['city'])}, {q(r['district'])}, {q(day)}, {ts(r['req'])}, {q(r['id'])}, {q(c[0])}, {drv_sql}, {q(src[0])}, {q(dst[0])}, {money(r['fare'])}, {q(r['status'])}, {q(r['method'])});")
     if d:
-        w(f"  INSERT INTO rides_by_driver_month (driver_id, yyyymm, requested_at, ride_id, driver_name, vehicle_plate, customer_id, pickup_address, destination_address, distance_km, fare, status) VALUES "
-          f"({q(d[0])}, {yyyymm}, {ts(r['req'])}, {q(r['id'])}, {q(d[1])}, {q(d[6][1])}, {q(c[0])}, {q(src[0])}, {q(dst[0])}, {r['dist']}, {money(r['fare'])}, {q(r['status'])});")
+        w(f"INSERT INTO rides_by_driver_month (driver_id, yyyymm, requested_at, ride_id, customer_id, pickup_address, destination_address, distance_km, fare, status) VALUES "
+          f"({q(d[0])}, {yyyymm}, {ts(r['req'])}, {q(r['id'])}, {q(c[0])}, {q(src[0])}, {q(dst[0])}, {r['dist']}, {money(r['fare'])}, {q(r['status'])});")
     if r['status'] == 'COMPLETED':
-        w(f"  INSERT INTO payments_by_city_date (city, pay_date, payment_method, paid_at, ride_id, customer_id, driver_id, district, amount, discount) VALUES "
+        w(f"INSERT INTO payments_by_city_date (city, pay_date, payment_method, paid_at, ride_id, customer_id, driver_id, district, amount, discount) VALUES "
           f"({q(r['city'])}, {q(r['done'].strftime('%Y-%m-%d'))}, {q(r['method'])}, {ts(r['done'])}, {q(r['id'])}, {q(c[0])}, {q(d[0])}, {q(r['district'])}, {money(r['fare'] - r['discount'])}, {money(r['discount'])});")
     if r['rating']:
         stars, comment, tags = r['rating']
         tag_sql = '[' + ', '.join(q(t) for t in tags) + ']'
         rated = r['done'] + timedelta(minutes=3)
-        w(f"  INSERT INTO ratings_by_driver (driver_id, rated_at, ride_id, customer_id, stars, comment, tags) VALUES "
+        w(f"INSERT INTO ratings_by_driver (driver_id, rated_at, ride_id, customer_id, stars, comment, tags) VALUES "
           f"({q(d[0])}, {ts(rated)}, {q(r['id'])}, {q(c[0])}, {stars}, {q(comment)}, {tag_sql});")
-    w('APPLY BATCH;')
 w('')
 w('-- ---------------------------------------------------------------------')
-w('-- C. Thống kê bằng counter (chỉ UPDATE +/-; không nằm chung BATCH với bảng thường)')
-w('-- ---------------------------------------------------------------------')
-stats = defaultdict(lambda: [0, 0, 0])
-for r in rides:
-    key = (r['city'], int(r['req'].strftime('%Y%m')), r['req'].strftime('%Y-%m-%d'))
-    stats[key][0] += 1
-    stats[key][1] += r['status'] == 'COMPLETED'
-    stats[key][2] += r['status'] == 'CANCELLED'
-w('BEGIN COUNTER BATCH')
-for (city, yyyymm, day), (req, comp, canc) in sorted(stats.items()):
-    w(f'  UPDATE ride_stats_by_city SET rides_requested = rides_requested + {req}, rides_completed = rides_completed + {comp}, '
-      f'rides_cancelled = rides_cancelled + {canc} WHERE city = {q(city)} AND yyyymm = {yyyymm} AND ride_date = {q(day)};')
-w('APPLY BATCH;')
-w('')
-w('-- ---------------------------------------------------------------------')
-w('-- D. Tài xế đang trực tuyến (lúc 10:00 ngày 04/10/2026) và vị trí GPS')
-w('--    Dữ liệu mẫu KHÔNG đặt TTL cho drivers_by_area để demo không bị mất;')
-w('--    ứng dụng thật ghi kèm USING TTL 300 mỗi lần tài xế gửi tín hiệu (xem 04_queries_advanced.cql).')
+w('-- C. Tài xế đang trực tuyến (lúc 10:00 ngày 04/10/2026) và vị trí GPS')
 w('-- ---------------------------------------------------------------------')
 offsets = [(-0.0030, 0.0020), (0.0015, -0.0025), (0.0040, 0.0010), (-0.0010, -0.0035), (0.0025, 0.0030), (-0.0045, 0.0005)]
 for i, did in enumerate(AVAILABLE_NOW):
     d = drv[did]
     home = next(p for p in PLACES.values() if p[3] == d[5])
     lat, lng = round(home[1] + offsets[i][0], 4), round(home[2] + offsets[i][1], 4)
-    w(f'INSERT INTO drivers_by_area (city, district, driver_id, full_name, phone, rating, vehicle, location, last_seen) VALUES '
-      f'({q(d[4])}, {q(d[5])}, {q(did)}, {q(d[1])}, {q(d[3])}, {driver_rating[did]}, {vehicle_udt(d[6])}, '
-      f'{{lat: {lat}, lng: {lng}}}, {ts(NOW - timedelta(seconds=30 * (i + 1)))});')
+    w(f'INSERT INTO drivers_by_area (city, district, driver_id, full_name, phone, rating, vehicle_plate, lat, lng, last_seen) VALUES '
+      f'({q(d[4])}, {q(d[5])}, {q(did)}, {q(d[1])}, {q(d[3])}, {driver_rating[did]}, {q(d[6][1])}, '
+      f'{lat}, {lng}, {ts(NOW - timedelta(seconds=30 * (i + 1)))});')
 w('')
-w('-- driver_locations có default_time_to_live = 86400: các điểm GPS tự xóa sau 24 giờ kể từ lúc chạy script này')
 tracks = {  # tài xế -> điểm đầu, điểm cuối, giờ bắt đầu
     'DRV_552': ('BEN_THANH', 'LANDMARK81', datetime(2026, 10, 4, 9, 38)),
     'DRV_559': ('XUAN_THUY', 'HANG_BAI', datetime(2026, 10, 4, 9, 23)),
@@ -353,8 +309,8 @@ for did, (a, b, t0) in tracks.items():
         lat = round(pa[1] + (pb[1] - pa[1]) * f, 5)
         lng = round(pa[2] + (pb[2] - pa[2]) * f, 5)
         speed = [0.0, 18.5, 26.0, 31.5, 22.0, 12.5][k]
-        w(f"INSERT INTO driver_locations (driver_id, day, ts, location, speed_kmh) VALUES "
-          f"({q(did)}, '2026-10-04', {ts(t0 + timedelta(minutes=2 * k))}, {{lat: {lat}, lng: {lng}}}, {speed});")
+        w(f"INSERT INTO driver_locations (driver_id, day, ts, lat, lng, speed_kmh) VALUES "
+          f"({q(did)}, '2026-10-04', {ts(t0 + timedelta(minutes=2 * k))}, {lat}, {lng}, {speed});")
 (ROOT / '02_data.cql').write_text('\n'.join(L) + '\n', encoding='utf-8', newline='\n')
 
 # ----------------------------------------------------------------------------

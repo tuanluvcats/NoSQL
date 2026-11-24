@@ -1,4 +1,4 @@
-"""Ứng dụng FastAPI render phía server cho keyspace ride_booking."""
+"""Ứng dụng FastAPI render phía server cho keyspace ride_booking_demo."""
 from __future__ import annotations
 
 import logging

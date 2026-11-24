@@ -49,7 +49,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="python -m tools.check_env",
         description="Kiểm tra kết nối Cassandra, keyspace và schema. Mã thoát 0 khi kết nối được và keyspace đã có, ngược lại 1.")
-    ap.add_argument("--keyspace", help="keyspace cần kiểm (mặc định: biến CASSANDRA_KEYSPACE, hoặc ride_booking)")
+    ap.add_argument("--keyspace", help="keyspace cần kiểm (mặc định: biến CASSANDRA_KEYSPACE, hoặc ride_booking_demo)")
     args = ap.parse_args(argv)
     settings = Settings.from_env()
     if args.keyspace:

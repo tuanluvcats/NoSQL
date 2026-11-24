@@ -7,7 +7,7 @@ def test_defaults():
     s = Settings.from_env({})
     assert s.hosts == ("127.0.0.1",)
     assert s.port == 9042
-    assert s.keyspace == "ride_booking"
+    assert s.keyspace == "ride_booking_demo"
     assert s.local_dc == "datacenter1"
     assert s.first_month == 202609
 

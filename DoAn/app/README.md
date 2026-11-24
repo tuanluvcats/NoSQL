@@ -2,8 +2,8 @@
 
 Ứng dụng web (FastAPI, Jinja2, Bootstrap, render phía server) cho đề tài "Tìm hiểu công cụ DbSchema để quản trị và khai thác CSDL Cassandra
 *Quản lý dữ liệu đặt xe công nghệ* và xây dựng ứng dụng minh họa" (môn Dữ liệu NoSQL, HUIT 14DH). Ứng dụng chạy trên keyspace
-`ride_booking` đã thiết kế trong `DoAn/cassandra/` (13 bảng và 1 materialized view `vehicles_by_plate`) và dùng thẳng các câu truy vấn B/A/T/Q
-của `DoAn/CASSANDRA.MD`.
+riêng `ride_booking_demo`, dựng từ thiết kế trong `DoAn/cassandra/` (13 bảng và 1 materialized view `vehicles_by_plate`) và dùng thẳng các câu truy vấn B/A/T/Q
+của `DoAn/CASSANDRA.MD`. Keyspace `ride_booking` là của báo cáo, ứng dụng không đọc hay ghi vào đó.
 
 Điểm cần thấy khi trình bày: giao diện mặc định sạch như một ứng dụng thật. Bấm **Bật chế độ kỹ thuật** ở chân trang (hoặc đặt `APP_TECH_MODE=1`) thì ở cuối mỗi trang có panel **CQL đã chạy** (câu CQL, bảng, partition key, consistency, kết quả LWT `[applied]`,
 danh sách bảng bị ghi so với ma trận ghi §3.7). Các bảng phi chuẩn hóa luôn khớp với `rides` nhờ quy tắc "ghi `rides` bằng LWT trước, chỉ khi
@@ -45,12 +45,12 @@ Khi log có dòng `Node localhost/127.0.0.1 state jump to NORMAL` là sẵn sàn
 ### 2. Môi trường Python (PowerShell, tại thư mục `DoAn\app`)
 
 ```powershell
-cd D:\Documents\Homework\NoSQL\DoAn\app
+cd <thư mục dự án>\DoAn\app
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 ```
 
-Dùng `py -3.12` (không dùng `py` trần, vì máy có thể đặt Python 3.14 làm mặc định). Các lệnh dưới đây gọi thẳng `.venv\Scripts\python`
+`<thư mục dự án>` là thư mục bạn giải nén dự án. Dùng `py -3.12` (không dùng `py` trần, vì máy có thể đặt Python 3.14 làm mặc định). Các lệnh dưới đây gọi thẳng `.venv\Scripts\python`
 nên không cần `Activate.ps1`. Mọi lệnh `python -m tools.…` và `uvicorn` chạy với thư mục hiện hành là `DoAn\app`.
 
 ### 3. Biến môi trường (PowerShell, đặt trước khi chạy tool hoặc app)
@@ -59,7 +59,7 @@ nên không cần `Activate.ps1`. Mọi lệnh `python -m tools.…` và `uvicor
 |---|---|---|
 | `CASSANDRA_HOSTS` | `127.0.0.1` | Danh sách contact point, ngăn cách bằng dấu phẩy |
 | `CASSANDRA_PORT` | `9042` | Cổng CQL |
-| `CASSANDRA_KEYSPACE` | `ride_booking` | Keyspace ứng dụng làm việc |
+| `CASSANDRA_KEYSPACE` | `ride_booking_demo` | Keyspace ứng dụng làm việc (không phải `ride_booking`, keyspace của báo cáo) |
 | `CASSANDRA_LOCAL_DC` | `datacenter1` | Datacenter cục bộ cho chính sách cân bằng tải |
 | `APP_SECRET_KEY` | `dev-secret-change-me` | Khóa ký cookie phiên; nên đặt khi chạy ngoài máy cá nhân |
 | `APP_DEBUG` | (tắt) | Đặt `1` (hoặc `true`, `yes`, `on`) để trang lỗi 500 hiện loại lỗi và thông điệp; mặc định ẩn, lỗi chỉ ghi vào log máy chủ |
@@ -89,11 +89,10 @@ keyspace đã có. Trên máy tác giả (keyspace `ride_booking_test`) kết qu
 
 ### Docker (cách phụ, môi trường của một người)
 
-Chỉ dùng khi máy không cài Cassandra trực tiếp. Hai service Cassandra trong `docker-compose.yml` cùng dùng cổng 9042, mỗi lúc chỉ chạy một:
+Chỉ dùng khi máy không cài Cassandra trực tiếp. `docker-compose.yml` ở gốc dự án dựng Cassandra 3.11 (service `cassandra-doan`, cổng 9042):
 
 ```powershell
-cd D:\Documents\Homework\NoSQL
-docker compose stop cassandra
+cd <thư mục dự án>
 docker compose up -d cassandra-doan
 ```
 
@@ -102,19 +101,19 @@ Sau đó làm các bước như trên (ứng dụng vẫn chỉ nói chuyện qu
 
 ## Chuẩn bị CSDL
 
-**Cảnh báo trước khi chạy:** `--seed` sẽ `TRUNCATE` 13 bảng của keyspace được chỉ định rồi nạp lại dữ liệu mẫu. Nếu keyspace `ride_booking` đang chứa
-dữ liệu bạn đã dùng làm báo cáo (ảnh chụp DbSchema, kết quả chạy `03`, `04`, `05`), **đừng** chạy lệnh này lên nó. Hãy dựng một keyspace riêng cho
-ứng dụng, ví dụ `ride_booking_demo`. Tool chỉ dùng `CREATE ... IF NOT EXISTS`, không bao giờ `DROP`.
+**Cảnh báo trước khi chạy:** `--seed` sẽ `TRUNCATE` 13 bảng của keyspace được chỉ định rồi nạp lại dữ liệu mẫu. `ride_booking` là keyspace của báo cáo
+(ảnh chụp DbSchema, kết quả chạy `03`, `04`, `05`): **không** chạy lệnh này, cũng như `tools.migrate`, lên keyspace đó. Ứng dụng dùng keyspace riêng
+`ride_booking_demo` (mặc định của `CASSANDRA_KEYSPACE`). Tool chỉ dùng `CREATE ... IF NOT EXISTS`, không bao giờ `DROP`.
 
 ### Trường hợp 1: dựng CSDL mới bằng ứng dụng (không cần cqlsh)
 
 ```powershell
-.venv\Scripts\python -m tools.setup_db --keyspace ride_booking --seed --yes
+.venv\Scripts\python -m tools.setup_db --keyspace ride_booking_demo --seed --yes
 ```
 
-Lệnh làm ba việc: tạo keyspace, 13 bảng và MV từ `DoAn/cassandra/01_schema.cql`; thêm cột `rides.rated_at` (xem phần 06 bên dưới); `TRUNCATE` rồi
-nạp seed từ `DoAn/cassandra/02_data.cql`. Thiếu `--yes` thì tool từ chối (mã thoát 2). Muốn keyspace riêng, đổi tên: `--keyspace ride_booking_demo`.
-Khi đó đặt `$env:CASSANDRA_KEYSPACE = "ride_booking_demo"` trước khi chạy ứng dụng. Kết quả mong đợi: số dòng seed mỗi bảng khớp bảng
+Lệnh làm bốn việc: tạo keyspace, 13 bảng và MV từ `DoAn/cassandra/01_schema.cql`; thêm cột `rides.rated_at` (xem phần 06 bên dưới); `TRUNCATE` rồi
+nạp seed từ `DoAn/cassandra/02_data.cql`; đánh dấu `rated_at` cho các chuyến seed đã có đánh giá (để không đánh giá lại được). Thiếu `--yes` thì tool từ chối (mã thoát 2).
+`ride_booking_demo` đã là mặc định của ứng dụng; nếu dùng tên khác thì đặt `$env:CASSANDRA_KEYSPACE` cho khớp trước khi chạy ứng dụng. Kết quả mong đợi: số dòng seed mỗi bảng khớp bảng
 `EXPECTED_SEED_COUNTS` trong `tools/seed.py` (10 khách, 10 tài xế, 10 xe, 22 tài khoản, 36 chuyến, 3 mã khuyến mãi, ...). Nếu bạn sửa `02_data.cql`
 làm số dòng đổi thì tool báo "Số dòng seed không khớp" và dừng **trước** khi `TRUNCATE`.
 
@@ -123,15 +122,15 @@ làm số dòng đổi thì tool báo "Số dòng seed không khớp" và dừng
 
 Chỉ nạp lại seed lên keyspace đã có schema: `python -m tools.seed --keyspace <tên> --yes`.
 
-### Trường hợp 2: CSDL đã dựng từ Word (chạy `01_schema.cql`, `02_data.cql` bằng cqlsh/DbSchema)
+### Trường hợp 2: keyspace của ứng dụng đã dựng bằng cqlsh/DbSchema (chạy `01_schema.cql`, `02_data.cql` vào `ride_booking_demo`)
 
 ```powershell
-.venv\Scripts\python -m tools.migrate --keyspace ride_booking
+.venv\Scripts\python -m tools.migrate --keyspace ride_booking_demo
 ```
 
 Lệnh chỉ thêm cột `rides.rated_at` nếu chưa có (chạy lại nhiều lần được) rồi đánh dấu các chuyến seed đã có đánh giá (backfill). **Không xóa dữ liệu.**
-Hệ quả: `DESCRIBE`/DbSchema của keyspace đó sẽ có thêm cột `rated_at`, không còn khớp hình trong Word. Vì vậy nên để keyspace `ride_booking` của báo cáo nguyên
-vẹn và chạy ứng dụng trên keyspace riêng ở Trường hợp 1.
+Hệ quả: `DESCRIBE`/DbSchema của keyspace đó sẽ có thêm cột `rated_at`, không còn khớp hình trong Word. Vì vậy keyspace `ride_booking` của báo cáo phải để nguyên vẹn
+(không migrate, không seed lại); ứng dụng chỉ làm việc trên `ride_booking_demo`.
 
 ### Chạy ứng dụng
 
@@ -231,7 +230,7 @@ query trace phía server. Kết quả một lần đo trên máy phát triển (
 - LWT khoảng 9,8 ms so với 0,8 ms của ghi thường (Paxos), nên ứng dụng chỉ dùng LWT ở chỗ có tranh chấp.
 - Tranh nhận chuyến, 8 luồng, 30 vòng: cách "đọc rồi UPDATE" cho từ 2 người thắng trở lên ở cả 30 vòng; LWT đúng 1 người thắng ở cả 30 vòng.
 
-Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 90,6 % (3.273 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
+Độ bao phủ mã của bộ test (`pytest --cov`, không tính thư mục `tests`): 91,1 % (3.297 lệnh). Đây là số đo một lần, chưa có khoảng tin cậy.
 
 ## Đối chiếu barem chấm điểm
 
@@ -253,8 +252,8 @@ Kịch bản T01 đến T12 của `CASSANDRA.MD` §8 được chạy end-to-end 
 
 ## Khác biệt so với 05_transactions.cql
 
-`05_transactions.cql` minh họa từng câu CQL; ứng dụng phải chạy nhiều người cùng lúc nên có một số điểm khác (ký hiệu D1 đến D14 là các quyết định trong
-kế hoạch triển khai). Kết quả cuối của kịch bản vẫn khớp `CASSANDRA.MD` §8.
+`05_transactions.cql` minh họa từng câu CQL; ứng dụng phải chạy nhiều người cùng lúc nên có một số điểm khác (ký hiệu D1 đến D14 chỉ các điểm khác biệt
+liệt kê bên dưới). Kết quả cuối của kịch bản vẫn khớp `CASSANDRA.MD` §8.
 
 - **T01 đảo thứ tự (đăng ký).** 05 ghi `customers` trước. Ứng dụng ghi `user_accounts` bằng LWT `IF NOT EXISTS` **trước** (tên đăng nhập là khóa duy nhất),
   chỉ khi `[applied] = True` mới ghi `customers` (cũng `IF NOT EXISTS`). Tên bị trùng thì không để lại hồ sơ khách mồ côi.

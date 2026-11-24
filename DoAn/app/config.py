@@ -76,7 +76,7 @@ class Settings:
         if not hosts:
             raise ValueError("CASSANDRA_HOSTS rỗng")
         port = int(e.get("CASSANDRA_PORT", "9042"))
-        keyspace = e.get("CASSANDRA_KEYSPACE", "ride_booking").strip()
+        keyspace = e.get("CASSANDRA_KEYSPACE", "ride_booking_demo").strip()
         if not _KEYSPACE_RE.match(keyspace):
             raise ValueError(f"Tên keyspace không hợp lệ: {keyspace!r}")
         return cls(

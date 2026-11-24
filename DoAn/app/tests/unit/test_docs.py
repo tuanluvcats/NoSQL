@@ -49,8 +49,8 @@ def test_readme_documents_environment_and_primary_install_path():
     text = _read(README)
     for var in ("CASSANDRA_HOSTS", "CASSANDRA_PORT", "CASSANDRA_KEYSPACE", "CASSANDRA_LOCAL_DC", "$env:CASSANDRA_KEYSPACE"):
         assert var in text, var
-    for needle in ("3.11.4", "python -m tools.check_env", "python -m tools.setup_db --keyspace ride_booking --seed --yes",
-                   "python -m tools.migrate --keyspace ride_booking", "uvicorn main:app"):
+    for needle in ("3.11.4", "python -m tools.check_env", "python -m tools.setup_db --keyspace ride_booking_demo --seed --yes",
+                   "python -m tools.migrate --keyspace ride_booking_demo", "uvicorn main:app"):
         assert needle in text, needle
 
 

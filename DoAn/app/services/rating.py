@@ -3,7 +3,7 @@
 Thứ tự (rides là nguồn đúng): LWT `rides` (`IF rated_at = null AND status = 'COMPLETED' AND customer_id = ?`) trước,
 chỉ khi applied mới ghi `ratings_by_driver`, rồi tính lại điểm trung bình (làm tròn 2 chữ số) và cập nhật
 `drivers.rating` cùng `drivers_by_area.rating`. `drivers_by_area` chỉ UPDATE ở dòng đang CÓ (tìm bằng A06): UPDATE là
-upsert nên cập nhật mù sẽ sinh dòng ma khiến tài xế offline "hiện ra" trong danh sách rảnh (Review Focus 1).
+upsert nên cập nhật mù sẽ sinh dòng ma khiến tài xế offline "hiện ra" trong danh sách rảnh (chống dòng ma).
 """
 from __future__ import annotations
 

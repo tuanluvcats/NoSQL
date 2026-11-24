@@ -1,4 +1,4 @@
-"""Thăm dò hành vi của Cassandra đang chạy (Task 1). Giá trị kỳ vọng nằm ở db/capabilities.py.
+"""Thăm dò hành vi của Cassandra đang chạy (probe). Giá trị kỳ vọng nằm ở db/capabilities.py.
 
 Chỉ chạy trên keyspace *_test; các bảng probe_* được DROP khi kết thúc.
 """

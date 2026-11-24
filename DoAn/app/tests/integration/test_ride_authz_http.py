@@ -19,7 +19,7 @@ def _status(db, ride_id):
 
 
 def test_other_customer_cannot_view_or_cancel_ride(client_factory, db):
-    """Review Focus 5 (IDOR)."""
+    """Chống IDOR: không truy cập được chuyến của người khác."""
     c = client_factory(clock=_clock)
     assert http_login(c, "cust001").status_code == 303
     assert c.get("/rides/RIDE_1024").status_code == 403

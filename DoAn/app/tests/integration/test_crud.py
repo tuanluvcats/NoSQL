@@ -198,7 +198,7 @@ def test_promo_city_add_and_remove(db):
     assert set(db.one("B16_promo_get", ["GIAM20"])["cities"]) == {"HCM", "HN"}
 
 
-# ---------------- Review Focus 1: không tạo dòng ma ----------------
+# ---------------- Chống dòng ma (UPDATE là upsert) ----------------
 def test_update_missing_entities_creates_no_row(db):
     r = ca.update_customer(db, _cust(customer_id="CUST_NOPE"))
     assert r.code == "not_found" and db.one("B02_customer_get", ["CUST_NOPE"]) is None

@@ -37,7 +37,7 @@ def test_rerating_seed_rated_ride_rejected(db):
 
 
 def test_rating_offline_driver_creates_no_area_row(db):
-    """Review Focus 1: đánh giá tài xế OFFLINE không được tạo dòng ma trong drivers_by_area (UPDATE là upsert)."""
+    """Chống dòng ma: đánh giá tài xế OFFLINE không được tạo dòng ma trong drivers_by_area (UPDATE là upsert)."""
     assert db.one("B03_driver_get", ["DRV_555"])["status"] == "OFFLINE"
     r = rating.rate_ride(db, "RIDE_1010", "CUST003", 5, "Tốt", ["Lịch sự"], NOW)
     assert r.ok and r.code == "ok", r

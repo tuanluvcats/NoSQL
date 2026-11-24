@@ -4,7 +4,7 @@ Nguyên tắc chống "dòng ma" (D13): UPDATE/INSERT của Cassandra là upsert
 - tạo bằng `IF NOT EXISTS` (đã có thì trả `duplicate`),
 - sửa bằng `IF EXISTS` / `IF used_count = n` (không có thì trả `not_found`),
 - thêm/bớt phần tử set `cities` bằng `IF EXISTS`.
-Các trang danh sách quét toàn bảng nhỏ, chấp nhận ở quy mô dữ liệu mẫu (spec §7).
+Các trang danh sách quét toàn bảng nhỏ, chấp nhận được ở quy mô dữ liệu mẫu.
 """
 from __future__ import annotations
 

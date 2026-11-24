@@ -30,7 +30,7 @@ def test_rate_order_when_driver_offline_and_no_area_write():
     assert r.ok and r.code == "ok"
     assert db.names() == ["B06_ride_get", "APP14_ride_rate", "T09_rating_insert", "A05_rating_avg",
                           "T09_driver_rating", "A06_area_find_driver", "A06_area_find_driver"]
-    assert "T09_area_rating" not in db.names()  # Review Focus 1: không có dòng khu vực thì không ghi (chống dòng ma)
+    assert "T09_area_rating" not in db.names()  # không có dòng khu vực thì không ghi (chống dòng ma)
     calls = dict(db.calls)
     assert calls["APP14_ride_rate"] == (NOW, "RIDE_1010", "CUST003")
     assert calls["T09_rating_insert"] == ("DRV_555", NOW, "RIDE_1010", "CUST003", 5.0, "Tốt", ["Lịch sự"])

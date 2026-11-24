@@ -80,7 +80,7 @@ def accept_ride(db, ride_id: str, driver_id: str, now: datetime) -> ActionResult
 
 
 # ---------------------------------------------------------------------------
-# Bắt đầu / hoàn thành + thanh toán / hủy (Task 8)
+# Bắt đầu / hoàn thành + thanh toán / hủy
 # ---------------------------------------------------------------------------
 Step = Callable[[], object]
 

@@ -138,7 +138,7 @@ def test_kind_matches_cql():
     for s in STATEMENTS.values():
         assert s.kind in ("read", "scan", "write", "lwt"), s.name
         if s.name == "APP12_vehicle_update":
-            continue  # theo db.capabilities (Task 1)
+            continue  # theo db.capabilities
         assert (s.kind == "lwt") == (" IF " in s.cql), s.name
 
 

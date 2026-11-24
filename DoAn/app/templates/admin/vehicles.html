@@ -23,7 +23,7 @@
     {% endif %}
   {% endif %}
   <p class="text-muted small">Biển số là duy nhất, không thể gán trùng cho hai xe.</p>
-  {% if tech %}<p class="text-muted small tech-note">Danh sách quét toàn bảng nhỏ (APP10), chấp nhận ở quy mô dữ liệu mẫu (spec §7). Biển số tra qua materialized view <code>vehicles_by_plate</code> (B05), kiểm trước khi ghi.</p>{% endif %}
+  {% if tech %}<p class="text-muted small tech-note">Danh sách quét toàn bảng nhỏ (APP10), chấp nhận được ở quy mô dữ liệu mẫu. Biển số tra qua materialized view <code>vehicles_by_plate</code> (B05), kiểm trước khi ghi.</p>{% endif %}
   <div class="table-responsive">
     <table class="table table-sm table-striped align-middle">
       <thead><tr><th>Mã xe</th><th>Tài xế</th><th>Biển số</th><th>Mẫu xe</th><th>Màu</th><th></th></tr></thead>

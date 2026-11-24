@@ -1,7 +1,7 @@
 """Backup/restore JSON logical (9.2). Không dùng nodetool snapshot, không cần cqlsh.
 
 Backup: SELECT JSON từng bảng THẬT (13 bảng, không MV) vào một file JSON kèm kiểu cột theo system_schema.columns.
-Restore (Nhánh A của Task 1, vì TRUNCATE bảng gốc làm rỗng cả MV trên 3.11.4):
+Restore (nhánh TRUNCATE rồi nạp lại, vì TRUNCATE bảng gốc làm rỗng cả MV trên 3.11.4, xem db/capabilities.py):
   1. kiểm TOÀN BỘ file (phiên bản, đủ 13 bảng, cột/kiểu khớp schema hiện tại, kiểu giá trị, số dòng) TRƯỚC mọi TRUNCATE;
   2. bật chế độ bảo trì (main.py chặn mọi POST khác), luôn tắt khi xong hoặc lỗi;
   3. tạo bản an toàn `*_prerestore.json` của dữ liệu hiện tại, TRUNCATE 13 bảng, INSERT ... JSON lại.

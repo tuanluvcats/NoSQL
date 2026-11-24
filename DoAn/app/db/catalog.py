@@ -11,9 +11,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-try:  # Task 1 (probe) tạo db/capabilities.py; chưa có thì dùng giá trị mặc định của plan
+try:  # db/capabilities.py ghi kết quả thăm dò hành vi Cassandra (test_cassandra_probe); chưa có thì dùng giá trị mặc định
     from db.capabilities import LWT_ON_MV_BASE_OK
-except ImportError:  # pragma: no cover - phụ thuộc việc Task 1 đã chạy chưa
+except ImportError:  # pragma: no cover - phụ thuộc việc đã có db/capabilities.py hay chưa
     LWT_ON_MV_BASE_OK = True
 
 Kind = Literal["read", "scan", "write", "lwt"]
@@ -174,7 +174,7 @@ _add("APP10_vehicles_scan", "APP10", "Q4", "vehicles", "scan",
 _add("APP11_vehicle_insert", "APP11", "Q4", "vehicles", "lwt",
      "INSERT INTO vehicles (vehicle_id, driver_id, license_plate, model, color) "
      "VALUES (?, ?, ?, ?, ?) IF NOT EXISTS")
-# Nếu probe (Task 1) cho thấy LWT trên bảng gốc có MV không dùng được thì bỏ IF EXISTS (kind write)
+# Nếu thăm dò hành vi Cassandra (db/capabilities.py) cho thấy LWT trên bảng gốc có MV không dùng được thì bỏ IF EXISTS (kind write)
 _add("APP12_vehicle_update", "APP12", "Q4", "vehicles", "lwt" if LWT_ON_MV_BASE_OK else "write",
      "UPDATE vehicles SET driver_id = ?, license_plate = ?, model = ?, color = ? WHERE vehicle_id = ?"
      + (" IF EXISTS" if LWT_ON_MV_BASE_OK else ""))

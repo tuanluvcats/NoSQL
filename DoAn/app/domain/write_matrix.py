@@ -1,4 +1,4 @@
-"""Ma trận ghi CASSANDRA.MD §3.7 (ô có ngoặc là optional) + bổ sung của plan."""
+"""Ma trận ghi CASSANDRA.MD §3.7 (ô có ngoặc là optional) + các bảng/dòng ứng dụng ghi thêm."""
 from __future__ import annotations
 
 WRITE_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {

@@ -90,7 +90,7 @@ def test_backup_delete_restore_counts_and_content_equal(db, raw, tmp_path):
 
 
 def test_restore_rejects_invalid_file_before_truncate(db, raw, tmp_path):
-    """Review Focus 4: file hỏng/khác schema phải bị từ chối TRƯỚC mọi TRUNCATE."""
+    """Chống mất dữ liệu: file hỏng/khác schema phải bị từ chối TRƯỚC mọi TRUNCATE."""
     _wait_mv(db)
     before = backup.table_counts(db)
     content_before = _dump(raw)

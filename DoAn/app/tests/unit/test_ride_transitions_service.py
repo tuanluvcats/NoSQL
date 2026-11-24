@@ -165,7 +165,7 @@ def test_complete_secondary_failure_is_partial_but_still_releases_driver():
 
 # ---------------- cancel ----------------
 def test_cancel_rereads_when_status_changed_and_releases_driver():
-    """Review Focus 2: hủy chạy đua với nhận chuyến không để tài xế kẹt BUSY."""
+    """Hủy chạy đua với nhận chuyến không để tài xế kẹt BUSY."""
     db = FakeDb({
         "B06_ride_get": [dict(REQUESTED), dict(ACCEPTED)],
         "T10_ride_cancel": [LwtResult(False, {"status": "ACCEPTED"}), LwtResult(True, None)],

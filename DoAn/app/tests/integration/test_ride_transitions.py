@@ -228,7 +228,7 @@ def test_cancel_requested_with_promo_gives_slot_back(db):
 
 
 def test_cancel_race_with_accept_does_not_leave_driver_busy(db):
-    """Review Focus 2 trên dữ liệu thật: khách đọc REQUESTED, tài xế nhận xong, rồi LWT hủy thua và đọc lại."""
+    """Hủy chạy đua với nhận chuyến trên dữ liệu thật: khách đọc REQUESTED, tài xế nhận xong, rồi LWT hủy thua và đọc lại."""
     stale = db.one("B06_ride_get", ["RIDE_1024"])
     assert rides_flow.accept_ride(db, "RIDE_1024", "DRV_551", parse_vn("2026-10-04 10:04")).ok
     assert _driver_status(db, "DRV_551") == "BUSY"

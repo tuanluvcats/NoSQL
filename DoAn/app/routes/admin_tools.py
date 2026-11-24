@@ -17,7 +17,8 @@ _MAX_ID = 64
 
 def _page(request: Request, extra: dict | None = None, status_code: int = 200):
     db = get_db(request)
-    ctx = {"stuck": consistency.find_stuck_busy_drivers(db, request.app.state.clock()),
+    ctx = {"stuck": consistency.find_stuck_busy_drivers(db, request.app.state.clock(),
+                                                        request.app.state.settings.first_month),
            "ride_id": "", "diffs": None, "driver_id": "", "area_problems": None}
     ctx.update(extra or {})
     return render(request, "admin/consistency.html", ctx, status_code=status_code)
@@ -74,7 +75,8 @@ def driver(request: Request, driver_id: str = Form(""), action: str = Form("chec
     if not driver_id:
         return _done(request, False, "Hãy nhập mã tài xế.")
     if action == "release":
-        result = consistency.release_stuck_driver(db, driver_id, request.app.state.clock())
+        result = consistency.release_stuck_driver(db, driver_id, request.app.state.clock(),
+                                                  request.app.state.settings.first_month)
         return _done(request, result.ok, result.message)
     if action != "check_areas":
         return _done(request, False, "Hành động không hợp lệ.")

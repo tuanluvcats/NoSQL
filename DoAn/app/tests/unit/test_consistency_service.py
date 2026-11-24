@@ -46,10 +46,34 @@ def test_missing_month_row_still_found_by_rides_scan():
     assert [c[1] for c in db.calls if c[0] == "B10_driver_month"] == [("DRV_551", 202610), ("DRV_551", 202609)]
 
 
-def test_previous_month_of_january_rolls_back_a_year():
+def test_months_walk_back_across_new_year_newest_first():
     db = FakeDb({SCAN: [[]]})
     consistency.active_ride_of(db, "DRV_551", parse_vn("2027-01-05 08:00"))
-    assert [c[1] for c in db.calls if c[0] == "B10_driver_month"] == [("DRV_551", 202701), ("DRV_551", 202612)]
+    assert [c[1] for c in db.calls if c[0] == "B10_driver_month"] == [
+        ("DRV_551", 202701), ("DRV_551", 202612), ("DRV_551", 202611), ("DRV_551", 202610), ("DRV_551", 202609)]
+
+
+def test_active_ride_two_or_more_months_old_is_still_found():
+    """Chuyến seed tháng 10 vẫn ACCEPTED/ONGOING khi đã sang tháng 12: đường nhanh phải lùi đủ các tháng."""
+    later = parse_vn("2026-12-02 09:00")
+    db = FakeDb({
+        # tháng 12 và 11 trống, tháng 10 có chuyến ONGOING
+        "B10_driver_month": [[], [], [{"ride_id": "RIDE_1022", "status": "ONGOING"}]],
+        "B06_ride_get": [{"ride_id": "RIDE_1022", "driver_id": "DRV_551", "status": "ONGOING"}],
+    })
+    assert consistency.recent_active_ride(db, "DRV_551", later) == "RIDE_1022"
+    assert [c[1] for c in db.calls if c[0] == "B10_driver_month"] == [
+        ("DRV_551", 202612), ("DRV_551", 202611), ("DRV_551", 202610)]
+    assert SCAN not in db.names()
+
+
+def test_months_before_first_month_are_not_queried():
+    db = FakeDb({SCAN: [[]]})
+    consistency.active_ride_of(db, "DRV_551", parse_vn("2026-12-02 09:00"), first_month=202611)
+    assert [c[1] for c in db.calls if c[0] == "B10_driver_month"] == [("DRV_551", 202612), ("DRV_551", 202611)]
+    db2 = FakeDb()
+    assert consistency.recent_active_ride(db2, "DRV_551", parse_vn("2026-08-01 09:00")) is None  # trước first_month
+    assert db2.calls == []
 
 
 def test_find_stuck_busy_drivers_scans_once_and_reports_only_unmatched():

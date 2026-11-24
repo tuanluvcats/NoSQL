@@ -14,6 +14,7 @@ from typing import Any
 
 from domain.labels import driver_status
 from domain.tz import vn_date, yyyymm
+from services.catalog_admin import FIRST_MONTH, _months
 from services.driver_presence import find_area_rows
 from services.result import ActionResult
 
@@ -127,16 +128,11 @@ def _scan_active(db) -> dict[str, list[str]]:
     return out
 
 
-def _prev_month(ym: int) -> int:
-    y, m = divmod(ym, 100)
-    return (y - 1) * 100 + 12 if m == 1 else ym - 1
-
-
-def _fast_active_row(db, driver_id: str, now: datetime) -> dict | None:
-    """Đường nhanh: rides_by_driver_month tháng này và tháng trước; mỗi dòng ứng viên được xác nhận lại bằng `rides`
-    (bảng phụ có thể cũ). Trả về dòng `rides` đã xác nhận."""
-    this_month = yyyymm(now)
-    for ym in (this_month, _prev_month(this_month)):
+def _fast_active_row(db, driver_id: str, now: datetime, first_month: int = FIRST_MONTH) -> dict | None:
+    """Đường nhanh: rides_by_driver_month lần lượt từng tháng, từ tháng của `now` lùi về `first_month` (mới nhất trước,
+    không đọc tháng trước `first_month`); mỗi dòng ứng viên được xác nhận lại bằng `rides` (bảng phụ có thể cũ).
+    Trả về dòng `rides` đã xác nhận."""
+    for ym in reversed(_months(first_month, now)):
         for row in db.rows("B10_driver_month", [driver_id, ym]):
             if row.get("status") not in ACTIVE:
                 continue
@@ -146,40 +142,41 @@ def _fast_active_row(db, driver_id: str, now: datetime) -> dict | None:
     return None
 
 
-def _fast_active(db, driver_id: str, now: datetime) -> str | None:
-    row = _fast_active_row(db, driver_id, now)
+def _fast_active(db, driver_id: str, now: datetime, first_month: int = FIRST_MONTH) -> str | None:
+    row = _fast_active_row(db, driver_id, now, first_month)
     return row["ride_id"] if row else None
 
 
-def recent_active_ride_row(db, driver_id: str, now: datetime) -> dict | None:
+def recent_active_ride_row(db, driver_id: str, now: datetime, first_month: int = FIRST_MONTH) -> dict | None:
     """Như recent_active_ride nhưng trả cả dòng `rides` đã đọc khi xác nhận (không đọc thêm lần nào)."""
-    return _fast_active_row(db, driver_id, now)
+    return _fast_active_row(db, driver_id, now, first_month)
 
 
-def recent_active_ride(db, driver_id: str, now: datetime) -> str | None:
+def recent_active_ride(db, driver_id: str, now: datetime, first_month: int = FIRST_MONTH) -> str | None:
     """Chuyến ACCEPTED/ONGOING của tài xế chỉ qua đường nhanh (đọc theo partition key, không quét bảng).
     Dùng cho trang tài xế, tải mỗi lần mở trang nên không được quét toàn bảng `rides`."""
-    return _fast_active(db, driver_id, now)
+    return _fast_active(db, driver_id, now, first_month)
 
 
-def active_ride_of(db, driver_id: str, now: datetime, scan: dict[str, list[str]] | None = None) -> str | None:
+def active_ride_of(db, driver_id: str, now: datetime, scan: dict[str, list[str]] | None = None,
+                   first_month: int = FIRST_MONTH) -> str | None:
     """Chuyến ACCEPTED/ONGOING của tài xế, hoặc None. Không thấy ở đường nhanh thì quét `rides` để chắc chắn, vì lệnh
     ghi bảng phụ có thể đã lỗi (D10): thiếu dòng ở rides_by_driver_month không chứng minh được là không có chuyến."""
-    found = _fast_active(db, driver_id, now)
+    found = _fast_active(db, driver_id, now, first_month)
     if found is not None:
         return found
     ids = (scan if scan is not None else _scan_active(db)).get(driver_id)
     return ids[0] if ids else None
 
 
-def find_stuck_busy_drivers(db, now: datetime) -> list[dict]:
+def find_stuck_busy_drivers(db, now: datetime, first_month: int = FIRST_MONTH) -> list[dict]:
     """Tài xế BUSY mà không có chuyến ACCEPTED/ONGOING nào. Mỗi phần tử: driver_id, full_name, reason."""
     busy = sorted((d for d in db.rows("APP03_drivers_scan", []) if d.get("status") == "BUSY"),
                   key=lambda x: x["driver_id"])
     stuck: list[dict] = []
     scan: dict[str, list[str]] | None = None
     for d in busy:
-        if _fast_active(db, d["driver_id"], now) is not None:
+        if _fast_active(db, d["driver_id"], now, first_month) is not None:
             continue
         if scan is None:
             scan = _scan_active(db)  # quét một lần, dùng cho mọi tài xế BUSY còn lại
@@ -190,7 +187,7 @@ def find_stuck_busy_drivers(db, now: datetime) -> list[dict]:
     return stuck
 
 
-def release_stuck_driver(db, driver_id: str, now: datetime) -> ActionResult:
+def release_stuck_driver(db, driver_id: str, now: datetime, first_month: int = FIRST_MONTH) -> ActionResult:
     """Đưa tài xế BUSY kẹt về AVAILABLE bằng LWT `IF status = 'BUSY'`, chỉ sau khi xác minh không có chuyến đang chạy.
     Sau khi release kiểm lại; nếu có chuyến vừa xuất hiện (chạy đua với lệnh nhận chuyến) thì claim lại (bồi hoàn)."""
     d = db.one("B03_driver_get", [driver_id])
@@ -199,14 +196,14 @@ def release_stuck_driver(db, driver_id: str, now: datetime) -> ActionResult:
     if d.get("status") != "BUSY":
         return ActionResult(False, "invalid_transition", f"Tài xế đang ở trạng thái {driver_status(d.get('status'))}, không cần giải phóng.",
                             current={"status": d.get("status")})
-    ride_id = active_ride_of(db, driver_id, now)
+    ride_id = active_ride_of(db, driver_id, now, first_month=first_month)
     if ride_id is not None:
         return ActionResult(False, "driver_busy", f"Tài xế đang có chuyến {ride_id}, không được giải phóng.",
                             ride_id=ride_id)
     r = db.lwt("APP08_driver_release", [driver_id])
     if not r.applied:
         return ActionResult(False, "lwt_lost", "Trạng thái tài xế vừa thay đổi, không giải phóng.", current=r.current)
-    late = active_ride_of(db, driver_id, now)
+    late = active_ride_of(db, driver_id, now, first_month=first_month)
     if late is not None:
         db.lwt("APP07_driver_claim", [driver_id])
         return ActionResult(False, "lwt_lost", f"Chuyến {late} vừa được nhận trong lúc giải phóng, tài xế vẫn được giữ ở trạng thái đang chở khách.",

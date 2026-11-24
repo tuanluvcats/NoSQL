@@ -73,7 +73,8 @@ def _home(request: Request, user: dict, errors: list[str] | None = None, status:
     if driver is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ tài xế.")
     areas = driver_presence.find_area_rows(db, driver_id)
-    current = (consistency.recent_active_ride_row(db, driver_id, request.app.state.clock())
+    current = (consistency.recent_active_ride_row(db, driver_id, request.app.state.clock(),
+                                                  request.app.state.settings.first_month)
                if driver.get("status") == "BUSY" else None)
     ctx = {"driver": driver, "areas": areas, "current": current, "area_config": AREAS, "errors": errors or [],
            "form": form or _default_form(request, driver_id, areas),

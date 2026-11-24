@@ -42,9 +42,8 @@
 | `csv/customers_import.csv` | 5 khách hàng mới để minh họa nhập CSV | Mục 6 |
 | `cqlshrc` | Cấu hình hiển thị của cqlsh (in đủ chữ số kiểu `double`) | Tiện ích |
 | `tools/gen_data.py` | Script Python sinh `02_data.cql` và file CSV (sửa dữ liệu ở đây rồi chạy lại) | Tiện ích |
-| `tools/build_chuong5.py`, `tools/docx_lib.py`, `tools/sync_word_refs.py` | Công cụ cũ, **không dùng nữa**: file Word khuôn mà chúng đọc đã bị bỏ; Chương 5 nay được chỉnh trực tiếp trong file Word chính | — |
 
-### 0.2. Chạy toàn bộ trong 7 lệnh (PowerShell, tại `D:\Documents\Homework\NoSQL`)
+### 0.2. Chạy toàn bộ trong 7 lệnh (PowerShell, tại thư mục gốc của dự án)
 
 ```powershell
 docker compose stop cassandra                       # nhường cổng 9042 nếu đang bật Cassandra 4.1 của bài tập
@@ -95,7 +94,7 @@ Image `cassandra:3.11` lấy từ Docker Hub [18]; tag này không còn nằm tr
 | Keyspace | `ride_booking` | `CREATE KEYSPACE IF NOT EXISTS` không ghi đè | Khớp |
 | Bảng đã có | `customers`, `drivers`, `rides_by_customer`, `vehicles` (Hình 3.5, 3.11, 4.1, 4.4) | Định nghĩa lại **y hệt** bằng `CREATE TABLE IF NOT EXISTS` (không đụng tới bảng đang có) | Khớp |
 | Cassandra | Nhánh 3.x, kết nối `localhost/127.0.0.1:9042` (Hình 3.19, 4.1) | `cassandra:3.11` (3.11.19), cluster `NoSQLLab`, DC `datacenter1`, heap 1 GB | Khớp nhánh 3.x |
-| File model DbSchema | `D:\NOSQL\test1.dbs` | — | Dùng tiếp để Refresh/Synchronize (§4.3) |
+| File model DbSchema | `test1.dbs` | — | Dùng tiếp để Refresh/Synchronize (§4.3) |
 
 > **Một điểm không đọc được từ ảnh chụp:** thứ tự sắp xếp (ASC/DESC) của hai clustering column `ride_date`, `ride_id` trong bảng `rides_by_customer`. Hình 3.19 cho thấy `ride_date` có biểu tượng lịch (kiểu ngày) và `fare` có biểu tượng Σ (kiểu số; dữ liệu mẫu `85000.0`). Tài liệu dùng định nghĩa mặc định (ASC, `double`). Mọi truy vấn đều ghi rõ `ORDER BY ride_date DESC, ride_id DESC` và mọi giá trị `fare` đều viết dạng `85000.0`, nên script chạy đúng với **cả hai** trường hợp ASC/DESC. Nếu Docker của bạn đã có sẵn bảng này từ trước, kiểm tra bằng:
 >
@@ -115,7 +114,7 @@ Image `cassandra:3.11` lấy từ Docker Hub [18]; tag này không còn nằm tr
 ### 1.2. Kiểm tra nhanh môi trường
 
 ```powershell
-cd D:\Documents\Homework\NoSQL
+cd <thư mục dự án>
 docker compose stop cassandra
 docker compose up -d cassandra-doan
 docker exec nosql-cassandra-doan nodetool status
@@ -172,10 +171,10 @@ Khởi động: mở Command Prompt, `cd c:\apache-cassandra-3.11.4\bin` rồi c
 
 | Docker | Cài trực tiếp |
 |---|---|
-| `docker exec nosql-cassandra-doan cqlsh -f /doan/01_schema.cql` | `cqlsh -f D:\NOSQL\cassandra\01_schema.cql` (thư mục `DoAn\cassandra` chép về máy) |
+| `docker exec nosql-cassandra-doan cqlsh -f /doan/01_schema.cql` | `cqlsh -f <thư mục chứa cassandra>\01_schema.cql` (thư mục `DoAn\cassandra` chép về máy) |
 | `docker exec nosql-cassandra-doan nodetool ...` | `nodetool ...` |
-| `COPY ... '/backup/x.csv'` | `COPY ... 'D:/NOSQL/export/x.csv'` (đường dẫn dùng `/`, thư mục phải có sẵn) |
-| `backup_snapshot.sh`, `restore_snapshot.sh`, `export_csv.sh`, `import_csv.sh` | Không chạy được trên Windows thuần (cần bash). Làm từng bước như Chương 5: `nodetool snapshot`, chép thư mục snapshot bằng PowerShell, `TRUNCATE`, chép lại vào thư mục `<bảng>-<id>` rồi `nodetool refresh` |
+| `COPY ... '/backup/x.csv'` | `COPY ... '<thư mục xuất>/x.csv'` (đường dẫn dùng `/`, thư mục phải có sẵn) |
+| `backup_snapshot.sh`, `restore_snapshot.sh`, `export_csv.sh`, `import_csv.sh` | Không chạy được trên Windows thuần (cần bash). Làm từng bước thủ công: `nodetool snapshot`, chép thư mục snapshot bằng PowerShell, `TRUNCATE`, chép lại vào thư mục `<bảng>-<id>` rồi `nodetool refresh` |
 | `set PYTHONIOENCODING` đã đặt sẵn trong `docker-compose.yml` | Tự gõ `set PYTHONIOENCODING=utf-8` trước khi chạy `cqlsh ... > file` |
 
 > Các bước dành riêng cho Windows (đường dẫn, lệnh PowerShell sao chép snapshot) chưa được chạy trên một bản Cassandra cài trực tiếp; riêng chuỗi `TRUNCATE`, chép file vào thư mục `<bảng>-<id>` rồi `nodetool refresh` đã chạy thử trên Cassandra 3.11.19 (Docker) và lệnh PowerShell chép snapshot đã chạy thử trên cây thư mục mô phỏng.
@@ -799,7 +798,7 @@ CREATE TABLE IF NOT EXISTS promotions (
 
 Làm giống báo cáo giữa kỳ §3.4 (Schema Refresh / Synchronization):
 
-1. Mở `D:\NOSQL\test1.dbs`, kết nối `Cassandra_002` như cũ (không đổi thông số).
+1. Mở `test1.dbs`, kết nối `Cassandra_002` như cũ (không đổi thông số).
 2. Chọn **Refresh From Database / Synchronize Model and Database**. DbSchema liệt kê 9 bảng mới ở trạng thái *present* trong Database, *absent* trong Model. Chọn **Create** về phía Model cho các bảng này và materialized view.
 3. Kéo các bảng vào diagram. Nên tách thành 3 diagram: *Chuyến đi*, *Tài xế & GPS*, *Tài khoản – Khuyến mãi*.
 4. Tạo **Virtual Foreign Key** theo các liên kết logic:
@@ -1735,7 +1734,7 @@ Những điều cần nói rõ khi trình bày:
 docker exec nosql-cassandra-doan cqlsh -e "COPY ride_booking.rides_by_customer (customer_id, ride_date, ride_id, pickup_address, destination_address, fare, status) TO '/backup/lich_su_chuyen.csv' WITH HEADER = true AND DELIMITER = ';';"
 
 # Lấy file về Windows
-docker cp nosql-cassandra-doan:/backup/lich_su_chuyen.csv D:\Documents\Homework\NoSQL\DoAn\
+docker cp nosql-cassandra-doan:/backup/lich_su_chuyen.csv <thư mục dự án>\DoAn\
 ```
 
 ```text
@@ -1786,7 +1785,7 @@ docker exec nosql-cassandra-doan cqlsh -e "SELECT customer_id, full_name, create
 
 ```powershell
 docker exec nosql-cassandra-doan bash /doan/scripts/export_csv.sh ride_booking
-docker cp nosql-cassandra-doan:/backup/csv_ride_booking D:\Documents\Homework\NoSQL\DoAn\csv_ride_booking
+docker cp nosql-cassandra-doan:/backup/csv_ride_booking <thư mục dự án>\DoAn\csv_ride_booking
 ```
 ```text
 customers                    11 dòng
@@ -1800,7 +1799,7 @@ vehicles                     10 dòng
 Nhập lại, ví dụ sang máy khác hoặc sau khi xóa dữ liệu:
 
 ```powershell
-docker cp D:\Documents\Homework\NoSQL\DoAn\csv_ride_booking nosql-cassandra-doan:/backup/
+docker cp <thư mục dự án>\DoAn\csv_ride_booking nosql-cassandra-doan:/backup/
 docker exec nosql-cassandra-doan cqlsh -f /doan/99_reset_data.cql      # xóa dữ liệu cũ trước khi nhập
 docker exec nosql-cassandra-doan bash /doan/scripts/import_csv.sh ride_booking
 ```
@@ -1861,7 +1860,7 @@ Snapshot nằm trong `/var/lib/cassandra/data/ride_booking/<bảng>-<id>/snapsho
 
 ```powershell
 docker exec nosql-cassandra-doan bash /doan/scripts/backup_snapshot.sh ride_booking bk_20261004
-docker cp nosql-cassandra-doan:/backup/bk_20261004.tar.gz D:\Backup\
+docker cp nosql-cassandra-doan:/backup/bk_20261004.tar.gz <thư mục sao lưu>\
 ```
 ```text
 [1/4] Sao lưu lược đồ (DESCRIBE KEYSPACE) -> /backup/bk_20261004/schema.cql
@@ -1964,13 +1963,13 @@ Cách này sao lưu toàn bộ dữ liệu của node đồ án. Phải dừng C
 **Cài đặt và chạy ứng dụng** (PowerShell, thư mục `DoAn\app`; Python 3.12 riêng cho ứng dụng, không dùng Python 2.7 của `cqlsh`):
 
 ```powershell
-cd D:\Documents\Homework\NoSQL\DoAn\app
+cd <thư mục dự án>\DoAn\app
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt      # gồm cassandra-driver==3.30.1, pyasyncore, fastapi, uvicorn, jinja2, ...
 
 .venv\Scripts\python -m tools.check_env                      # kiểm máy: kết nối được không, release_version, keyspace, rated_at
 .venv\Scripts\python -m tools.setup_db --keyspace ride_booking_demo --seed --yes   # dựng keyspace + 13 bảng + MV + cột rated_at, nạp seed (TRUNCATE 13 bảng của keyspace đó)
-.venv\Scripts\python -m tools.migrate --keyspace ride_booking                      # nếu CSDL đã dựng từ Word: chỉ thêm cột rides.rated_at (06_app_migration.cql), không xóa dữ liệu
+.venv\Scripts\python -m tools.migrate --keyspace ride_booking_demo                 # nếu keyspace của ứng dụng đã dựng bằng cqlsh từ 01, 02: chỉ thêm cột rides.rated_at (06_app_migration.cql), không xóa dữ liệu
 
 $env:CASSANDRA_KEYSPACE = "ride_booking_demo"                # CASSANDRA_HOSTS, CASSANDRA_PORT, CASSANDRA_LOCAL_DC đặt tương tự
 .venv\Scripts\python -m uvicorn main:app --port 8000
@@ -2027,9 +2026,9 @@ print(r.was_applied)      # True / False — kết quả LWT
 
 ## 13. Tài liệu tham khảo
 
-Số thứ tự [1]–[17] trùng với mục TÀI LIỆU THAM KHẢO của file Word chính (`DoAn/Báo cáo NoSQL DbSchema và Apache Cassandra (chia lại Chương 5).docx`): [1]–[10] là nguồn của Chương 1–4, [11]–[17] là nguồn của Chương 5, đánh theo thứ tự xuất hiện. Các mục [18]–[24] chỉ dùng trong tài liệu kỹ thuật này.
+Số thứ tự [1]–[24] dưới đây chỉ dùng trong tài liệu kỹ thuật này. Báo cáo Word (`DoAn/Báo cáo NoSQL DbSchema và Apache Cassandra.docx`) có mục TÀI LIỆU THAM KHẢO riêng, đánh số [1]–[8] theo thứ tự xuất hiện trong báo cáo, nên không trùng số với danh sách này.
 
-**Nguồn của Chương 1–4** (trong file Word chính)
+**Nguồn về DbSchema và công cụ liên quan**
 
 1. DbSchema, "Installation". https://dbschema.com/documentation/installation.html
 2. DbSchema, trang về Apache Cassandra. https://dbschema.com/databases/cassandra/
@@ -2052,7 +2051,7 @@ Số thứ tự [1]–[17] trùng với mục TÀI LIỆU THAM KHẢO của file
     - Lightweight Transactions and Paxos (tr. 120), Lightweight Transactions (tr. 191), Batches (tr. 194–196);
     - chương 12 "Maintenance": Backup and Recovery (tr. 290–293).
 
-**Nguồn bên ngoài tài liệu được cấp** (Chương 5; [13] là tài liệu thực hành của môn học)
+**Nguồn bên ngoài tài liệu được cấp** ([13] là tài liệu thực hành của môn học)
 
 13. Nguyễn Văn Lễ, Nguyễn Thị Định, *Tài liệu hướng dẫn thực hành Cơ sở dữ liệu NoSQL*, Trường Đại học Công Thương TP.HCM, 2025, lưu hành nội bộ (`BaiTap/TH_HUONG DAN THUC HANH NoSQL_2025.pdf`, Chương 2, tr. 37–42).
 14. Wise Coders, "cassandra-jdbc-driver", GitHub. https://github.com/wise-coders/cassandra-jdbc-driver (truy cập 04/10/2026).
@@ -2067,5 +2066,5 @@ Số thứ tự [1]–[17] trùng với mục TÀI LIỆU THAM KHẢO của file
 20. Apache Cassandra `NEWS.txt` (nhánh 4.1): `nodetool import` thay `nodetool refresh` (4.0). Đây là lý do 3.11 khác 4.1 ở §1.1.
 21. Docker library, `github.com/docker-library/cassandra` (docker-entrypoint.sh 4.1) và `github.com/docker-library/docs` (cassandra/content.md).
 22. `apache/cassandra-python-driver` — CHANGELOG.rst và `docs/installation.rst` (bản 3.30.1): Python 3.12, `pyasyncore`.
-23. Báo cáo giữa kỳ của nhóm, nay là Chương 1–4 của file Word chính `DoAn/Báo cáo NoSQL DbSchema và Apache Cassandra (chia lại Chương 5).docx` (Hình 2.6, 3.4, 3.5, 3.15, 3.19, 4.1, 4.4).
+23. Báo cáo của nhóm: file Word `DoAn/Báo cáo NoSQL DbSchema và Apache Cassandra.docx` (Chương 1 và 2 về DbSchema, Chương 3 về thiết kế CSDL và ứng dụng).
 24. Kết quả kiểm chứng: trên Cassandra 4.1.12 (chạy kiểm chứng tự động trên máy của nhóm) và trên Cassandra 3.11.19 ngày 04/10/2026 (toàn bộ `01`–`05_*.cql`, `export_csv.sh`, `import_csv.sh`, `backup_snapshot.sh`, `restore_snapshot.sh` và driver Python; các lệnh `nodetool help`, `sstableloader --help`, `HELP COPY` trong container là tài liệu tham chiếu của đúng phiên bản này).

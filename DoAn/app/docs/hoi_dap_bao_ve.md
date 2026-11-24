@@ -83,7 +83,8 @@ trạng thái hiện ở trang chi tiết chuyến), `ratings_by_driver.tags` l�
 
 ### Truy vấn thiếu partition key thì sao?
 
-Trang **NoSQL** có nút chạy thử một câu như vậy; Cassandra từ chối và đòi `ALLOW FILTERING`. Ứng dụng không dùng `ALLOW FILTERING` vì nó quét mọi node.
+Trang **NoSQL** có nút chạy thử một câu như vậy; Cassandra từ chối và đòi `ALLOW FILTERING`. Khi chưa cố định partition key, `ALLOW FILTERING` buộc Cassandra quét nhiều partition (mọi node), nên ứng dụng không dùng nó theo cách đó.
+Ứng dụng chỉ dùng `ALLOW FILTERING` sau khi đã cố định partition key: thu nhập tháng của tài xế (A01, partition `(driver_id, yyyymm)`) và chuyến chờ theo khu vực (APP15, partition `(city, district, ride_date)`); lúc đó Cassandra chỉ lọc vài chục dòng trong một partition.
 Các trang quản trị cần liệt kê toàn bộ (tài khoản, khách) chấp nhận quét bảng nhỏ ở quy mô dữ liệu mẫu và ghi rõ giới hạn này trong README.
 
 ### Backup/restore làm thế nào? (mục 9.2, mục 6)
@@ -106,7 +107,7 @@ và `COPY TO/FROM` CSV cho phần làm trên công cụ.
 
 ## 4. Kiểm thử
 
-Khoảng 600 test pytest: unit test dùng `FakeDb` (không cần Cassandra) kiểm thứ tự ghi bảng và nhánh LWT thua; integration test chạy trên keyspace
+748 test pytest: unit test dùng `FakeDb` (không cần Cassandra) kiểm thứ tự ghi bảng và nhánh LWT thua; integration test chạy trên keyspace
 `ride_booking_test` (từ chối chạy nếu tên không kết thúc bằng `_test`) gồm kịch bản T01-T12 cho đúng kết quả `CASSANDRA.MD` §8 (khách trả 65000,
 điểm tài xế 4.67), hai luồng tranh nhận cùng chuyến, hai luồng tranh mã khuyến mãi, backup rồi restore.
 
@@ -115,7 +116,7 @@ Khoảng 600 test pytest: unit test dùng `FakeDb` (không cần Cassandra) ki�
 Có (`docs/ket_qua_do_hieu_nang.md`, đo bằng query trace phía server). Baseline là cách làm thông thường "đọc trạng thái rồi UPDATE": 8 tài xế cùng nhận
 một chuyến, 30 vòng, cả 30 vòng đều có từ 2 người "nhận được"; dùng LWT thì cả 30 vòng đúng 1 người. Cái giá: LWT khoảng 9,8 ms so với 0,8 ms của ghi
 thường. Đọc theo partition key giữ khoảng 1 ms khi bảng tăng lên 20.036 chuyến, còn `ALLOW FILTERING` tăng từ 3,6 ms lên khoảng 100 ms: đó là lý do thiết
-kế theo truy vấn. Độ bao phủ mã của bộ test là 90,6 %.
+kế theo truy vấn. Độ bao phủ mã của bộ test là 91,1 %.
 
 ## 5. Tài liệu tham khảo đã đối chiếu
 

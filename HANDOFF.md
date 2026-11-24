@@ -1,8 +1,8 @@
 # HANDOFF: đồ án NoSQL (DbSchema và Apache Cassandra)
 
-Cập nhật: 2026-11-22. Nhánh chính: `main`.
+Cập nhật: 2026-11-24. Nhánh chính: `main`.
 
-Tài liệu này dành cho người hoặc agent tiếp quản. Không cần plugin, skill hay công cụ riêng nào: chỉ cần đọc file, chạy lệnh trong PowerShell, sửa file và dùng git.
+Ghi chú bàn giao cho người tiếp tục dự án: trạng thái hiện tại, cách chạy, quy tắc làm việc và việc còn mở. Chỉ cần đọc file, chạy lệnh trong PowerShell, sửa file và dùng git.
 Đọc hết mục 1 đến 4 trước khi sửa gì.
 
 ## 1. Dự án là gì
@@ -19,7 +19,7 @@ Tài liệu này dành cho người hoặc agent tiếp quản. Không cần plu
 1. **Không ghi vào keyspace `ride_booking`.** Đó là dữ liệu dùng cho ảnh chụp và kết quả trong báo cáo. Ứng dụng chạy trên `ride_booking_demo`; test chỉ chạy trên keyspace có đuôi `_test` (code tự từ chối keyspace khác).
 2. **Không xóa dữ liệu, không `git reset --hard`, không `push --force`** nếu chủ repo chưa đồng ý rõ ràng.
 3. **Chỉ nói "xong" khi test đã chạy thật và pass.** Ghi lại dòng tóm tắt của pytest.
-4. **Sửa file Word tại chỗ và sao lưu trước** vào `DoAn/SaoLuu/` (thư mục này không đưa lên git). Giữ nguyên style có sẵn của tài liệu.
+4. **Sửa file Word tại chỗ và giữ một bản sao lưu ngoài repo trước khi sửa.** Giữ nguyên style có sẵn của tài liệu.
 5. **Văn phong báo cáo:** viết ở mức phương pháp, không đưa tên file, tên hàm, đường dẫn mã nguồn vào phần trình bày. Mọi con số phải đo thật; số liệu đo một lần thì ghi rõ là một lần.
 6. **Giao diện cho người dùng cuối:** không hiện tên bảng, mã câu truy vấn, LWT, keyspace hay mã trạng thái tiếng Anh. Ghi chú kỹ thuật chỉ đặt trong khối `{% if tech %}...{% endif %}` với class `tech-note`. Mã trạng thái, vai trò, thanh toán, khu vực hiển thị qua filter nhãn tiếng Việt (`DoAn/app/domain/labels.py`).
 7. **Commit:** mỗi bước một commit, message tiếng Việt có tiền tố `feat`/`fix`/`docs`/`test`/`chore`. Tác giả là chủ repo; không thêm dòng `Co-Authored-By`.
@@ -28,7 +28,7 @@ Tài liệu này dành cho người hoặc agent tiếp quản. Không cần plu
 
 - Windows 11, PowerShell, Python 3.12.
 - Cassandra 3.11.4 cài trực tiếp ở `C:\apache-cassandra-3.11.4`, khởi động bằng `khoi_dong_cassandra.bat` (chạy ẩn, mất 1 đến 2 phút). Kiểm cổng: `Test-NetConnection 127.0.0.1 -Port 9042`.
-- Máy không cài Cassandra thì dùng Docker: `docker compose up -d cassandra-doan` ở gốc repo (Cassandra 3.11, cổng 9042). Service `cassandra` 4.1 của bài tập dùng chung cổng nên phải tắt trước.
+- Máy không cài Cassandra thì dùng Docker: `docker compose up -d cassandra-doan` ở gốc repo (Cassandra 3.11, cổng 9042).
 - Console Windows dùng cp1252: script Python in tiếng Việt thì đặt `$env:PYTHONIOENCODING = "utf-8"`.
 
 ```powershell
@@ -50,12 +50,12 @@ Nút "Bật chế độ kỹ thuật" ở chân trang (hoặc biến môi trư�
 
 ```powershell
 .venv\Scripts\python -m pytest tests/unit -q -p no:cacheprovider     # vài giây, không cần Cassandra
-.venv\Scripts\python -m pytest tests -q -p no:cacheprovider          # toàn bộ, khoảng 3 phút, cần Cassandra ở 127.0.0.1:9042
+.venv\Scripts\python -m pytest tests -q -p no:cacheprovider          # toàn bộ, khoảng 6 phút, cần Cassandra ở 127.0.0.1:9042
 .venv\Scripts\python -m pytest tests -q -p no:cacheprovider --cov=.
 .venv\Scripts\python -m coverage report --omit="tests/*,.venv/*"     # độ bao phủ không tính thư mục test
 ```
 
-Kết quả gần nhất (2026-11-22, Cassandra 3.11.4): 745 test pass trong 362 giây. Độ bao phủ đo lần gần nhất, khi còn 723 test (trước khi thêm trang chuyến tự cập nhật): 90,6 % trên 3.273 lệnh (không tính thư mục `tests`).
+Kết quả gần nhất (2026-11-24, Cassandra 3.11.4): 748 test pass trong 403 giây; độ bao phủ 91,1 % trên 3.297 lệnh (không tính thư mục `tests`).
 Marker theo barem: `pytest -m auth|crud|business|backup|nosql`.
 Đo hiệu năng: `.venv\Scripts\python -m tools.bench --keyspace ride_booking_bench_test`, kết quả ở `DoAn/app/docs/ket_qua_do_hieu_nang.md`. Đồng hồ Windows làm tròn khoảng 15,6 ms nên công cụ đo bằng query trace phía máy chủ.
 
@@ -94,7 +94,7 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 - Ứng dụng theo barem: đăng nhập, đăng ký, phân quyền, khóa tài khoản (9.1); quản lý khách, tài xế, xe, khuyến mãi, sao lưu và khôi phục JSON (9.2); đặt xe, nhận chuyến bằng LWT hai tầng, bắt đầu, hoàn thành, thanh toán, hủy, đánh giá một lần (9.3); lịch sử, thu nhập tháng, doanh thu ngày và 7 ngày, thống kê khu vực, GPS, xuất CSV (9.4); trang Kết nối và trang NoSQL cho quản trị.
 - Đồng thời: điểm trung bình tài xế ghi kèm `USING TIMESTAMP` nên hai lượt đánh giá cùng lúc không ghi đè nhau.
 - Giao diện đã rà theo nhận xét giảng viên: không nút trùng chức năng, hỏi lại khi xóa hoặc khóa, giao diện mặc định không có ghi chú kỹ thuật.
-- Trải nghiệm đã sửa sau một lượt đánh giá thiết kế (21/40 theo thang Nielsen):
+- Trải nghiệm đã sửa sau một lượt rà soát giao diện theo các nguyên tắc dễ dùng (nhìn trạng thái hệ thống, phòng lỗi, nhất quán):
   - đặt xe hiện giá ngay trên nút đặt, máy chủ từ chối đặt nếu giá đã đổi;
   - chi tiết chuyến kiểu biên nhận, có biển số chữ to và chấm sao;
   - chuyến chờ dạng thẻ, tự làm mới;
@@ -106,7 +106,7 @@ Chưa chạy lại thăm dò trên Cassandra 3.11.19 (Docker).
 
   Ảnh màn hình ở `DoAn/app/docs/giao_dien/`.
 - Tài liệu: `DoAn/app/docs/kich_ban_demo.md` (kịch bản demo), `DoAn/app/docs/hoi_dap_bao_ve.md` (câu hỏi khi bảo vệ: Jinja2, FastAPI, LWT, phi chuẩn hóa).
-- Báo cáo Word có mục 3.7 về ứng dụng, 49 trang, mục lục đã cập nhật. Năm hình của mục 3.7 (Hình 3.9–3.13) đã chụp lại theo giao diện mới; số liệu kiểm thử trong báo cáo là 723 test, độ bao phủ 90,6%. Số trang và vị trí các đề mục không đổi nên mục lục và danh mục hình vẫn đúng.
+- Báo cáo Word có mục 3.7 về ứng dụng và mục "BẢNG PHÂN CÔNG CÔNG VIỆC", 50 trang, mục lục đã cập nhật. Năm hình của mục 3.7 (Hình 3.9–3.13) đã chụp lại theo giao diện mới; số liệu kiểm thử trong báo cáo là 748 test, độ bao phủ 91,1%.
 
 ## 8. Việc còn mở
 

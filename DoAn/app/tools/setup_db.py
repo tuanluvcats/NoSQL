@@ -7,6 +7,8 @@ from pathlib import Path
 
 from config import CASSANDRA_DIR, Settings, ensure_utf8_stdout
 from db.migrate import apply_schema, ensure_app_migration
+from db.repo import CassandraDb
+from services.rating import backfill_rated_at
 from tools.seed import load_seed, reset_tables, seed_statements
 
 
@@ -18,7 +20,10 @@ def setup_db(session, keyspace: str, *, seed: bool, schema_path: Path) -> dict[s
     data_path = Path(schema_path).parent / "02_data.cql"
     seed_statements(data_path)  # kiểm định dạng trước khi TRUNCATE
     reset_tables(session, keyspace)
-    return load_seed(session, keyspace, data_path)
+    counts = load_seed(session, keyspace, data_path)
+    # Chuyến seed đã có đánh giá phải có rated_at, nếu không sẽ đánh giá lại được (giống tools.migrate).
+    counts["rated_at_backfill"] = backfill_rated_at(CassandraDb(session, keyspace))
+    return counts
 
 
 def main(argv=None) -> int:

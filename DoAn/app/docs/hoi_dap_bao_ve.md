@@ -76,6 +76,13 @@ lần đọc sau (thấy đủ hai đánh giá) luôn thắng, nên điểm khô
 `vehicles_by_plate` là MV của bảng `vehicles`, khóa theo biển số, để tra xe bằng biển số khi tài xế bật nhận chuyến và trong trang quản trị xe. Ứng dụng
 không bao giờ ghi trực tiếp vào MV; Cassandra tự cập nhật từ bảng gốc.
 
+### Sơ đồ DbSchema sao không thấy partition key và view `vehicles_by_plate`?
+
+DbSchema 10.5.2 dùng driver Cassandra kèm theo; khi Reverse Engineer, công cụ đọc bảng, cột, kiểu dữ liệu và đánh dấu clustering column (index tên
+`CLUSTER KEY`), nhưng không đánh dấu partition key (bộ kiểm tra mô hình của DbSchema báo mọi bảng "không có khóa chính") và không đọc materialized
+view (driver chỉ liệt kê đối tượng loại TABLE). Synchronize cũng không thêm được, vì nó chỉ so với những gì driver đọc được. Nhóm kiểm khóa và view bằng
+`DESCRIBE TABLE`, `DESCRIBE MATERIALIZED VIEW vehicles_by_plate` hoặc bảng hệ thống `system_schema.columns` (cột `kind` là `partition_key`, `clustering`).
+
 ### Kiểu dữ liệu tập hợp (map/set/list) thể hiện ở đâu?
 
 `promotions.cities` là `set<text>` (thêm/bớt thành phố bằng `cities + {...}` và `cities - {...}`), `rides.status_history` là `map<timestamp, text>` (lịch sử
